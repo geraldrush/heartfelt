@@ -32,6 +32,8 @@ const Chat = () => {
   const listRef = useRef(null);
   const topSentinelRef = useRef(null);
   const typingTimeout = useRef(null);
+  const messageRefs = useRef(new Map());
+  const readSent = useRef(new Set());
 
   const otherUserId = connection?.other_user_id;
   const otherUserName = connection?.full_name || 'Connection';
@@ -148,6 +150,7 @@ const Chat = () => {
   useEffect(() => {
     setMessages([]);
     setOffset(0);
+    readSent.current = new Set();
     loadConnection();
     loadMessages({ reset: true });
     loadTokenRequests();
@@ -179,18 +182,38 @@ const Chat = () => {
   }, [hasMore, loadingMore]);
 
   useEffect(() => {
-    const unreadIds = messages
-      .filter((msg) => msg.sender_id !== user?.id && msg.status !== 'read')
-      .map((msg) => msg.id);
-
-    if (unreadIds.length > 0) {
-      unreadIds.forEach((id) => sendReadReceipt(id));
-      setMessages((prev) =>
-        prev.map((msg) =>
-          unreadIds.includes(msg.id) ? { ...msg, status: 'read' } : msg
-        )
-      );
+    if (!listRef.current) {
+      return;
     }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) {
+            return;
+          }
+          const messageId = entry.target.getAttribute('data-message-id');
+          if (!messageId || readSent.current.has(messageId)) {
+            return;
+          }
+          const message = messages.find((msg) => msg.id === messageId);
+          if (!message || message.sender_id === user?.id || message.status === 'read') {
+            return;
+          }
+          readSent.current.add(messageId);
+          sendReadReceipt(messageId);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId ? { ...msg, status: 'read' } : msg
+            )
+          );
+        });
+      },
+      { root: listRef.current, threshold: 0.6 }
+    );
+
+    messageRefs.current.forEach((node) => observer.observe(node));
+
+    return () => observer.disconnect();
   }, [messages, sendReadReceipt, user?.id]);
 
   useEffect(() => {
@@ -358,6 +381,14 @@ const Chat = () => {
                 className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}
               >
                 <div
+                  ref={(node) => {
+                    if (!node) {
+                      messageRefs.current.delete(msg.id);
+                      return;
+                    }
+                    messageRefs.current.set(msg.id, node);
+                  }}
+                  data-message-id={msg.id}
                   className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm shadow ${
                     isSender ? 'bg-blue-600 text-white' : 'bg-white text-slate-700'
                   }`}

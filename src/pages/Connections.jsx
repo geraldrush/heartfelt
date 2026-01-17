@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getConnections, getTokenBalance, transferTokens } from '../utils/api.js';
+import ChatList from '../components/ChatList.jsx';
 
 const Connections = () => {
   const [connections, setConnections] = useState([]);
@@ -97,6 +98,13 @@ const Connections = () => {
         )}
 
         <div className="mt-6 space-y-4">
+          <div className="rounded-2xl bg-white p-6 shadow">
+            <h2 className="text-lg font-semibold text-slate-900">Chats</h2>
+            <p className="mt-1 text-xs text-slate-500">Recent conversations</p>
+            <div className="mt-4">
+              <ChatList />
+            </div>
+          </div>
           {connections.map((connection) => (
             <div key={connection.id} className="rounded-2xl bg-white p-6 shadow">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

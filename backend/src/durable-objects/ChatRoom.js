@@ -46,6 +46,17 @@ export class ChatRoom {
     this.connections.set(userId, server);
     this.startHeartbeat(userId);
 
+    for (const [otherUserId] of this.connections.entries()) {
+      if (otherUserId === userId) {
+        continue;
+      }
+      this.sendToUser(userId, {
+        type: 'presence',
+        user_id: otherUserId,
+        is_online: true,
+      });
+    }
+
     this.broadcast({ type: 'presence', user_id: userId, is_online: true }, userId);
 
     server.addEventListener('message', async (event) => {

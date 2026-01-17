@@ -4,6 +4,7 @@ import {
   createTokenRequest,
   getMessagesByConnection,
   getDb,
+  getMessageIdsForUser,
   getUnreadCounts,
   getPendingTokenRequests,
   updateMultipleMessageStatus,
@@ -100,7 +101,10 @@ chat.get('/unread-counts', authMiddleware, async (c) => {
 chat.post('/messages/mark-delivered', authMiddleware, async (c) => {
   const body = await c.req.json().catch(() => null);
   const ids = Array.isArray(body?.message_ids) ? body.message_ids : [];
-  await updateMultipleMessageStatus(getDb(c), ids, 'delivered');
+  const db = getDb(c);
+  const userId = c.get('userId');
+  const allowedIds = await getMessageIdsForUser(db, userId, ids);
+  await updateMultipleMessageStatus(db, allowedIds, 'delivered');
   return c.json({ success: true });
 });
 

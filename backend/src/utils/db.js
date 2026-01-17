@@ -500,6 +500,26 @@ export async function verifyUserInConnection(db, connectionId, userId) {
   return Boolean(row);
 }
 
+export async function getMessageIdsForUser(db, userId, messageIds) {
+  if (!Array.isArray(messageIds) || messageIds.length === 0) {
+    return [];
+  }
+  const placeholders = messageIds.map(() => '?').join(', ');
+  const { results } = await db
+    .prepare(
+      `SELECT messages.id
+       FROM messages
+       JOIN connections ON connections.id = messages.connection_id
+       WHERE messages.id IN (${placeholders})
+         AND connections.status = 'active'
+         AND (connections.user_id_1 = ? OR connections.user_id_2 = ?)`
+    )
+    .bind(...messageIds, userId, userId)
+    .all();
+
+  return results.map((row) => row.id);
+}
+
 export async function getReferenceData(db) {
   const religions = await db
     .prepare('SELECT id, name FROM religions WHERE is_active = 1')
