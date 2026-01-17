@@ -19,3 +19,4 @@ Backend (Cloudflare Workers):
 - Set `GOOGLE_CLIENT_ID` to your Google OAuth client ID.
 - For local dev: update `backend/.dev.vars`.
 - For production: update `backend/wrangler.toml` and run `wrangler secret put JWT_SECRET`.
+# Build fix
