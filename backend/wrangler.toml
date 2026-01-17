@@ -1,3 +1,4 @@
+migrations_dir = "./migrations"
 name = "heartfelt-api"
 compatibility_date = "2024-01-01"
 main = "src/index.js"
@@ -6,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "heartfelt-db"
-database_id = ""
+database_id = "b0e2b609-aa73-47af-8711-6b78fc8a5031"
 
 [[r2_buckets]]
 binding = "R2_BUCKET"
@@ -23,6 +24,8 @@ PAYFAST_PASSPHRASE = "CHANGE_ME"
 PAYFAST_MODE = "sandbox"
 PAYFAST_SANDBOX_URL = "https://sandbox.payfast.co.za/eng/process"
 PAYFAST_LIVE_URL = "https://www.payfast.co.za/eng/process"
+PAYFAST_REFUND_SECRET = "CHANGE_ME"
+
 
 [ai]
 binding = "AI"

@@ -8,6 +8,7 @@ import {
   rejectConnectionRequest,
 } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 
 const ReceivedRequests = () => {
   const { user, updateUser } = useAuth();
@@ -94,7 +95,11 @@ const ReceivedRequests = () => {
           </div>
         )}
 
-        {loading && <p className="mt-6 text-sm text-slate-500">Loading...</p>}
+        {loading && (
+          <div className="mt-6">
+            <LoadingSpinner label="Loading..." />
+          </div>
+        )}
 
         {!loading && requests.length === 0 && (
           <p className="mt-6 text-sm text-slate-500">No pending requests.</p>

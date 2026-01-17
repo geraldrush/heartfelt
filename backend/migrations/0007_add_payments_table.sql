@@ -1,4 +1,4 @@
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   package_id TEXT NOT NULL,
@@ -11,5 +11,5 @@ CREATE TABLE payments (
   FOREIGN KEY (package_id) REFERENCES tokens(id)
 );
 
-CREATE INDEX idx_payments_user ON payments(user_id, created_at);
-CREATE INDEX idx_payments_status ON payments(status);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);

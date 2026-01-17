@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { cancelConnectionRequest, getSentRequests, getTokenBalance } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 
 const SentRequests = () => {
   const { user, updateUser } = useAuth();
@@ -64,7 +65,7 @@ const SentRequests = () => {
       <h1 className="mb-6 text-3xl font-bold text-white">Sent Connection Requests</h1>
 
       <div className="w-full max-w-2xl rounded-lg bg-white p-4 shadow-md">
-        {loading && <p className="text-gray-600">Loading...</p>}
+        {loading && <LoadingSpinner label="Loading..." />}
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         {!loading && sentRequests.length === 0 && (

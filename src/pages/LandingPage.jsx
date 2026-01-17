@@ -1,10 +1,14 @@
 // src/pages/LandingPage.jsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserFriends, faUserCheck, faUsers, faCoins } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getConnectionCounts, getTokenBalance } from '../utils/api.js';
+import TokenSparkle from '../components/animations/TokenSparkle.jsx';
+
+const MotionLink = motion(Link);
 
 const LandingPage = () => {
   const { user } = useAuth();
@@ -66,28 +70,48 @@ const LandingPage = () => {
   const displayName = user?.full_name || 'there';
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-400 to-purple-500 text-white text-center p-4">
-      <h1 className="text-3xl md:text-5xl font-bold mb-4">Welcome, {displayName}!</h1>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-romantic-gradient px-4 pb-24 pt-10 text-center text-white">
+      <h1 className="mb-4 text-3xl font-bold md:text-5xl">Welcome, {displayName}!</h1>
 
-      <div className="grid grid-cols-2 gap-4 mb-6 w-full max-w-lg">
-        <Link to="/sent-requests" className="bg-white text-blue-500 flex items-center justify-center p-4 rounded-lg shadow-md hover:bg-gray-100 transition">
-          <FontAwesomeIcon icon={faUserCheck} className="mr-2" />
+      <div className="mb-6 grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-2">
+        <MotionLink
+          to="/sent-requests"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-white/90 p-4 text-rose-600 shadow-lg transition hover:bg-white"
+        >
+          <FontAwesomeIcon icon={faUserCheck} />
           <span className="text-lg">{sentRequests}</span>
-        </Link>
-        <Link to="/received-requests" className="bg-white text-blue-500 flex items-center justify-center p-4 rounded-lg shadow-md hover:bg-gray-100 transition">
-          <FontAwesomeIcon icon={faUserFriends} className="mr-2" />
+        </MotionLink>
+        <MotionLink
+          to="/received-requests"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-white/90 p-4 text-rose-600 shadow-lg transition hover:bg-white"
+        >
+          <FontAwesomeIcon icon={faUserFriends} />
           <span className="text-lg">{receivedRequests}</span>
-        </Link>
-        <Link to="/connections" className="bg-white text-blue-500 flex items-center justify-center p-4 rounded-lg shadow-md hover:bg-gray-100 transition">
-          <FontAwesomeIcon icon={faUsers} className="mr-2" />
+        </MotionLink>
+        <MotionLink
+          to="/connections"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-white/90 p-4 text-rose-600 shadow-lg transition hover:bg-white"
+        >
+          <FontAwesomeIcon icon={faUsers} />
           <span className="text-lg">{totalConnections}</span>
-        </Link>
-        <Link to="/tokens" className="bg-white text-blue-500 flex items-center justify-center p-4 rounded-lg shadow-md hover:bg-gray-100 transition">
-          <FontAwesomeIcon icon={faCoins} className="mr-2" />
+        </MotionLink>
+        <MotionLink
+          to="/tokens"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-white/90 p-4 text-rose-600 shadow-lg transition hover:bg-white"
+        >
+          <FontAwesomeIcon icon={faCoins} />
           <span className="text-lg">
-            {loading ? '...' : tokenBalance ?? 0}
+            {loading ? '...' : <TokenSparkle value={tokenBalance ?? 0} />}
           </span>
-        </Link>
+        </MotionLink>
       </div>
 
       {error && (
@@ -96,28 +120,40 @@ const LandingPage = () => {
         </div>
       )}
 
-      <button
+      <motion.button
         type="button"
         onClick={() => {
           fetchBalance();
           fetchCounts();
         }}
-        className="mb-6 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-blue-600 shadow-md transition hover:bg-gray-100"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="mb-6 rounded-full bg-white/90 px-5 py-2 text-sm font-semibold text-rose-600 shadow-md transition hover:bg-white"
       >
         Refresh dashboard
-      </button>
+      </motion.button>
 
-      <div className="flex flex-col space-y-4 w-full max-w-lg">
-        <Link to="/stories" className="bg-white text-blue-500 py-3 rounded-lg shadow-md hover:bg-gray-100 transition text-center">
+      <div className="flex w-full max-w-lg flex-col space-y-4">
+        <MotionLink
+          to="/stories"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 py-3 text-center text-sm font-semibold text-white shadow-lg transition hover:from-rose-500 hover:to-pink-500"
+        >
           Explore Stories
-        </Link>
-        <Link to="/profile" className="bg-white text-blue-500 py-3 rounded-lg shadow-md hover:bg-gray-100 transition text-center">
+        </MotionLink>
+        <MotionLink
+          to="/profile"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="rounded-2xl bg-white/90 py-3 text-center text-sm font-semibold text-rose-600 shadow-lg transition hover:bg-white"
+        >
           View User Profile
-        </Link>
+        </MotionLink>
       </div>
 
-      <footer className="mt-10">
-        <p className="text-sm">© {new Date().getFullYear()} Heartfelt Connections. All rights reserved.</p>
+      <footer className="mt-10 text-sm text-white/80">
+        © {new Date().getFullYear()} Heartfelt Connections. All rights reserved.
       </footer>
     </div>
   );

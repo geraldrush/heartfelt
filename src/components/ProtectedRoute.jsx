@@ -1,14 +1,16 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import LoadingSpinner from './LoadingSpinner.jsx';
+import Navbar from './Navbar.jsx';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center text-gray-600">
-        Loading...
+      <div className="flex h-screen items-center justify-center">
+        <LoadingSpinner label="Loading..." />
       </div>
     );
   }
@@ -17,7 +19,12 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/" replace />;
   }
 
-  return children;
+  return (
+    <>
+      <Navbar />
+      {children}
+    </>
+  );
 };
 
 export default ProtectedRoute;

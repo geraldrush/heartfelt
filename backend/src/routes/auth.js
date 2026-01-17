@@ -20,7 +20,8 @@ const auth = new Hono();
 
 const getSignupBonusTokens = (c) => {
   const raw = Number(c.env.SIGNUP_BONUS_TOKENS);
-  return Number.isFinite(raw) && raw > 0 ? raw : 50;
+  const value = Number.isFinite(raw) ? Math.trunc(raw) : NaN;
+  return value >= 1 ? value : 2;
 };
 
 function userResponse(user) {

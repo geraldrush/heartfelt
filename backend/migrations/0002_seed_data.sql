@@ -1,4 +1,4 @@
-INSERT INTO religions (id, name) VALUES
+INSERT OR IGNORE INTO religions (id, name) VALUES
   ('christian', 'Christian'),
   ('muslim', 'Muslim'),
   ('hindu', 'Hindu'),
@@ -9,7 +9,7 @@ INSERT INTO religions (id, name) VALUES
   ('other', 'Other'),
   ('prefer_not_to_say', 'Prefer not to say');
 
-INSERT INTO races (id, name) VALUES
+INSERT OR IGNORE INTO races (id, name) VALUES
   ('black_african', 'Black African'),
   ('white', 'White'),
   ('coloured', 'Coloured'),
@@ -17,7 +17,7 @@ INSERT INTO races (id, name) VALUES
   ('other', 'Other'),
   ('prefer_not_to_say', 'Prefer not to say');
 
-INSERT INTO education_levels (id, name) VALUES
+INSERT OR IGNORE INTO education_levels (id, name) VALUES
   ('high_school', 'High School'),
   ('diploma', 'Diploma'),
   ('bachelor', 'Bachelor'),
@@ -26,7 +26,7 @@ INSERT INTO education_levels (id, name) VALUES
   ('phd', 'PhD'),
   ('other', 'Other');
 
-INSERT INTO cities (id, name, province, lat, lng) VALUES
+INSERT OR IGNORE INTO cities (id, name, province, lat, lng) VALUES
   ('cpt', 'Cape Town', 'Western Cape', -33.9249, 18.4241),
   ('jhb', 'Johannesburg', 'Gauteng', -26.2041, 28.0473),
   ('pta', 'Pretoria', 'Gauteng', -25.7479, 28.2293),

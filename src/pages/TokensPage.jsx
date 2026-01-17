@@ -11,6 +11,7 @@ import {
   initiatePayment,
   transferTokens,
 } from '../utils/api.js';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 
 const TokensPage = () => {
   const [transactions, setTransactions] = useState([]);
@@ -253,7 +254,9 @@ const TokensPage = () => {
             <span>Balance</span>
           </div>
           {loading ? (
-            <div className="px-4 py-6 text-center text-sm text-slate-500">Loading...</div>
+            <div className="px-4 py-6 text-center">
+              <LoadingSpinner label="Loading..." />
+            </div>
           ) : transactions.length === 0 ? (
             <div className="px-4 py-6 text-center text-sm text-slate-500">No transactions yet.</div>
           ) : (

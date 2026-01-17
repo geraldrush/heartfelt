@@ -225,6 +225,89 @@ payments.post('/notify', async (c) => {
   return c.text('OK', 200);
 });
 
+payments.post('/refund/:paymentId', async (c) => {
+  const secret = c.req.header('x-internal-secret');
+  const expectedSecret = c.env.PAYFAST_REFUND_SECRET;
+
+  if (!expectedSecret || secret !== expectedSecret) {
+    return c.json({ error: 'Forbidden.' }, 403);
+  }
+
+  const paymentId = c.req.param('paymentId');
+  const db = getDb(c);
+  const payment = await db
+    .prepare(
+      `SELECT
+        payments.id,
+        payments.user_id,
+        payments.status,
+        tokens.amount AS token_amount
+      FROM payments
+      JOIN tokens ON tokens.id = payments.package_id
+      WHERE payments.id = ?`
+    )
+    .bind(paymentId)
+    .first();
+
+  if (!payment) {
+    return c.json({ error: 'Payment not found.' }, 404);
+  }
+
+  if (payment.status !== 'completed') {
+    return c.json({ error: 'Only completed payments can be refunded.' }, 400);
+  }
+
+  const amount = payment.token_amount;
+  const transactionId = generateId();
+  const timestamp = new Date().toISOString();
+  const description = `Refund for payment ${paymentId}`;
+
+  const refundResult = await db
+    .prepare(
+      `WITH updated_payment AS (
+        UPDATE payments
+        SET status = 'refunded', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND status = 'completed'
+        RETURNING id, user_id
+      ),
+      updated_user AS (
+        UPDATE users
+        SET token_balance = token_balance - ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = (SELECT user_id FROM updated_payment) AND token_balance >= ?
+        RETURNING id, token_balance
+      ),
+      inserted_tx AS (
+        INSERT INTO token_transactions (
+          id,
+          user_id,
+          amount,
+          transaction_type,
+          related_user_id,
+          related_entity_id,
+          balance_after,
+          description,
+          created_at
+        )
+        SELECT ?, updated_user.id, ?, 'refund', NULL, updated_payment.id, updated_user.token_balance, ?, ?
+        FROM updated_user
+        CROSS JOIN updated_payment
+      )
+      SELECT updated_user.token_balance AS balance_after FROM updated_user`
+    )
+    .bind(paymentId, amount, amount, transactionId, amount * -1, description, timestamp)
+    .first();
+
+  if (!refundResult || refundResult.balance_after == null) {
+    return c.json({ error: 'Insufficient balance to refund tokens.' }, 402);
+  }
+
+  return c.json({
+    success: true,
+    refunded_amount: amount,
+    new_balance: refundResult.balance_after,
+  });
+});
+
 payments.get('/status/:paymentId', authMiddleware, async (c) => {
   const paymentId = c.req.param('paymentId');
   const db = getDb(c);

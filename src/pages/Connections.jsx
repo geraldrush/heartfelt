@@ -1,8 +1,13 @@
 // src/pages/Connections.jsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { getConnections, getTokenBalance, transferTokens } from '../utils/api.js';
 import ChatList from '../components/ChatList.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
+
+const MotionLink = motion(Link);
 
 const Connections = () => {
   const [connections, setConnections] = useState([]);
@@ -70,8 +75,22 @@ const Connections = () => {
     }
   };
 
+  const emptyIcon = (
+    <svg
+      viewBox="0 0 64 64"
+      className="h-12 w-12 text-rose-400"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 22c-5 0-9 4-9 9 0 6 6 12 14 18l7 5 7-5c8-6 14-12 14-18 0-5-4-9-9-9-4 0-7 2-9 5-2-3-5-5-9-5z" />
+    </svg>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-peach-100 p-6 pb-24">
       <div className="mx-auto max-w-4xl">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -80,20 +99,34 @@ const Connections = () => {
               {connections.length} connection{connections.length === 1 ? '' : 's'}
             </p>
           </div>
-          <div className="rounded-xl bg-white px-4 py-2 text-sm text-slate-600 shadow">
+          <div className="rounded-xl bg-white/90 px-4 py-2 text-sm text-slate-600 shadow">
             Balance: {balance ?? '...'} tokens
           </div>
         </div>
 
         {loading && (
-          <div className="mt-6 rounded-2xl bg-white p-6 text-sm text-slate-500 shadow">
-            Loading connections...
+          <div className="mt-6 rounded-2xl bg-white p-6 shadow">
+            <LoadingSpinner label="Loading connections..." />
           </div>
         )}
 
         {!loading && connections.length === 0 && (
-          <div className="mt-8 rounded-2xl bg-white p-6 text-sm text-slate-500 shadow">
-            You have no connections yet.
+          <div className="mt-8">
+            <EmptyState
+              icon={emptyIcon}
+              title="No Connections Yet"
+              description="Start swiping to find your match!"
+              actionButton={(
+                <MotionLink
+                  to="/stories"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-5 py-2 text-sm font-semibold text-white shadow transition hover:from-rose-500 hover:to-pink-500"
+                >
+                  Explore Stories
+                </MotionLink>
+              )}
+            />
           </div>
         )}
 
@@ -121,23 +154,27 @@ const Connections = () => {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Link
+                  <MotionLink
                     to={`/chat?connectionId=${connection.id}&userId=${connection.other_user_id}`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
                   >
                     Message
-                  </Link>
-                  <button
+                  </MotionLink>
+                  <motion.button
                     type="button"
                     onClick={() =>
                       setActiveConnectionId((prev) =>
                         prev === connection.id ? null : connection.id
                       )
                     }
-                    className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:from-rose-500 hover:to-pink-500"
                   >
                     Send Tokens
-                  </button>
+                  </motion.button>
                 </div>
               </div>
 
@@ -151,25 +188,27 @@ const Connections = () => {
                     min="1"
                     value={amount}
                     onChange={(event) => setAmount(event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-emerald-400 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
                     placeholder="Amount"
                   />
                   <input
                     type="text"
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-emerald-400 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
                     placeholder="Message (optional)"
                   />
                   {status && (
                     <p className="text-xs text-slate-500">{status}</p>
                   )}
-                  <button
+                  <motion.button
                     type="submit"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
                   >
                     Confirm Transfer
-                  </button>
+                  </motion.button>
                 </form>
               )}
             </div>

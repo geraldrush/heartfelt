@@ -1,9 +1,12 @@
 // src/App.jsx
 import React, { useEffect, useState } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import FadeIn from './components/animations/FadeIn.jsx';
+import LoadingSpinner from './components/LoadingSpinner.jsx';
 import SignInPage from './pages/SignInPage';
 import LandingPage from './pages/LandingPage';
 import CreateProfile from './pages/CreateProfile';
@@ -21,8 +24,8 @@ const AuthRedirect = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center text-gray-600">
-        Loading...
+      <div className="flex h-screen items-center justify-center">
+        <LoadingSpinner label="Loading..." />
       </div>
     );
   }
@@ -32,6 +35,117 @@ const AuthRedirect = ({ children }) => {
   }
 
   return children;
+};
+
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route
+          path="/"
+          element={
+            <AuthRedirect>
+              <FadeIn>
+                <SignInPage />
+              </FadeIn>
+            </AuthRedirect>
+          }
+        />
+        <Route
+          path="/landing"
+          element={
+            <ProtectedRoute>
+              <FadeIn>
+                <LandingPage />
+              </FadeIn>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create-profile"
+          element={
+            <ProtectedRoute>
+              <FadeIn>
+                <CreateProfile />
+              </FadeIn>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stories"
+          element={
+            <ProtectedRoute>
+              <FadeIn>
+                <StoryFeed />
+              </FadeIn>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <FadeIn>
+                <Chat />
+              </FadeIn>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sent-requests"
+          element={
+            <ProtectedRoute>
+              <FadeIn>
+                <SentRequests />
+              </FadeIn>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/received-requests"
+          element={
+            <ProtectedRoute>
+              <FadeIn>
+                <ReceivedRequests />
+              </FadeIn>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/connections"
+          element={
+            <ProtectedRoute>
+              <FadeIn>
+                <Connections />
+              </FadeIn>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <FadeIn>
+                <Profile />
+              </FadeIn>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tokens"
+          element={
+            <ProtectedRoute>
+              <FadeIn>
+                <TokensPage />
+              </FadeIn>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </AnimatePresence>
+  );
 };
 
 const App = () => {
@@ -60,88 +174,7 @@ const App = () => {
           </div>
         )}
         <Router>
-          <Routes>
-          <Route
-            path="/"
-            element={
-              <AuthRedirect>
-                <SignInPage />
-              </AuthRedirect>
-            }
-          />
-          <Route
-            path="/landing"
-            element={
-              <ProtectedRoute>
-                <LandingPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/create-profile"
-            element={
-              <ProtectedRoute>
-                <CreateProfile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/stories"
-            element={
-              <ProtectedRoute>
-                <StoryFeed />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <Chat />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sent-requests"
-            element={
-              <ProtectedRoute>
-                <SentRequests />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/received-requests"
-            element={
-              <ProtectedRoute>
-                <ReceivedRequests />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/connections"
-            element={
-              <ProtectedRoute>
-                <Connections />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/tokens"
-            element={
-              <ProtectedRoute>
-                <TokensPage />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+          <AnimatedRoutes />
       </Router>
       </AuthProvider>
     </GoogleOAuthProvider>

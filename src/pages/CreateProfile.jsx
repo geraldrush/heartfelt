@@ -812,7 +812,7 @@ const CreateProfile = () => {
                   type="button"
                   onClick={handleNext}
                   disabled={loading}
-                  className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="rounded-xl bg-rose-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   Next
                 </button>
@@ -820,7 +820,7 @@ const CreateProfile = () => {
                 <button
                   type="submit"
                   disabled={loading || isImageProcessing}
-                  className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="rounded-xl bg-rose-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {loading ? 'Saving...' : 'Submit'}
                 </button>
