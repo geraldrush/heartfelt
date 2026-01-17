@@ -1,12 +1,44 @@
 // src/components/Navbar.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faComments } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext.jsx';
+import { getUnreadCounts } from '../utils/api.js';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [unreadTotal, setUnreadTotal] = useState(0);
+
+  useEffect(() => {
+    let intervalId;
+
+    const loadUnread = async () => {
+      try {
+        const data = await getUnreadCounts();
+        const total = (data.counts || []).reduce(
+          (sum, item) => sum + Number(item.unread_count || 0),
+          0
+        );
+        setUnreadTotal(total);
+      } catch (error) {
+        setUnreadTotal(0);
+      }
+    };
+
+    if (user) {
+      loadUnread();
+      intervalId = setInterval(loadUnread, 30000);
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [user]);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -45,7 +77,15 @@ const Navbar = () => {
           <Link to="/" className="text-gray-700 hover:text-blue-500 transition">Home</Link>
           <Link to="/create-profile" className="text-gray-700 hover:text-blue-500 transition">Create Profile</Link>
           <Link to="/stories" className="text-gray-700 hover:text-blue-500 transition">Story Feed</Link>
-          <Link to="/chat" className="text-gray-700 hover:text-blue-500 transition">Chat</Link>
+          <Link to="/connections" className="relative text-gray-700 hover:text-blue-500 transition">
+            <FontAwesomeIcon icon={faComments} className="mr-2" />
+            Chat
+            {unreadTotal > 0 && (
+              <span className="absolute -right-3 -top-2 rounded-full bg-red-500 px-2 py-0.5 text-xs text-white">
+                {unreadTotal}
+              </span>
+            )}
+          </Link>
           {user && (
             <div className="flex items-center space-x-3 pl-4 border-l border-gray-200">
               <div className="text-sm text-gray-600">
@@ -70,7 +110,14 @@ const Navbar = () => {
           <Link to="/" onClick={toggleMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-200">Home</Link>
           <Link to="/create-profile" onClick={toggleMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-200">Create Profile</Link>
           <Link to="/stories" onClick={toggleMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-200">Story Feed</Link>
-          <Link to="/chat" onClick={toggleMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-200">Chat</Link>
+          <Link to="/connections" onClick={toggleMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-200">
+            Chat
+            {unreadTotal > 0 && (
+              <span className="ml-2 rounded-full bg-red-500 px-2 py-0.5 text-xs text-white">
+                {unreadTotal}
+              </span>
+            )}
+          </Link>
           {user && (
             <div className="border-t border-gray-200 px-4 py-3 text-sm text-gray-600">
               <div className="font-semibold text-gray-800">{user.full_name || user.email}</div>

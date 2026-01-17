@@ -44,3 +44,5 @@ app.route('/api/tokens', tokenRoutes);
 app.route('/api/chat', chatRoutes);
 
 export default app;
+
+export { ChatRoom } from './durable-objects/ChatRoom.js';

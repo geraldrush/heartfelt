@@ -390,6 +390,116 @@ export async function expireOldRequests(db) {
     .run();
 }
 
+export async function createMessage(db, messageData) {
+  const { id, connection_id, sender_id, content, status, created_at } = messageData;
+  await db
+    .prepare(
+      `INSERT INTO messages (
+        id,
+        connection_id,
+        sender_id,
+        content,
+        status,
+        created_at
+      ) VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      id,
+      connection_id,
+      sender_id,
+      content,
+      status || 'sent',
+      created_at || new Date().toISOString()
+    )
+    .run();
+}
+
+export async function getMessagesByConnection(db, connectionId, limit, offset, beforeTimestamp) {
+  const conditions = ['messages.connection_id = ?'];
+  const params = [connectionId];
+
+  if (beforeTimestamp) {
+    conditions.push('messages.created_at < ?');
+    params.push(beforeTimestamp);
+  }
+
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+  const { results } = await db
+    .prepare(
+      `SELECT
+        messages.id,
+        messages.connection_id,
+        messages.sender_id,
+        messages.content,
+        messages.status,
+        messages.created_at,
+        users.full_name AS sender_name
+      FROM messages
+      JOIN users ON users.id = messages.sender_id
+      ${whereClause}
+      ORDER BY messages.created_at DESC
+      LIMIT ? OFFSET ?`
+    )
+    .bind(...params, limit, offset)
+    .all();
+
+  return results;
+}
+
+export async function updateMessageStatus(db, messageId, status) {
+  await db
+    .prepare('UPDATE messages SET status = ? WHERE id = ?')
+    .bind(status, messageId)
+    .run();
+}
+
+export async function updateMultipleMessageStatus(db, messageIds, status) {
+  if (!Array.isArray(messageIds) || messageIds.length === 0) {
+    return;
+  }
+  const placeholders = messageIds.map(() => '?').join(', ');
+  const statusCondition = status === 'delivered' ? " AND status = 'sent'" : '';
+  await db
+    .prepare(
+      `UPDATE messages
+       SET status = ?
+       WHERE id IN (${placeholders})${statusCondition}`
+    )
+    .bind(status, ...messageIds)
+    .run();
+}
+
+export async function getUnreadCounts(db, userId) {
+  const { results } = await db
+    .prepare(
+      `SELECT connection_id, COUNT(*) AS unread_count
+       FROM messages
+       WHERE status != 'read' AND sender_id != ?
+       GROUP BY connection_id`
+    )
+    .bind(userId)
+    .all();
+  return results;
+}
+
+export async function getConnectionById(db, connectionId) {
+  return db.prepare('SELECT * FROM connections WHERE id = ?')
+    .bind(connectionId)
+    .first();
+}
+
+export async function verifyUserInConnection(db, connectionId, userId) {
+  const row = await db
+    .prepare(
+      `SELECT 1 FROM connections
+       WHERE id = ? AND status = 'active' AND (user_id_1 = ? OR user_id_2 = ?)`
+    )
+    .bind(connectionId, userId, userId)
+    .first();
+  return Boolean(row);
+}
+
 export async function getReferenceData(db) {
   const religions = await db
     .prepare('SELECT id, name FROM religions WHERE is_active = 1')

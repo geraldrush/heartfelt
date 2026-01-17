@@ -100,3 +100,13 @@ export const getSentRequests = () => apiClient.get('/api/connections/sent');
 export const getReceivedRequests = () => apiClient.get('/api/connections/received');
 export const getConnections = () => apiClient.get('/api/connections/list');
 export const getConnectionCounts = () => apiClient.get('/api/connections/counts');
+export const getMessages = (connectionId, { limit = 50, offset = 0, before } = {}) => {
+  const params = new URLSearchParams({ limit, offset });
+  if (before) {
+    params.append('before', before);
+  }
+  return apiClient.get(`/api/chat/messages/${connectionId}?${params.toString()}`);
+};
+export const getUnreadCounts = () => apiClient.get('/api/chat/unread-counts');
+export const markMessagesAsDelivered = (messageIds) =>
+  apiClient.post('/api/chat/messages/mark-delivered', { message_ids: messageIds });

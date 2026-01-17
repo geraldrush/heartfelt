@@ -17,3 +17,12 @@ SIGNUP_BONUS_TOKENS = "50"
 
 [ai]
 binding = "AI"
+
+[[durable_objects.bindings]]
+name = "CHAT_ROOM"
+class_name = "ChatRoom"
+script_name = "heartfelt-api"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["ChatRoom"]

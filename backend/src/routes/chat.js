@@ -2,9 +2,13 @@ import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
 import {
   createTokenRequest,
+  getMessagesByConnection,
   getDb,
+  getUnreadCounts,
   getPendingTokenRequests,
+  updateMultipleMessageStatus,
   updateTokenRequestStatus,
+  verifyUserInConnection,
 } from '../utils/db.js';
 import { tokenRequestSchema } from '../utils/validation.js';
 
@@ -51,8 +55,53 @@ chat.post('/token-requests/:id/fulfill', authMiddleware, async (c) => {
   return c.json({ success: true });
 });
 
-chat.get('/connect', async (c) => {
-  return c.json({ message: 'Chat WebSocket endpoint' });
+chat.get('/connect/:connectionId', authMiddleware, async (c) => {
+  const connectionId = c.req.param('connectionId');
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  const isAllowed = await verifyUserInConnection(db, connectionId, userId);
+  if (!isAllowed) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const id = c.env.CHAT_ROOM.idFromName(connectionId);
+  const stub = c.env.CHAT_ROOM.get(id);
+  return stub.fetch(c.req.raw);
+});
+
+chat.get('/messages/:connectionId', authMiddleware, async (c) => {
+  const connectionId = c.req.param('connectionId');
+  const userId = c.get('userId');
+  const db = getDb(c);
+
+  const isAllowed = await verifyUserInConnection(db, connectionId, userId);
+  if (!isAllowed) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const limitRaw = Number(c.req.query('limit') || 50);
+  const offsetRaw = Number(c.req.query('offset') || 0);
+  const limit = Math.min(Number.isFinite(limitRaw) ? limitRaw : 50, 100);
+  const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
+  const before = c.req.query('before') || c.req.query('before_timestamp') || null;
+
+  const messages = await getMessagesByConnection(db, connectionId, limit, offset, before);
+  return c.json({ messages, limit, offset });
+});
+
+chat.get('/unread-counts', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+  const counts = await getUnreadCounts(db, userId);
+  return c.json({ counts });
+});
+
+chat.post('/messages/mark-delivered', authMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const ids = Array.isArray(body?.message_ids) ? body.message_ids : [];
+  await updateMultipleMessageStatus(getDb(c), ids, 'delivered');
+  return c.json({ success: true });
 });
 
 export default chat;

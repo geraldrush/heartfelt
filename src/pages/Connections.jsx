@@ -114,7 +114,7 @@ const Connections = () => {
                 </div>
                 <div className="flex gap-2">
                   <Link
-                    to={`/chat?connectionId=${connection.id}`}
+                    to={`/chat?connectionId=${connection.id}&userId=${connection.other_user_id}`}
                     className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
                   >
                     Message
