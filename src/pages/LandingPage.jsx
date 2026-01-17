@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { getConnectionCounts, getTokenBalance } from '../utils/api.js';
 import TokenSparkle from '../components/animations/TokenSparkle.jsx';
 
-const MotionLink = motion(Link);
+const MotionLink = motion.create(Link);
 
 const LandingPage = () => {
   const { user } = useAuth();
