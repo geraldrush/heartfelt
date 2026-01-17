@@ -231,7 +231,7 @@ export async function updateTokenRequestStatus(db, requestId, status) {
   await db
     .prepare(
       `UPDATE token_requests
-       SET status = ?, updated_at = CURRENT_TIMESTAMP
+       SET status = ?
        WHERE id = ?`
     )
     .bind(status, requestId)
@@ -345,7 +345,7 @@ export async function updateConnectionRequestStatus(db, requestId, status, respo
   await db
     .prepare(
       `UPDATE connection_requests
-       SET status = ?, responded_at = ?, updated_at = CURRENT_TIMESTAMP
+       SET status = ?, responded_at = ?
        WHERE id = ?`
     )
     .bind(status, respondedAt || new Date().toISOString(), requestId)
@@ -384,7 +384,7 @@ export async function expireOldRequests(db) {
   await db
     .prepare(
       `UPDATE connection_requests
-       SET status = 'expired', responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       SET status = 'expired', responded_at = CURRENT_TIMESTAMP
        WHERE status = 'pending' AND expires_at < CURRENT_TIMESTAMP`
     )
     .run();
