@@ -46,3 +46,25 @@ export const googleAuth = (credential) =>
   apiClient.post('/api/auth/google', { credential });
 export const refreshToken = () => apiClient.post('/api/auth/refresh');
 export const getCurrentUser = () => apiClient.get('/api/auth/me');
+
+export const uploadStoryImage = (formData) => {
+  const token = localStorage.getItem('token');
+  return fetch(`${API_URL}/api/stories/upload-image`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  }).then(async (res) => {
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const message = payload?.error || payload?.message || 'Image upload failed.';
+      const error = new Error(message);
+      error.status = res.status;
+      throw error;
+    }
+    return payload;
+  });
+};
+
+export const createStory = (data) => apiClient.post('/api/stories/create-story', data);
+export const updateProfile = (data) => apiClient.put('/api/stories/update-profile', data);
+export const getReferenceData = () => apiClient.get('/api/stories/reference/data');

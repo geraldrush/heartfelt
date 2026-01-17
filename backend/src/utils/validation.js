@@ -31,3 +31,25 @@ export const emailLoginSchema = z.object({
 export const googleAuthSchema = z.object({
   credential: z.string().min(1, { message: 'Google credential is required.' }),
 });
+
+export const updateProfileSchema = z.object({
+  age: z.number().int().min(18),
+  gender: z.enum(['male', 'female', 'non-binary', 'other']),
+  nationality: z.string().min(1),
+  religion: z.string().min(1),
+  race: z.string().min(1),
+  education: z.string().min(1),
+  has_kids: z.boolean(),
+  num_kids: z.number().int().refine((value) => [0, 1, 2, 3].includes(value), {
+    message: 'Number of kids must be 0, 1, 2, or 3+.',
+  }),
+  smoker: z.boolean(),
+  drinks_alcohol: z.boolean(),
+  location_city: z.string().min(1),
+  location_province: z.string().min(1),
+});
+
+export const createStorySchema = z.object({
+  story_text: z.string().min(50, { message: 'Story must be at least 50 characters.' }),
+  image_ids: z.array(z.string()).min(1).max(5),
+});

@@ -8,7 +8,7 @@ database_name = "heartfelt-db"
 database_id = ""
 
 [[r2_buckets]]
-binding = "IMAGES"
+binding = "R2_BUCKET"
 bucket_name = "heartfelt-images"
 
 [vars]

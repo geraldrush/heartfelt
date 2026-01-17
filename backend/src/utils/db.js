@@ -107,3 +107,59 @@ export async function updateUserTokenBalance(db, userId, amount) {
     .bind(amount, userId)
     .run();
 }
+
+export async function getReferenceData(db) {
+  const religions = await db
+    .prepare('SELECT id, name FROM religions WHERE is_active = 1')
+    .all();
+  const races = await db.prepare('SELECT id, name FROM races WHERE is_active = 1').all();
+  const education_levels = await db
+    .prepare('SELECT id, name FROM education_levels WHERE is_active = 1')
+    .all();
+  const cities = await db.prepare('SELECT id, name, province FROM cities').all();
+
+  return {
+    religions: religions.results,
+    races: races.results,
+    education_levels: education_levels.results,
+    cities: cities.results,
+  };
+}
+
+export async function updateUserProfile(db, userId, profileData) {
+  await db
+    .prepare(
+      `UPDATE users SET
+        age = ?,
+        gender = ?,
+        nationality = ?,
+        religion = ?,
+        race = ?,
+        education = ?,
+        has_kids = ?,
+        num_kids = ?,
+        smoker = ?,
+        drinks_alcohol = ?,
+        location_city = ?,
+        location_province = ?,
+        profile_complete = 1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?`
+    )
+    .bind(
+      profileData.age,
+      profileData.gender,
+      profileData.nationality,
+      profileData.religion,
+      profileData.race,
+      profileData.education,
+      profileData.has_kids ? 1 : 0,
+      profileData.num_kids,
+      profileData.smoker ? 1 : 0,
+      profileData.drinks_alcohol ? 1 : 0,
+      profileData.location_city,
+      profileData.location_province,
+      userId
+    )
+    .run();
+}
