@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { getUnreadCounts } from '../utils/api.js';
 import TokenSparkle from './animations/TokenSparkle.jsx';
 
-const MotionLink = motion(Link);
+const MotionLink = motion.create(Link);
 
 const Navbar = () => {
   const navigate = useNavigate();

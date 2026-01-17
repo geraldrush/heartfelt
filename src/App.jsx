@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useEffect, useState } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -173,9 +173,7 @@ const App = () => {
             Loading face detection model...
           </div>
         )}
-        <Router>
-          <AnimatedRoutes />
-      </Router>
+        <AnimatedRoutes />
       </AuthProvider>
     </GoogleOAuthProvider>
   );
