@@ -1,0 +1,14 @@
+{
+  "name": "heartfelt-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.0.0",
+    "jose": "^5.2.4",
+    "zod": "^3.22.4"
+  }
+}

@@ -5,7 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:backend": "cd backend && wrangler dev",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:backend\"",
     "build": "vite build",
+    "build:backend": "cd backend && wrangler deploy",
+    "migrate:local": "cd backend && wrangler d1 execute heartfelt-db --local --file=./migrations/0001_initial_schema.sql && wrangler d1 execute heartfelt-db --local --file=./migrations/0002_seed_data.sql",
+    "migrate:prod": "cd backend && wrangler d1 execute heartfelt-db --remote --file=./migrations/0001_initial_schema.sql && wrangler d1 execute heartfelt-db --remote --file=./migrations/0002_seed_data.sql",
     "lint": "eslint .",
     "preview": "vite preview"
   },

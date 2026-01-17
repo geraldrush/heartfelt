@@ -1,0 +1,15 @@
+name = "heartfelt-api"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "heartfelt-db"
+database_id = ""
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "heartfelt-images"
+
+[vars]
+JWT_SECRET = ""
+CORS_ORIGIN = "http://localhost:5173"
