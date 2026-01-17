@@ -1,5 +1,6 @@
 name = "heartfelt-api"
 compatibility_date = "2024-01-01"
+main = "src/index.js"
 
 [[d1_databases]]
 binding = "DB"
@@ -11,5 +12,6 @@ binding = "IMAGES"
 bucket_name = "heartfelt-images"
 
 [vars]
-JWT_SECRET = ""
-CORS_ORIGIN = "http://localhost:5173"
+JWT_SECRET = "replace-with-secure-jwt-secret-32-chars-min"
+CORS_ORIGIN = "http://localhost:5173,https://heartfelt.pages.dev"
+GOOGLE_CLIENT_ID = "replace-with-google-client-id"

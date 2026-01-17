@@ -1,12 +1,20 @@
 // src/components/Navbar.jsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   return (
@@ -33,11 +41,26 @@ const Navbar = () => {
         </button>
 
         {/* Links for Desktop */}
-        <div className="hidden md:flex space-x-4">
+        <div className="hidden md:flex items-center space-x-4">
           <Link to="/" className="text-gray-700 hover:text-blue-500 transition">Home</Link>
           <Link to="/create-profile" className="text-gray-700 hover:text-blue-500 transition">Create Profile</Link>
           <Link to="/stories" className="text-gray-700 hover:text-blue-500 transition">Story Feed</Link>
           <Link to="/chat" className="text-gray-700 hover:text-blue-500 transition">Chat</Link>
+          {user && (
+            <div className="flex items-center space-x-3 pl-4 border-l border-gray-200">
+              <div className="text-sm text-gray-600">
+                <div className="font-semibold text-gray-800">{user.full_name || user.email}</div>
+                <div className="text-xs text-gray-500">Tokens: {user.token_balance ?? 0}</div>
+              </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-blue-400 hover:text-blue-500"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -48,6 +71,22 @@ const Navbar = () => {
           <Link to="/create-profile" onClick={toggleMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-200">Create Profile</Link>
           <Link to="/stories" onClick={toggleMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-200">Story Feed</Link>
           <Link to="/chat" onClick={toggleMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-200">Chat</Link>
+          {user && (
+            <div className="border-t border-gray-200 px-4 py-3 text-sm text-gray-600">
+              <div className="font-semibold text-gray-800">{user.full_name || user.email}</div>
+              <div className="text-xs text-gray-500">Tokens: {user.token_balance ?? 0}</div>
+              <button
+                type="button"
+                onClick={() => {
+                  toggleMenu();
+                  handleLogout();
+                }}
+                className="mt-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 hover:border-blue-400 hover:text-blue-500"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       )}
     </nav>
