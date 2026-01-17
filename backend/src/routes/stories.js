@@ -15,6 +15,16 @@ import {
 
 const stories = new Hono();
 
+const buildPublicImageUrl = (c, key) => {
+  const base = c.env.R2_PUBLIC_BASE_URL;
+  if (!base || !key) {
+    return key;
+  }
+  const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
+  const trimmedKey = key.startsWith('/') ? key.slice(1) : key;
+  return `${trimmedBase}/${trimmedKey}`;
+};
+
 stories.get('/reference/data', async (c) => {
   const db = getDb(c);
   const data = await getReferenceData(db);
@@ -333,8 +343,10 @@ stories.get('/feed', authMiddleware, async (c) => {
             expiresIn: 3600,
           });
         } catch (error) {
-          imageUrl = row.blurred_image_url;
+          imageUrl = buildPublicImageUrl(c, row.blurred_image_url);
         }
+      } else {
+        imageUrl = buildPublicImageUrl(c, row.blurred_image_url);
       }
       return {
         ...row,
@@ -369,8 +381,10 @@ stories.get('/:storyId/images', async (c) => {
             expiresIn: 3600,
           });
         } catch (error) {
-          url = row.blurred_url;
+          url = buildPublicImageUrl(c, row.blurred_url);
         }
+      } else {
+        url = buildPublicImageUrl(c, row.blurred_url);
       }
       return {
         id: row.id,
