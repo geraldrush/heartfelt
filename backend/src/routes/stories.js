@@ -297,6 +297,7 @@ stories.get('/feed', authMiddleware, async (c) => {
       stories.story_text,
       stories.created_at,
       si.blurred_url AS blurred_image_url,
+      cr_received.id AS request_id,
       CASE
         WHEN c.id IS NOT NULL THEN 'connected'
         WHEN cr_sent.id IS NOT NULL THEN 'pending_sent'

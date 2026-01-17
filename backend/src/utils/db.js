@@ -246,6 +246,150 @@ export function buildDistanceQuery(userLat, userLng) {
   ))`;
 }
 
+export async function createConnectionRequest(db, senderId, receiverId, message) {
+  const id = generateId();
+  await db
+    .prepare(
+      `INSERT INTO connection_requests (
+        id,
+        sender_id,
+        receiver_id,
+        status,
+        message,
+        expires_at
+      ) VALUES (?, ?, ?, ?, ?, datetime('now', '+7 days'))`
+    )
+    .bind(id, senderId, receiverId, 'pending', message || null)
+    .run();
+  return id;
+}
+
+export async function getConnectionRequestById(db, requestId) {
+  return db.prepare('SELECT * FROM connection_requests WHERE id = ?')
+    .bind(requestId)
+    .first();
+}
+
+export async function getSentConnectionRequests(db, userId) {
+  const { results } = await db
+    .prepare(
+      `SELECT
+        cr.id,
+        cr.receiver_id,
+        cr.status,
+        cr.created_at,
+        cr.expires_at,
+        u.full_name,
+        u.age,
+        u.gender
+      FROM connection_requests cr
+      JOIN users u ON cr.receiver_id = u.id
+      WHERE cr.sender_id = ?
+      ORDER BY cr.created_at DESC`
+    )
+    .bind(userId)
+    .all();
+  return results;
+}
+
+export async function getReceivedConnectionRequests(db, userId) {
+  const { results } = await db
+    .prepare(
+      `SELECT
+        cr.id,
+        cr.sender_id,
+        cr.status,
+        cr.message,
+        cr.created_at,
+        cr.expires_at,
+        u.full_name,
+        u.age,
+        u.gender
+      FROM connection_requests cr
+      JOIN users u ON cr.sender_id = u.id
+      WHERE cr.receiver_id = ? AND cr.status = 'pending'
+      ORDER BY cr.created_at DESC`
+    )
+    .bind(userId)
+    .all();
+  return results;
+}
+
+export async function getConnections(db, userId) {
+  const { results } = await db
+    .prepare(
+      `SELECT
+        c.id,
+        c.user_id_1,
+        c.user_id_2,
+        c.created_at,
+        u.id AS other_user_id,
+        u.full_name,
+        u.age,
+        u.gender,
+        u.location_city
+      FROM connections c
+      JOIN users u ON u.id = CASE
+        WHEN c.user_id_1 = ? THEN c.user_id_2
+        ELSE c.user_id_1
+      END
+      WHERE (c.user_id_1 = ? OR c.user_id_2 = ?) AND c.status = 'active'
+      ORDER BY c.created_at DESC`
+    )
+    .bind(userId, userId, userId)
+    .all();
+  return results;
+}
+
+export async function updateConnectionRequestStatus(db, requestId, status, respondedAt) {
+  await db
+    .prepare(
+      `UPDATE connection_requests
+       SET status = ?, responded_at = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`
+    )
+    .bind(status, respondedAt || new Date().toISOString(), requestId)
+    .run();
+}
+
+export async function createConnection(db, userId1, userId2) {
+  const id = generateId();
+  await db
+    .prepare(
+      'INSERT INTO connections (id, user_id_1, user_id_2, status) VALUES (?, ?, ?, ?)'
+    )
+    .bind(id, userId1, userId2, 'active')
+    .run();
+  return id;
+}
+
+export async function checkExistingConnection(db, userId1, userId2) {
+  const row = await db
+    .prepare(
+      `SELECT 1 FROM connections
+       WHERE status = 'active'
+         AND ((user_id_1 = ? AND user_id_2 = ?) OR (user_id_1 = ? AND user_id_2 = ?))
+       UNION ALL
+       SELECT 1 FROM connection_requests
+       WHERE status = 'pending'
+         AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))
+       LIMIT 1`
+    )
+    .bind(userId1, userId2, userId2, userId1, userId1, userId2, userId2, userId1)
+    .first();
+  return Boolean(row);
+}
+
+export async function expireOldRequests(db) {
+  await db
+    .prepare(
+      `UPDATE connection_requests
+       SET status = 'expired', responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       WHERE status = 'pending' AND expires_at < CURRENT_TIMESTAMP`
+    )
+    .run();
+}
+
 export async function getReferenceData(db) {
   const religions = await db
     .prepare('SELECT id, name FROM religions WHERE is_active = 1')

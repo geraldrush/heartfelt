@@ -70,3 +70,12 @@ export const tokenRequestSchema = z.object({
   amount: z.number().int().min(1).max(1000),
   reason: z.string().max(200).optional(),
 });
+
+export const connectionRequestSchema = z.object({
+  receiver_id: z.string().uuid(),
+  message: z.string().max(200).optional(),
+});
+
+export const connectionActionSchema = z.object({
+  request_id: z.string().uuid(),
+});

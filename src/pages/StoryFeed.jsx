@@ -4,6 +4,8 @@ import {
   getReferenceData,
   getStoryFeed,
   getTokenBalance,
+  acceptConnectionRequest,
+  sendConnectionRequest,
 } from '../utils/api.js';
 
 const PAGE_SIZE = 20;
@@ -187,11 +189,57 @@ const StoryFeed = () => {
   };
 
   const handleConnect = async (story) => {
-    setError('Connections are coming soon. This feature is not available yet.');
+    if (tokenBalance !== null && tokenBalance < 5) {
+      setError('You need at least 5 tokens to send a connection request.');
+      return;
+    }
+    const confirmed = window.confirm(
+      `Send connection request to ${story.age} from ${story.location_city}? This will cost 5 tokens.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await sendConnectionRequest({ receiver_id: story.user_id, message: '' });
+      setStories((prev) =>
+        prev.map((item) =>
+          item.story_id === story.story_id
+            ? { ...item, connection_status: 'pending_sent' }
+            : item
+        )
+      );
+      setTokenBalance((prev) => (prev !== null ? prev - 5 : prev));
+    } catch (err) {
+      setError(err.message || 'Failed to send connection request.');
+    }
   };
 
   const handleAccept = async (story) => {
-    setError('Connections are coming soon. This feature is not available yet.');
+    if (tokenBalance !== null && tokenBalance < 3) {
+      setError('You need at least 3 tokens to accept a connection request.');
+      return;
+    }
+    const confirmed = window.confirm(
+      `Accept connection request from ${story.location_city}? This will cost 3 tokens.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await acceptConnectionRequest(story.request_id);
+      setStories((prev) =>
+        prev.map((item) =>
+          item.story_id === story.story_id
+            ? { ...item, connection_status: 'connected' }
+            : item
+        )
+      );
+      setTokenBalance((prev) => (prev !== null ? prev - 3 : prev));
+    } catch (err) {
+      setError(err.message || 'Failed to accept connection request.');
+    }
   };
 
   const truncateText = (text) =>
@@ -414,6 +462,13 @@ const StoryFeed = () => {
         {error && (
           <div className="mt-6 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
             {error}
+            {error.toLowerCase().includes('insufficient') && (
+              <span className="ml-2">
+                <a href="/tokens" className="font-semibold text-blue-600">
+                  Buy tokens
+                </a>
+              </span>
+            )}
           </div>
         )}
 
@@ -492,20 +547,24 @@ const StoryFeed = () => {
                       <button
                         type="button"
                         onClick={() => handleAccept(story)}
-                        disabled
-                        className="rounded-xl bg-emerald-600/60 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed"
+                        disabled={tokenBalance !== null && tokenBalance < 3}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        Accept (Coming soon)
+                        {tokenBalance !== null && tokenBalance < 3
+                          ? 'Insufficient Tokens'
+                          : 'Accept (3 tokens)'}
                       </button>
                     )}
                     {story.connection_status === 'none' && (
                       <button
                         type="button"
                         onClick={() => handleConnect(story)}
-                        disabled
-                        className="rounded-xl bg-blue-600/60 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed"
+                        disabled={tokenBalance !== null && tokenBalance < 5}
+                        className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        Connect (Coming soon)
+                        {tokenBalance !== null && tokenBalance < 5
+                          ? 'Insufficient Tokens'
+                          : 'Connect (5 tokens)'}
                       </button>
                     )}
                   </div>

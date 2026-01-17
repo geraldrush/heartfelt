@@ -4,12 +4,18 @@ import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserFriends, faUserCheck, faUsers, faCoins } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getTokenBalance } from '../utils/api.js';
+import { getConnectionCounts, getTokenBalance } from '../utils/api.js';
 
 const LandingPage = () => {
   const { user } = useAuth();
   const [tokenBalance, setTokenBalance] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [countsLoading, setCountsLoading] = useState(true);
+  const [connectionCounts, setConnectionCounts] = useState({
+    sent_requests: 0,
+    received_requests: 0,
+    total_connections: 0,
+  });
   const [error, setError] = useState('');
 
   const fetchBalance = async () => {
@@ -25,13 +31,38 @@ const LandingPage = () => {
     }
   };
 
+  const fetchCounts = async () => {
+    setCountsLoading(true);
+    setError('');
+    try {
+      const data = await getConnectionCounts();
+      setConnectionCounts(data);
+    } catch (err) {
+      setError(err.message || 'Unable to load connection counts.');
+    } finally {
+      setCountsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchBalance();
+    fetchCounts();
   }, []);
 
-  const sentRequests = 0;
-  const receivedRequests = 0;
-  const totalConnections = 0;
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchBalance();
+        fetchCounts();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
+  const sentRequests = countsLoading ? '...' : connectionCounts.sent_requests;
+  const receivedRequests = countsLoading ? '...' : connectionCounts.received_requests;
+  const totalConnections = countsLoading ? '...' : connectionCounts.total_connections;
   const displayName = user?.full_name || 'there';
 
   return (
@@ -67,10 +98,13 @@ const LandingPage = () => {
 
       <button
         type="button"
-        onClick={fetchBalance}
+        onClick={() => {
+          fetchBalance();
+          fetchCounts();
+        }}
         className="mb-6 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-blue-600 shadow-md transition hover:bg-gray-100"
       >
-        Refresh balance
+        Refresh dashboard
       </button>
 
       <div className="flex flex-col space-y-4 w-full max-w-lg">

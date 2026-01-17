@@ -88,3 +88,15 @@ export const getStoryFeed = (filters = {}) => {
   const query = params.toString();
   return apiClient.get(`/api/stories/feed${query ? `?${query}` : ''}`);
 };
+export const sendConnectionRequest = (data) =>
+  apiClient.post('/api/connections/request', data);
+export const acceptConnectionRequest = (requestId) =>
+  apiClient.post('/api/connections/accept', { request_id: requestId });
+export const rejectConnectionRequest = (requestId) =>
+  apiClient.post('/api/connections/reject', { request_id: requestId });
+export const cancelConnectionRequest = (requestId) =>
+  apiClient.post('/api/connections/cancel', { request_id: requestId });
+export const getSentRequests = () => apiClient.get('/api/connections/sent');
+export const getReceivedRequests = () => apiClient.get('/api/connections/received');
+export const getConnections = () => apiClient.get('/api/connections/list');
+export const getConnectionCounts = () => apiClient.get('/api/connections/counts');
