@@ -53,3 +53,20 @@ export const createStorySchema = z.object({
   story_text: z.string().min(50, { message: 'Story must be at least 50 characters.' }),
   image_ids: z.array(z.string()).min(1).max(5),
 });
+
+export const tokenTransferSchema = z.object({
+  recipient_id: z.string().uuid(),
+  amount: z.number().int().min(1).max(1000),
+  message: z.string().max(200).optional(),
+});
+
+export const tokenHistorySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const tokenRequestSchema = z.object({
+  recipient_id: z.string().uuid(),
+  amount: z.number().int().min(1).max(1000),
+  reason: z.string().max(200).optional(),
+});

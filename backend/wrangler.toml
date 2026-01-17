@@ -13,6 +13,7 @@ bucket_name = "heartfelt-images"
 
 [vars]
 CORS_ORIGIN = "http://localhost:5173,https://heartfelt.pages.dev,https://heartfelt-2ti.pages.dev"
+SIGNUP_BONUS_TOKENS = "50"
 
 [ai]
 binding = "AI"

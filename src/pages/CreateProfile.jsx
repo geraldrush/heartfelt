@@ -7,6 +7,7 @@ import {
   uploadStoryImage,
 } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { detectAndBlurFaces } from '../utils/faceBlur.js';
 
 const stepTitles = [
   'Personal Details',
@@ -46,6 +47,12 @@ const CreateProfile = () => {
   const [referenceLoading, setReferenceLoading] = useState(true);
   const [referenceError, setReferenceError] = useState('');
   const imagesRef = useRef([]);
+
+  const updateImageById = (id, updater) => {
+    setImages((prev) =>
+      prev.map((image) => (image.id === id ? updater(image) : image))
+    );
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -179,6 +186,58 @@ const CreateProfile = () => {
     setStep((prev) => Math.max(prev - 1, 1));
   };
 
+  const processImageFile = async (entry) => {
+    const result = await detectAndBlurFaces(entry.originalFile);
+    if (result.error) {
+      throw result.error;
+    }
+
+    const nextBlob = result.blob;
+    const blurredFile =
+      nextBlob instanceof File
+        ? nextBlob
+        : new File([nextBlob], entry.originalFile.name, {
+            type: nextBlob.type || entry.originalFile.type,
+          });
+    const preview = URL.createObjectURL(blurredFile);
+
+    updateImageById(entry.id, (image) => {
+      if (image.preview) {
+        URL.revokeObjectURL(image.preview);
+      }
+      return {
+        ...image,
+        file: blurredFile,
+        preview,
+        status: result.facesDetected > 0 ? 'blurred' : 'no-faces',
+        facesDetected: result.facesDetected,
+      };
+    });
+  };
+
+  const retryBlur = async (id) => {
+    const target = images.find((image) => image.id === id);
+    if (!target) {
+      return;
+    }
+
+    updateImageById(id, (image) => ({
+      ...image,
+      status: 'processing',
+      errorMessage: '',
+    }));
+
+    try {
+      await processImageFile(target);
+    } catch (error) {
+      updateImageById(id, (image) => ({
+        ...image,
+        status: 'error',
+        errorMessage: 'Blur failed. Try again.',
+      }));
+    }
+  };
+
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) {
@@ -187,6 +246,7 @@ const CreateProfile = () => {
 
     const nextImages = [...images];
     let fileError = '';
+    const processingQueue = [];
 
     for (const file of files) {
       if (!ACCEPTED_TYPES.has(file.type)) {
@@ -201,12 +261,34 @@ const CreateProfile = () => {
         fileError = 'You can upload up to 5 photos.';
         break;
       }
-      nextImages.push({ file, preview: URL.createObjectURL(file) });
+      const entry = {
+        id: crypto.randomUUID(),
+        file,
+        originalFile: file,
+        preview: URL.createObjectURL(file),
+        status: 'processing',
+        facesDetected: 0,
+        errorMessage: '',
+      };
+      nextImages.push(entry);
+      processingQueue.push(entry);
     }
 
     setImages(nextImages);
     setErrors((prev) => ({ ...prev, images: fileError }));
     event.target.value = '';
+
+    processingQueue.forEach(async (entry) => {
+      try {
+        await processImageFile(entry);
+      } catch (error) {
+        updateImageById(entry.id, (image) => ({
+          ...image,
+          status: 'error',
+          errorMessage: 'Blur failed. Try again.',
+        }));
+      }
+    });
   };
 
   const removeImage = (index) => {
@@ -238,10 +320,18 @@ const CreateProfile = () => {
       setErrors(nextErrors);
       return;
     }
+    if (isImageProcessing) {
+      setFormError('Please wait for face detection to finish.');
+      return;
+    }
+    if (hasBlurFailures) {
+      setFormError('Please retry failed images before submitting.');
+      return;
+    }
 
     setLoading(true);
     setFormError('');
-    setStatusMessage('Uploading images...');
+    setStatusMessage('Uploading blurred images...');
     setUploadProgress({ current: 0, total: images.length });
 
     try {
@@ -251,7 +341,8 @@ const CreateProfile = () => {
       for (let i = 0; i < images.length; i += 1) {
         setUploadProgress({ current: i + 1, total: images.length });
         const formData = new FormData();
-        formData.append('image', images[i].file);
+        formData.append('image_original', images[i].originalFile || images[i].file);
+        formData.append('image_blurred', images[i].file);
 
         try {
           const response = await uploadStoryImage(formData);
@@ -600,7 +691,7 @@ const CreateProfile = () => {
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
             {images.map((image, index) => (
               <div
-                key={`${image.preview}-${index}`}
+                key={image.id}
                 className="group relative overflow-hidden rounded-2xl"
               >
                 <img
@@ -608,6 +699,27 @@ const CreateProfile = () => {
                   alt={`Upload ${index + 1}`}
                   className="h-36 w-full rounded-2xl object-cover"
                 />
+                {image.status === 'processing' && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                  </div>
+                )}
+                <div
+                  className={`absolute left-2 bottom-2 rounded-full px-2 py-1 text-[10px] font-semibold ${
+                    image.status === 'blurred'
+                      ? 'bg-emerald-500/90 text-white'
+                      : image.status === 'no-faces'
+                      ? 'bg-amber-500/90 text-white'
+                      : image.status === 'error'
+                      ? 'bg-red-500/90 text-white'
+                      : 'bg-slate-900/70 text-white'
+                  }`}
+                >
+                  {image.status === 'processing' && 'Processing...'}
+                  {image.status === 'blurred' && 'Faces blurred ✓'}
+                  {image.status === 'no-faces' && 'No faces detected'}
+                  {image.status === 'error' && 'Blur failed'}
+                </div>
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
@@ -615,6 +727,15 @@ const CreateProfile = () => {
                 >
                   Remove
                 </button>
+                {image.status === 'error' && (
+                  <button
+                    type="button"
+                    onClick={() => retryBlur(image.id)}
+                    className="absolute right-2 bottom-2 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 shadow"
+                  >
+                    Retry
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -622,6 +743,9 @@ const CreateProfile = () => {
       </div>
     );
   };
+
+  const isImageProcessing = images.some((image) => image.status === 'processing');
+  const hasBlurFailures = images.some((image) => image.status === 'error');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-200 via-sky-100 to-amber-100">
@@ -695,7 +819,7 @@ const CreateProfile = () => {
               ) : (
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || isImageProcessing}
                   className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {loading ? 'Saving...' : 'Submit'}

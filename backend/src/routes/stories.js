@@ -6,6 +6,7 @@ import {
 } from '../utils/validation.js';
 import {
   generateId,
+  buildDistanceQuery,
   getDb,
   getReferenceData,
   getUserById,
@@ -136,8 +137,216 @@ stories.put('/update-profile', authMiddleware, async (c) => {
   return c.json({ user: safeUser });
 });
 
-stories.get('/feed', async (c) => {
-  return c.json({ message: 'Story feed endpoint' });
+stories.get('/feed', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+  const user = await getUserById(db, userId);
+
+  if (!user) {
+    return c.json({ error: 'User not found.' }, 404);
+  }
+
+  const limitRaw = Number(c.req.query('limit') || 20);
+  const offsetRaw = Number(c.req.query('offset') || 0);
+  const limit = Math.min(Number.isFinite(limitRaw) ? limitRaw : 20, 50);
+  const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
+
+  const maxDistanceRaw = c.req.query('max_distance_km');
+  const maxDistance = Number.isFinite(Number(maxDistanceRaw))
+    ? Number(maxDistanceRaw)
+    : 100;
+
+  const parseBool = (value) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return null;
+  };
+
+  const ageMin = Number(c.req.query('age_min'));
+  const ageMax = Number(c.req.query('age_max'));
+  const gender = c.req.query('gender');
+  const religion = c.req.query('religion');
+  const race = c.req.query('race');
+  const education = c.req.query('education');
+  const nationality = c.req.query('nationality');
+  const hasKids = parseBool(c.req.query('has_kids'));
+  const numKids = Number(c.req.query('num_kids'));
+  const smoker = parseBool(c.req.query('smoker'));
+  const drinksAlcohol = parseBool(c.req.query('drinks_alcohol'));
+
+  const userLat = Number.isFinite(user.location_lat) ? user.location_lat : null;
+  const userLng = Number.isFinite(user.location_lng) ? user.location_lng : null;
+  const hasUserLocation = userLat !== null && userLng !== null;
+
+  const distanceFormula = hasUserLocation
+    ? buildDistanceQuery(userLat, userLng)
+    : '999999';
+  const distanceSelect = hasUserLocation
+    ? `CASE WHEN users.location_lat IS NULL OR users.location_lng IS NULL THEN 999999 ELSE ${distanceFormula} END`
+    : '999999';
+
+  const conditions = [
+    'stories.is_active = 1',
+    'users.profile_complete = 1',
+    'stories.user_id != ?',
+    'c.id IS NULL',
+  ];
+  const params = [userId];
+
+  if (Number.isFinite(ageMin)) {
+    conditions.push('users.age >= ?');
+    params.push(ageMin);
+  }
+  if (Number.isFinite(ageMax)) {
+    conditions.push('users.age <= ?');
+    params.push(ageMax);
+  }
+  if (gender) {
+    conditions.push('users.gender = ?');
+    params.push(gender);
+  }
+  if (religion) {
+    conditions.push('users.religion = ?');
+    params.push(religion);
+  }
+  if (race) {
+    conditions.push('users.race = ?');
+    params.push(race);
+  }
+  if (education) {
+    conditions.push('users.education = ?');
+    params.push(education);
+  }
+  if (nationality) {
+    conditions.push('users.nationality = ?');
+    params.push(nationality);
+  }
+  if (typeof hasKids === 'boolean') {
+    conditions.push('users.has_kids = ?');
+    params.push(hasKids ? 1 : 0);
+  }
+  if (Number.isFinite(numKids)) {
+    conditions.push('users.num_kids = ?');
+    params.push(numKids);
+  }
+  if (typeof smoker === 'boolean') {
+    conditions.push('users.smoker = ?');
+    params.push(smoker ? 1 : 0);
+  }
+  if (typeof drinksAlcohol === 'boolean') {
+    conditions.push('users.drinks_alcohol = ?');
+    params.push(drinksAlcohol ? 1 : 0);
+  }
+  if (hasUserLocation && Number.isFinite(maxDistance)) {
+    conditions.push(
+      `(users.location_lat IS NULL OR users.location_lng IS NULL OR ${distanceFormula} <= ?)`
+    );
+    params.push(maxDistance);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const baseJoins = `
+    JOIN users ON users.id = stories.user_id
+    LEFT JOIN connections c
+      ON c.status = 'active'
+      AND ((c.user_id_1 = stories.user_id AND c.user_id_2 = ?)
+        OR (c.user_id_2 = stories.user_id AND c.user_id_1 = ?))
+    LEFT JOIN connection_requests cr_sent
+      ON cr_sent.sender_id = ? AND cr_sent.receiver_id = stories.user_id AND cr_sent.status = 'pending'
+    LEFT JOIN connection_requests cr_received
+      ON cr_received.sender_id = stories.user_id AND cr_received.receiver_id = ? AND cr_received.status = 'pending'
+  `;
+
+  const joinParams = [userId, userId, userId, userId];
+
+  const countQuery = `
+    SELECT COUNT(*) as total
+    FROM stories
+    ${baseJoins}
+    ${whereClause}
+  `;
+
+  const countRow = await db
+    .prepare(countQuery)
+    .bind(...joinParams, ...params)
+    .first();
+  const total = countRow?.total ?? 0;
+
+  const feedQuery = `
+    SELECT
+      stories.id AS story_id,
+      stories.user_id,
+      users.age,
+      users.gender,
+      users.nationality,
+      users.religion,
+      users.race,
+      users.education,
+      users.has_kids,
+      users.num_kids,
+      users.smoker,
+      users.drinks_alcohol,
+      users.location_city,
+      users.location_province,
+      ${distanceSelect} AS distance_km,
+      CASE
+        WHEN users.updated_at >= datetime('now', '-10 minutes') THEN 1
+        ELSE 0
+      END AS is_online,
+      stories.story_text,
+      stories.created_at,
+      si.blurred_url AS blurred_image_url,
+      CASE
+        WHEN c.id IS NOT NULL THEN 'connected'
+        WHEN cr_sent.id IS NOT NULL THEN 'pending_sent'
+        WHEN cr_received.id IS NOT NULL THEN 'pending_received'
+        ELSE 'none'
+      END AS connection_status
+    FROM stories
+    ${baseJoins}
+    LEFT JOIN story_images si
+      ON si.id = (
+        SELECT id
+        FROM story_images
+        WHERE story_id = stories.id AND processing_status = 'completed'
+        ORDER BY created_at ASC
+        LIMIT 1
+      )
+    ${whereClause}
+    ORDER BY distance_km ASC, stories.created_at DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  const { results } = await db
+    .prepare(feedQuery)
+    .bind(...joinParams, ...params, limit, offset)
+    .all();
+
+  const stories = await Promise.all(
+    results.map(async (row) => {
+      let imageUrl = row.blurred_image_url;
+      if (imageUrl && typeof c.env.R2_BUCKET.createSignedUrl === 'function') {
+        try {
+          imageUrl = await c.env.R2_BUCKET.createSignedUrl(imageUrl, {
+            expiresIn: 3600,
+          });
+        } catch (error) {
+          imageUrl = row.blurred_image_url;
+        }
+      }
+      return {
+        ...row,
+        blurred_image_url: imageUrl,
+      };
+    })
+  );
+
+  return c.json({
+    stories,
+    total,
+    has_more: offset + stories.length < total,
+  });
 });
 
 stories.get('/:storyId/images', async (c) => {

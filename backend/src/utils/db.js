@@ -108,6 +108,144 @@ export async function updateUserTokenBalance(db, userId, amount) {
     .run();
 }
 
+export async function getUserTokenBalance(db, userId) {
+  const row = await db
+    .prepare('SELECT token_balance FROM users WHERE id = ?')
+    .bind(userId)
+    .first();
+  return row?.token_balance ?? null;
+}
+
+export async function createTokenTransaction(db, transactionData) {
+  const {
+    user_id,
+    amount,
+    transaction_type,
+    related_user_id,
+    related_entity_id,
+    balance_after,
+    description,
+    created_at,
+  } = transactionData;
+
+  await db
+    .prepare(
+      `INSERT INTO token_transactions (
+        id,
+        user_id,
+        amount,
+        transaction_type,
+        related_user_id,
+        related_entity_id,
+        balance_after,
+        description,
+        created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      generateId(),
+      user_id,
+      amount,
+      transaction_type,
+      related_user_id || null,
+      related_entity_id || null,
+      balance_after,
+      description || null,
+      created_at || new Date().toISOString()
+    )
+    .run();
+}
+
+export async function getTokenTransactions(db, userId, limit, offset) {
+  const { results } = await db
+    .prepare(
+      `SELECT
+        tt.id,
+        tt.amount,
+        tt.transaction_type,
+        tt.related_user_id,
+        tt.description,
+        tt.balance_after,
+        tt.created_at,
+        u.full_name AS related_user_name
+      FROM token_transactions tt
+      LEFT JOIN users u ON tt.related_user_id = u.id
+      WHERE tt.user_id = ?
+      ORDER BY tt.created_at DESC
+      LIMIT ? OFFSET ?`
+    )
+    .bind(userId, limit, offset)
+    .all();
+
+  return results;
+}
+
+export async function createTokenRequest(db, requestData) {
+  const { requester_id, recipient_id, amount, reason } = requestData;
+  await db
+    .prepare(
+      `INSERT INTO token_requests (
+        id,
+        requester_id,
+        recipient_id,
+        amount,
+        reason,
+        status
+      ) VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      generateId(),
+      requester_id,
+      recipient_id,
+      amount,
+      reason || null,
+      'pending'
+    )
+    .run();
+}
+
+export async function getPendingTokenRequests(db, userId) {
+  const { results } = await db
+    .prepare(
+      `SELECT
+        tr.id,
+        tr.requester_id,
+        tr.recipient_id,
+        tr.amount,
+        tr.reason,
+        tr.status,
+        tr.created_at,
+        u.full_name AS requester_name
+      FROM token_requests tr
+      LEFT JOIN users u ON tr.requester_id = u.id
+      WHERE tr.recipient_id = ? AND tr.status = 'pending'
+      ORDER BY tr.created_at DESC`
+    )
+    .bind(userId)
+    .all();
+
+  return results;
+}
+
+export async function updateTokenRequestStatus(db, requestId, status) {
+  await db
+    .prepare(
+      `UPDATE token_requests
+       SET status = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`
+    )
+    .bind(status, requestId)
+    .run();
+}
+
+export function buildDistanceQuery(userLat, userLng) {
+  return `(6371 * acos(
+    cos(radians(${userLat})) * cos(radians(location_lat)) *
+    cos(radians(location_lng) - radians(${userLng})) +
+    sin(radians(${userLat})) * sin(radians(location_lat))
+  ))`;
+}
+
 export async function getReferenceData(db) {
   const religions = await db
     .prepare('SELECT id, name FROM religions WHERE is_active = 1')

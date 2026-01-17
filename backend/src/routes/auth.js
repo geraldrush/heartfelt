@@ -18,7 +18,10 @@ import {
 
 const auth = new Hono();
 
-const signupBonusTokens = 50;
+const getSignupBonusTokens = (c) => {
+  const raw = Number(c.env.SIGNUP_BONUS_TOKENS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 50;
+};
 
 function userResponse(user) {
   return {
@@ -47,6 +50,7 @@ auth.post('/email-signup', async (c) => {
     return c.json({ error: 'Email already exists.' }, 409);
   }
 
+  const signupBonusTokens = getSignupBonusTokens(c);
   const password_hash = await hashPassword(parsed.data.password);
   const { id } = await createUser(db, {
     email: parsed.data.email,
@@ -144,6 +148,7 @@ auth.post('/google', async (c) => {
     return c.json({ error: 'Invalid Google credential.' }, 401);
   }
 
+  const signupBonusTokens = getSignupBonusTokens(c);
   const tokenInfo = await tokenInfoResponse.json();
   const googleId = tokenInfo.sub;
   const email = tokenInfo.email;

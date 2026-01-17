@@ -68,3 +68,23 @@ export const uploadStoryImage = (formData) => {
 export const createStory = (data) => apiClient.post('/api/stories/create-story', data);
 export const updateProfile = (data) => apiClient.put('/api/stories/update-profile', data);
 export const getReferenceData = () => apiClient.get('/api/stories/reference/data');
+export const processImage = (data) => apiClient.post('/api/images/process', data);
+export const getStoryImages = (storyId) => apiClient.get(`/api/stories/${storyId}/images`);
+export const getTokenBalance = () => apiClient.get('/api/tokens/balance');
+export const transferTokens = (data) => apiClient.post('/api/tokens/transfer', data);
+export const getTokenHistory = ({ limit = 50, offset = 0 } = {}) =>
+  apiClient.get(`/api/tokens/history?limit=${limit}&offset=${offset}`);
+export const createTokenRequest = (data) => apiClient.post('/api/chat/token-requests', data);
+export const getTokenRequests = () => apiClient.get('/api/chat/token-requests');
+export const fulfillTokenRequest = (id) =>
+  apiClient.post(`/api/chat/token-requests/${id}/fulfill`);
+export const getStoryFeed = (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== null && value !== undefined && value !== '') {
+      params.append(key, value);
+    }
+  });
+  const query = params.toString();
+  return apiClient.get(`/api/stories/feed${query ? `?${query}` : ''}`);
+};
