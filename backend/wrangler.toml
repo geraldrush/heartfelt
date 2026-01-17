@@ -1,6 +1,7 @@
 name = "heartfelt-api"
 compatibility_date = "2024-01-01"
 main = "src/index.js"
+compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "DB"
@@ -13,8 +14,15 @@ bucket_name = "heartfelt-images"
 
 [vars]
 CORS_ORIGIN = "http://localhost:5173,https://heartfelt.pages.dev,https://heartfelt-2ti.pages.dev"
-SIGNUP_BONUS_TOKENS = "50"
+SIGNUP_BONUS_TOKENS = "2"
 R2_PUBLIC_BASE_URL = "https://heartfelt-images.79faac3a1f7c3b8ab3be66153def7484.r2.cloudflarestorage.com"
+FRONTEND_URL = "http://localhost:5173"
+PAYFAST_MERCHANT_ID = "CHANGE_ME"
+PAYFAST_MERCHANT_KEY = "CHANGE_ME"
+PAYFAST_PASSPHRASE = "CHANGE_ME"
+PAYFAST_MODE = "sandbox"
+PAYFAST_SANDBOX_URL = "https://sandbox.payfast.co.za/eng/process"
+PAYFAST_LIVE_URL = "https://www.payfast.co.za/eng/process"
 
 [ai]
 binding = "AI"

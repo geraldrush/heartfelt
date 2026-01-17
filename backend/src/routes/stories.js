@@ -15,16 +15,6 @@ import {
 
 const stories = new Hono();
 
-const buildPublicImageUrl = (c, key) => {
-  const base = c.env.R2_PUBLIC_BASE_URL;
-  if (!base || !key) {
-    return key;
-  }
-  const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
-  const trimmedKey = key.startsWith('/') ? key.slice(1) : key;
-  return `${trimmedBase}/${trimmedKey}`;
-};
-
 stories.get('/reference/data', async (c) => {
   const db = getDb(c);
   const data = await getReferenceData(db);
@@ -334,26 +324,17 @@ stories.get('/feed', authMiddleware, async (c) => {
     .bind(...joinParams, ...params, limit, offset)
     .all();
 
-  const stories = await Promise.all(
-    results.map(async (row) => {
-      let imageUrl = row.blurred_image_url;
-      if (imageUrl && typeof c.env.R2_BUCKET.createSignedUrl === 'function') {
-        try {
-          imageUrl = await c.env.R2_BUCKET.createSignedUrl(imageUrl, {
-            expiresIn: 3600,
-          });
-        } catch (error) {
-          imageUrl = buildPublicImageUrl(c, row.blurred_image_url);
-        }
-      } else {
-        imageUrl = buildPublicImageUrl(c, row.blurred_image_url);
-      }
-      return {
-        ...row,
-        blurred_image_url: imageUrl,
-      };
-    })
-  );
+  const origin = new URL(c.req.url).origin;
+  const stories = results.map((row) => {
+    const hasImage = Boolean(row.blurred_image_url);
+    const imageUrl = hasImage
+      ? `${origin}/api/stories/${row.story_id}/blurred`
+      : null;
+    return {
+      ...row,
+      blurred_image_url: imageUrl,
+    };
+  });
 
   return c.json({
     stories,
@@ -372,30 +353,46 @@ stories.get('/:storyId/images', async (c) => {
     .bind(storyId, 'completed')
     .all();
 
-  const images = await Promise.all(
-    results.map(async (row) => {
-      let url = row.blurred_url;
-      if (typeof c.env.R2_BUCKET.createSignedUrl === 'function') {
-        try {
-          url = await c.env.R2_BUCKET.createSignedUrl(row.blurred_url, {
-            expiresIn: 3600,
-          });
-        } catch (error) {
-          url = buildPublicImageUrl(c, row.blurred_url);
-        }
-      } else {
-        url = buildPublicImageUrl(c, row.blurred_url);
-      }
-      return {
-        id: row.id,
-        blurred_url: url,
-        processing_status: row.processing_status,
-        created_at: row.created_at,
-      };
-    })
-  );
+  const origin = new URL(c.req.url).origin;
+  const images = results.map((row) => ({
+    id: row.id,
+    blurred_url: `${origin}/api/stories/${storyId}/blurred`,
+    processing_status: row.processing_status,
+    created_at: row.created_at,
+  }));
 
   return c.json({ images });
+});
+
+stories.get('/:storyId/blurred', async (c) => {
+  const storyId = c.req.param('storyId');
+  const db = getDb(c);
+  const image = await db
+    .prepare(
+      `SELECT blurred_url
+       FROM story_images
+       WHERE story_id = ? AND processing_status = 'completed'
+       ORDER BY created_at ASC
+       LIMIT 1`
+    )
+    .bind(storyId)
+    .first();
+
+  if (!image || !image.blurred_url) {
+    return c.json({ error: 'Image not found.' }, 404);
+  }
+
+  const stored = await c.env.R2_BUCKET.get(image.blurred_url);
+  if (!stored) {
+    return c.json({ error: 'Image unavailable.', image: image.blurred_url }, 404);
+  }
+
+  const headers = {
+    'Content-Type': stored.httpMetadata?.contentType || 'application/octet-stream',
+    'Cache-Control': 'public, max-age=300',
+  };
+
+  return c.body(stored.body, 200, headers);
 });
 
 export default stories;

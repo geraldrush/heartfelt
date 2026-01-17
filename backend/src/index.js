@@ -6,6 +6,7 @@ import connectionRoutes from './routes/connections.js';
 import tokenRoutes from './routes/tokens.js';
 import chatRoutes from './routes/chat.js';
 import imagesRoutes from './routes/images.js';
+import paymentRoutes from './routes/payments.js';
 
 const app = new Hono();
 
@@ -42,6 +43,7 @@ app.route('/api/images', imagesRoutes);
 app.route('/api/connections', connectionRoutes);
 app.route('/api/tokens', tokenRoutes);
 app.route('/api/chat', chatRoutes);
+app.route('/api/payments', paymentRoutes);
 
 export default app;
 

@@ -110,3 +110,7 @@ export const getMessages = (connectionId, { limit = 50, offset = 0, before } = {
 export const getUnreadCounts = () => apiClient.get('/api/chat/unread-counts');
 export const markMessagesAsDelivered = (messageIds) =>
   apiClient.post('/api/chat/messages/mark-delivered', { message_ids: messageIds });
+export const getTokenPackages = () => apiClient.get('/api/payments/packages');
+export const initiatePayment = (data) => apiClient.post('/api/payments/initiate', data);
+export const getPaymentStatus = (paymentId) =>
+  apiClient.get(`/api/payments/status/${paymentId}`);

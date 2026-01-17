@@ -79,3 +79,7 @@ export const connectionRequestSchema = z.object({
 export const connectionActionSchema = z.object({
   request_id: z.string().uuid(),
 });
+
+export const paymentInitiateSchema = z.object({
+  package_id: z.string().uuid(),
+});
