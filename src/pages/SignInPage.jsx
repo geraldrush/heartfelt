@@ -83,9 +83,9 @@ const SignInPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-200 via-sky-100 to-amber-100">
-      <div className="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-6 py-12">
-        <div className="w-full rounded-3xl bg-white/80 p-10 shadow-2xl backdrop-blur">
-          <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-2 py-8 sm:px-6 sm:py-12">
+        <div className="w-full bg-white/80 p-6 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-12">
+          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
               <h1 className="text-4xl font-bold text-slate-900">
                 Heartfelt Connections
@@ -95,7 +95,7 @@ const SignInPage = () => {
                 connection grounded in shared values.
               </p>
 
-              <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-slate-900">
                     {isSignup ? 'Create your account' : 'Welcome back'}
@@ -280,7 +280,7 @@ const SignInPage = () => {
               </div>
             </div>
 
-            <div className="flex flex-col justify-between rounded-2xl bg-slate-900 p-8 text-white">
+            <div className="flex flex-col justify-between rounded-2xl bg-slate-900 p-6 sm:p-10 text-white">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">
                   Your Story Starts Here
