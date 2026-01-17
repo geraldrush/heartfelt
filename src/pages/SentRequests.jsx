@@ -61,8 +61,8 @@ const SentRequests = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-gradient-to-b from-blue-400 to-purple-500 p-4">
-      <h1 className="mb-6 text-3xl font-bold text-white">Sent Connection Requests</h1>
+    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-rose-100 via-pink-50 to-peach-100 p-4 pb-28 text-slate-900">
+      <h1 className="mb-6 text-3xl font-bold text-rose-700">Sent Connection Requests</h1>
 
       <div className="w-full max-w-2xl rounded-lg bg-white p-4 shadow-md">
         {loading && <LoadingSpinner label="Loading..." />}
@@ -97,7 +97,7 @@ const SentRequests = () => {
                 <button
                   type="button"
                   onClick={() => handleCancel(request)}
-                  className="rounded bg-red-500 px-4 py-1 text-white transition hover:bg-red-600"
+                  className="rounded bg-rose-500 px-4 py-1 text-white transition hover:bg-rose-600"
                 >
                   Cancel
                 </button>

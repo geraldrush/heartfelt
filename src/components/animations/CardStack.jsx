@@ -81,7 +81,7 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
                 {...bind()}
                 onClick={() => onCardClick?.(item)}
                 style={{ x, y, rotate: rot, scale }}
-                className="absolute inset-0 cursor-grab select-none"
+                className="absolute inset-0 cursor-grab select-none touch-none"
               >
                 <motion.div
                   className="relative h-full w-full overflow-hidden rounded-[32px] border border-rose-100 bg-white shadow-2xl"

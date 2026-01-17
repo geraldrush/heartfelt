@@ -748,7 +748,7 @@ const CreateProfile = () => {
   const hasBlurFailures = images.some((image) => image.status === 'error');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-200 via-sky-100 to-amber-100">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-200 via-sky-100 to-amber-100 pb-24">
       <div className="mx-auto flex min-h-screen w-full flex-col items-center justify-center px-0 py-6 sm:px-6 sm:py-12">
         <div className="w-full bg-white/80 p-6 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-10">
           <div className="flex items-center justify-between">

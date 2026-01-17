@@ -1,5 +1,5 @@
 // src/pages/StoryFeed.jsx
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   acceptConnectionRequest,
@@ -125,34 +125,42 @@ const StoryFeed = () => {
     return () => clearTimeout(handler);
   }, [filtersDraft]);
 
-  const fetchStories = async ({ reset = false } = {}) => {
-    const nextOffset = reset ? 0 : offset;
-    if (reset) {
-      setLoading(true);
-      setError('');
-    } else {
-      setLoadingMore(true);
-    }
+  const fetchStories = useCallback(
+    async ({ reset = false } = {}) => {
+      const nextOffset = reset ? 0 : offset;
+      if (reset) {
+        setLoading(true);
+        setError('');
+      } else {
+        setLoadingMore(true);
+      }
 
-    try {
-      const data = await getStoryFeed({
-        ...filtersApplied,
-        limit: PAGE_SIZE,
-        offset: nextOffset,
-      });
-      setStories((prev) => (reset ? data.stories : [...prev, ...data.stories]));
-      setHasMore(data.has_more);
-      setOffset(nextOffset + data.stories.length);
-    } catch (err) {
-      setError(err.message || 'Unable to load stories.');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
+      try {
+        const data = await getStoryFeed({
+          ...filtersApplied,
+          limit: PAGE_SIZE,
+          offset: nextOffset,
+        });
+        setStories((prev) => (reset ? data.stories : [...prev, ...data.stories]));
+        setHasMore(data.has_more);
+        setOffset(nextOffset + data.stories.length);
+      } catch (err) {
+        setError(err.message || 'Unable to load stories.');
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [filtersApplied, offset]
+  );
+
+  const fetchStoriesRef = useRef(fetchStories);
+  useEffect(() => {
+    fetchStoriesRef.current = fetchStories;
+  }, [fetchStories]);
 
   useEffect(() => {
-    fetchStories({ reset: true });
+    fetchStoriesRef.current({ reset: true });
   }, [filtersApplied]);
 
   useEffect(() => {
@@ -160,7 +168,7 @@ const StoryFeed = () => {
       return;
     }
     if (stories.length < 5) {
-      fetchStories({ reset: false });
+      fetchStoriesRef.current({ reset: false });
     }
   }, [stories.length, hasMore, loading, loadingMore]);
 
@@ -188,7 +196,7 @@ const StoryFeed = () => {
         observer.unobserve(sentinel);
       }
     };
-  }, [hasMore, loadingMore, loading, filtersApplied]);
+  }, [hasMore, loadingMore, loading, fetchStories]);
 
   const clearFilters = () => {
     setAgeMin('');

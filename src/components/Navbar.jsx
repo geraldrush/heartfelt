@@ -124,7 +124,10 @@ const Navbar = () => {
         animate={{ y: 0 }}
         className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-[0_-12px_30px_rgba(15,23,42,0.08)] md:hidden"
       >
-        <div className="flex items-center justify-around px-4 pb-6 pt-3">
+        <div
+          className="flex items-center justify-around px-4 pt-3"
+          style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           {mobileItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.to);

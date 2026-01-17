@@ -197,16 +197,16 @@ const TokensPage = () => {
   }, [packages]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-400 to-purple-500 px-4 py-10 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-50 to-peach-100 px-4 py-10 pb-28 text-slate-900">
       <div className="mx-auto w-full max-w-4xl">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold md:text-4xl">Token Wallet</h1>
-            <p className="mt-2 text-sm text-white/80">{summary}</p>
+            <p className="mt-2 text-sm text-rose-900/70">{summary}</p>
           </div>
           <div className="rounded-2xl bg-white/20 px-6 py-4 text-center">
-            <FontAwesomeIcon icon={faCoins} className="mb-2 text-2xl" />
-            <p className="text-xs uppercase tracking-[0.2em] text-white/60">Balance</p>
+            <FontAwesomeIcon icon={faCoins} className="mb-2 text-2xl text-rose-600" />
+            <p className="text-xs uppercase tracking-[0.2em] text-rose-900/60">Balance</p>
             <p className="mt-1 text-2xl font-semibold">
               {loading ? '...' : balance ?? 0}
             </p>
@@ -214,7 +214,7 @@ const TokensPage = () => {
         </div>
 
         {error && (
-          <div className="mt-6 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
+          <div className="mt-6 rounded-xl bg-rose-100 px-4 py-3 text-sm text-rose-700">
             {error}
           </div>
         )}
@@ -231,14 +231,14 @@ const TokensPage = () => {
             <button
               type="button"
               onClick={() => setShowBuyModal(true)}
-              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-600 shadow hover:bg-blue-50"
+              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-rose-600 shadow hover:bg-rose-50"
             >
               Buy Tokens
             </button>
             <button
               type="button"
               onClick={() => setShowTransfer(true)}
-              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-600 shadow hover:bg-blue-50"
+              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-rose-600 shadow hover:bg-rose-50"
             >
               Transfer Tokens
             </button>
@@ -288,7 +288,7 @@ const TokensPage = () => {
             <button
               type="button"
               onClick={handleLoadMore}
-              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-600 shadow hover:bg-blue-50"
+              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-rose-600 shadow hover:bg-rose-50"
             >
               Load More
             </button>
@@ -315,7 +315,7 @@ const TokensPage = () => {
                 <input
                   value={recipientId}
                   onChange={(event) => setRecipientId(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-400 focus:outline-none"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none"
                   placeholder="UUID"
                 />
               </div>
@@ -326,7 +326,7 @@ const TokensPage = () => {
                   min="1"
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-400 focus:outline-none"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none"
                   placeholder="Enter token amount"
                 />
               </div>
@@ -335,19 +335,19 @@ const TokensPage = () => {
                 <textarea
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-400 focus:outline-none"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none"
                   placeholder="Add a note"
                   rows="3"
                 />
               </div>
               {transferStatus && (
-                <div className="rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700">
+                <div className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
                   {transferStatus}
                 </div>
               )}
               <button
                 type="submit"
-                className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+                className="w-full rounded-xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
               >
                 Send Tokens
               </button>
@@ -388,12 +388,12 @@ const TokensPage = () => {
                       onClick={() => setSelectedPackage(pkg)}
                       className={`relative rounded-2xl border px-4 py-5 text-left transition ${
                         isSelected
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-slate-200 hover:border-blue-200'
+                          ? 'border-rose-500 bg-rose-50'
+                          : 'border-slate-200 hover:border-rose-200'
                       }`}
                     >
                       {isBestValue && (
-                        <span className="absolute right-3 top-3 rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
+                        <span className="absolute right-3 top-3 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white">
                           Best Value
                         </span>
                       )}
@@ -412,7 +412,7 @@ const TokensPage = () => {
             )}
 
             {paymentError && (
-              <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
                 {paymentError}
               </div>
             )}
@@ -421,7 +421,7 @@ const TokensPage = () => {
               type="button"
               onClick={handleBuyTokens}
               disabled={!selectedPackage || paymentLoading}
-              className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-blue-300"
+              className="mt-6 w-full rounded-xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-rose-300"
             >
               {paymentLoading ? 'Redirecting to Payfast...' : 'Proceed to Payment'}
             </button>
