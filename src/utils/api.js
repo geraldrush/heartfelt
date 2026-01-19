@@ -67,12 +67,7 @@ export const getCurrentUser = () => apiClient.get('/api/auth/me');
 export const uploadStoryImage = (formData) => {
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
-  
-  // CSRF protection - add origin header for state-changing requests
-  if (window.location.origin) {
-    headers['X-Requested-With'] = 'XMLHttpRequest';
-  }
-  
+
   return fetch(`${API_URL}/api/stories/upload-image`, {
     method: 'POST',
     headers,
