@@ -142,14 +142,19 @@ export const AuthProvider = ({ children }) => {
       logout();
       return;
     }
-    commitSession(storedToken, null, { skipIdle: true });
-
+    
+    // Set token immediately if valid
+    setToken(storedToken);
+    setLoading(false);
+    
+    // Try to refresh user data in background
     try {
-      await refreshSession();
+      const data = await refreshToken();
+      commitSession(data.token, data.user, { skipLoading: true });
     } catch {
-      // refreshSession already handles logout on failure
+      // Keep existing session if refresh fails
     }
-  }, [commitSession, logout, refreshSession]);
+  }, [commitSession, logout]);
 
   useEffect(() => {
     initializeSession();

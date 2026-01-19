@@ -1,6 +1,7 @@
 // src/pages/StoryFeed.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { FaFilter } from 'react-icons/fa';
 import {
   acceptConnectionRequest,
   getReferenceData,
@@ -305,7 +306,7 @@ const StoryFeed = () => {
 
   const renderCard = (story) => (
     <div className="glass-card rounded-3xl overflow-hidden shadow-2xl h-full flex flex-col">
-      <div className="relative h-80">
+      <div className="relative h-[50%] md:h-80">
         {story.blurred_image_url ? (
           <img
             src={story.blurred_image_url}
@@ -352,7 +353,7 @@ const StoryFeed = () => {
         </div>
       </div>
       
-      <div className="flex-1 p-6 space-y-4">
+      <div className="flex-1 p-6 space-y-4 overflow-y-auto max-h-[50%] md:max-h-none">
         {/* Tags */}
         <div className="flex flex-wrap gap-2">
           {[story.religion, story.race, story.education].filter(Boolean).map((tag, index) => (
@@ -403,19 +404,19 @@ const StoryFeed = () => {
   );
 
   return (
-    <div className="min-h-screen bg-premium-mesh relative overflow-hidden">
+    <div className="h-screen md:min-h-screen overflow-hidden md:overflow-auto bg-premium-mesh relative">
       {/* Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/10 via-pink-900/10 to-rose-900/10" />
-      <div className="absolute top-40 left-20 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-40 right-20 w-80 h-80 bg-pink-500/5 rounded-full blur-3xl animate-pulse" />
+      <div className="fixed inset-0 bg-gradient-to-br from-purple-900/10 via-pink-900/10 to-rose-900/10" />
+      <div className="absolute top-40 left-20 w-64 h-64 bg-purple-500/5 rounded-full blur-2xl md:blur-3xl animate-pulse" />
+      <div className="absolute bottom-40 right-20 w-80 h-80 bg-pink-500/5 rounded-full blur-2xl md:blur-3xl animate-pulse" />
       
-      <div className="relative z-10 px-4 pb-28 pt-8">
-        <div className="mx-auto w-full max-w-6xl">
+      <div className="relative z-10 px-4 py-0 md:px-4 md:pb-28 md:pt-8">
+        <div className="w-full md:max-w-6xl mx-auto">
           {/* Header */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8"
+            className="hidden md:flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8"
           >
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 bg-clip-text text-transparent mb-2">
@@ -426,7 +427,7 @@ const StoryFeed = () => {
               </p>
             </div>
             
-            <div className="glass-card rounded-3xl px-6 py-4 text-center">
+            <div className="hidden md:block glass-card rounded-3xl px-6 py-4 text-center">
               <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Tokens</p>
               <p className="text-3xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
                 {tokenBalance === null ? '...' : tokenBalance}
@@ -434,12 +435,34 @@ const StoryFeed = () => {
             </div>
           </motion.div>
 
+          {/* Mobile Token Badge */}
+          <div className="fixed top-4 right-4 z-40 md:hidden glass-card rounded-full px-4 py-2 flex items-center gap-2">
+            <span className="text-lg">🪙</span>
+            <span className="text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+              {tokenBalance === null ? '...' : tokenBalance}
+            </span>
+          </div>
+
+          {/* Mobile Filter Icon Button */}
+          <button
+            type="button"
+            onClick={() => setShowFilters((prev) => !prev)}
+            className="fixed top-4 left-4 z-40 md:hidden glass-card rounded-full w-12 h-12 flex items-center justify-center"
+          >
+            <FaFilter className="text-purple-600" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
           {/* Filter Controls */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="flex items-center justify-between mb-6"
+            className="hidden md:flex items-center justify-between mb-6"
           >
             <motion.button
               type="button"
@@ -464,8 +487,18 @@ const StoryFeed = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="glass-card rounded-3xl p-8 mb-8"
+              className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto z-50 glass-card rounded-t-3xl md:rounded-3xl p-8 mb-0 md:mb-8 max-h-[90vh] md:max-h-none overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] md:pb-8"
             >
+              <div className="flex justify-between items-center mb-6 md:hidden">
+                <h3 className="text-lg font-semibold text-gray-800">Filters</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowFilters(false)}
+                  className="glass-card rounded-full w-8 h-8 flex items-center justify-center"
+                >
+                  ✕
+                </button>
+              </div>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Age Range</label>
@@ -579,15 +612,17 @@ const StoryFeed = () => {
           )}
 
           {/* Stories Content */}
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center h-[calc(100dvh-160px)] md:h-auto" style={{ height: 'calc(100dvh - 160px)' }}>
             {loading ? (
-              <div className="grid w-full max-w-md gap-8">
-                {Array.from({ length: 2 }).map((_, index) => (
-                  <StoryCardSkeleton key={`skeleton-${index}`} />
-                ))}
+              <div className="flex items-center justify-center h-full w-full max-w-md">
+                <div className="grid gap-8">
+                  {Array.from({ length: 2 }).map((_, index) => (
+                    <StoryCardSkeleton key={`skeleton-${index}`} />
+                  ))}
+                </div>
               </div>
             ) : stories.length > 0 ? (
-              <div className="relative w-full max-w-md mx-auto">
+              <div className="relative w-full max-w-md mx-auto h-full flex items-center justify-center">
                 <CardStack
                   items={stories}
                   onSwipeLeft={handlePass}
@@ -599,7 +634,7 @@ const StoryFeed = () => {
                 <HeartAnimation trigger={heartTrigger} />
               </div>
             ) : (
-              <div className="w-full max-w-md">
+              <div className="flex items-center justify-center h-full w-full max-w-md">
                 <EmptyState
                   icon={emptyIcon}
                   title="No Stories Found"
@@ -670,18 +705,18 @@ const StoryFeed = () => {
           </div>
 
           {loadingMore && (
-            <div className="mt-8 flex justify-center">
+            <div className="hidden md:flex mt-8 justify-center">
               <LoadingSpinner label="Loading more stories..." />
             </div>
           )}
 
           {!hasMore && stories.length > 0 && (
-            <div className="mt-8 text-center text-gray-500">
+            <div className="hidden md:block mt-8 text-center text-gray-500">
               You've seen all available stories. Check back later for more!
             </div>
           )}
 
-          <div ref={sentinelRef} className="h-8" />
+          <div ref={sentinelRef} className="hidden md:block h-8" />
         </div>
       </div>
 
@@ -692,7 +727,7 @@ const StoryFeed = () => {
           onClick={handleUndo}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="fixed bottom-32 left-6 z-40 glass-card rounded-full px-4 py-2 text-sm font-semibold text-gray-600 shadow-lg md:bottom-12"
+          className="fixed bottom-[120px] left-4 z-40 glass-card rounded-full px-4 py-2 text-sm font-semibold text-gray-600 shadow-lg md:bottom-12 md:left-6"
         >
           ↶ Undo
         </motion.button>
@@ -700,11 +735,11 @@ const StoryFeed = () => {
 
       {/* Story Detail Modal */}
       {selectedStory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-2xl glass-card rounded-3xl overflow-hidden shadow-2xl"
+            className="w-full max-w-full md:max-w-2xl glass-card rounded-t-3xl md:rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] md:max-h-[70vh]"
           >
             <div className="flex items-center justify-between border-b border-white/20 px-6 py-4">
               <div>
@@ -722,7 +757,7 @@ const StoryFeed = () => {
               </button>
             </div>
             
-            <div className="max-h-[70vh] overflow-y-auto">
+            <div className="max-h-[70vh] md:max-h-[50vh] overflow-y-auto">
               <div className="h-64 w-full bg-gradient-to-br from-purple-200 to-pink-200">
                 {selectedStory.blurred_image_url && (
                   <img
