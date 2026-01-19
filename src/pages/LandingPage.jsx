@@ -146,9 +146,9 @@ const LandingPage = () => {
             to="/stories"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
-            className="rounded-2xl border border-rose-100 bg-rose-500/90 px-6 py-4 text-sm font-semibold text-white shadow-lg transition hover:bg-rose-600"
+            className="block rounded-2xl border border-rose-100 bg-rose-500/90 px-6 py-4 text-sm font-semibold text-white shadow-lg transition hover:bg-rose-600"
           >
-            Explore Stories
+            Discover Stories
           </MotionLink>
           <MotionLink
             to="/profile"
