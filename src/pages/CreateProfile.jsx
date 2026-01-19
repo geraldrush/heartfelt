@@ -403,7 +403,7 @@ const CreateProfile = () => {
       });
 
       setStatusMessage("Complete!");
-      setTimeout(() => navigate("/landing"), 800);
+      setTimeout(() => navigate("/stories"), 800);
     } catch (error) {
       setFormError(error.message || "Something went wrong. Please try again.");
     } finally {

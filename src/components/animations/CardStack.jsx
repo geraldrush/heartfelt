@@ -7,6 +7,11 @@ const SWIPE_THRESHOLD = 150;
 
 const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, onCardClick }) => {
   const [dragState, setDragState] = React.useState({ x: 0, y: 0, rot: 0, scale: 1 });
+  const [isVisible, setIsVisible] = React.useState(true);
+
+  React.useEffect(() => {
+    setIsVisible(true);
+  }, [items]);
 
   const bind = useDrag(({ down, movement: [mx, my], tap }) => {
     if (tap) return; // Ignore tap events
@@ -50,7 +55,7 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
   }
 
   return (
-    <div className="relative h-[520px] w-full max-w-md">
+    <div className="relative h-[520px] w-full max-w-md" style={{ opacity: isVisible ? 1 : 0 }}>
       {visibleCards
         .slice()
         .reverse()
@@ -66,7 +71,8 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
                 key={item.story_id || item.id}
                 {...bind()}
                 onClick={() => onCardClick?.(item)}
-                animate={{ x: dragState.x, y: dragState.y, rotate: dragState.rot, scale: dragState.scale }}
+                initial={{ opacity: 1, scale: 1 }}
+                animate={{ x: dragState.x, y: dragState.y, rotate: dragState.rot, scale: dragState.scale, opacity: 1 }}
                 transition={{ duration: 0.3 }}
                 className="absolute inset-0 cursor-grab select-none touch-none"
                 style={{ touchAction: 'none' }}

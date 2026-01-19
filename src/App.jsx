@@ -66,7 +66,7 @@ const AnimatedRoutes = () => {
         <Route
           path="/create-profile"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requireIncompleteProfile>
               <FadeIn>
                 <CreateProfile />
               </FadeIn>
