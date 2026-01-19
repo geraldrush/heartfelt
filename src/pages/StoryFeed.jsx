@@ -612,7 +612,13 @@ const StoryFeed = () => {
           )}
 
           {/* Stories Content */}
-          <div className="flex flex-col items-center h-[calc(100dvh-160px)] md:h-auto" style={{ height: 'calc(100dvh - 160px)' }}>
+          <div 
+            className="flex flex-col items-center h-[calc(100vh-160px)] md:h-auto"
+            style={{
+              '--card-height': 'calc(100dvh - 160px)',
+              height: 'var(--card-height, calc(100vh - 160px))'
+            }}
+          >
             {loading ? (
               <div className="flex items-center justify-center h-full w-full max-w-md">
                 <div className="grid gap-8">

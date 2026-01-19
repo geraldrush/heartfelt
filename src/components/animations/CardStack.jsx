@@ -74,8 +74,7 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
                 initial={{ opacity: 1, scale: 1 }}
                 animate={{ x: dragState.x, y: dragState.y, rotate: dragState.rot, scale: dragState.scale, opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                className="absolute inset-0 cursor-grab select-none touch-none"
-                style={{ touchAction: 'none' }}
+                className="absolute inset-0 cursor-grab select-none"
               >
                 <motion.div
                   className="relative h-full w-full overflow-hidden rounded-[32px] border border-rose-100 bg-white shadow-2xl"
