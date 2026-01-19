@@ -32,6 +32,21 @@ const ImageGalleryViewer = ({ storyId, initialImageUrl, onClose, isOpen = true }
   }, [storyId, initialImageUrl]);
 
   useEffect(() => {
+    // Preload adjacent images
+    if (images.length > 1) {
+      const preloadIndexes = [
+        currentIndex - 1,
+        currentIndex + 1,
+      ].filter(i => i >= 0 && i < images.length);
+
+      preloadIndexes.forEach(index => {
+        const img = new Image();
+        img.src = images[index];
+      });
+    }
+  }, [currentIndex, images]);
+
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowLeft') handlePrevious();
@@ -86,12 +101,12 @@ const ImageGalleryViewer = ({ storyId, initialImageUrl, onClose, isOpen = true }
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[70] bg-black backdrop-blur-sm"
+      className="fixed inset-0 z-[70] bg-black backdrop-blur-sm touch-none"
     >
       {/* Close Button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 glass-card rounded-full w-12 h-12 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+        className="absolute top-[calc(1rem+env(safe-area-inset-top,0px))] right-4 z-10 glass-card rounded-full w-12 h-12 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
       >
         <FaTimes />
       </button>
@@ -117,7 +132,7 @@ const ImageGalleryViewer = ({ storyId, initialImageUrl, onClose, isOpen = true }
 
       {/* Image Counter */}
       {images.length > 1 && (
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 glass-card rounded-full px-4 py-2 text-white text-sm font-semibold pb-[env(safe-area-inset-bottom)]">
+        <div className="absolute bottom-[calc(2rem+env(safe-area-inset-bottom,0px))] left-1/2 transform -translate-x-1/2 glass-card rounded-full px-4 py-2 text-white text-sm font-semibold">
           {currentIndex + 1} / {images.length}
         </div>
       )}
@@ -125,7 +140,7 @@ const ImageGalleryViewer = ({ storyId, initialImageUrl, onClose, isOpen = true }
       {/* Image Container */}
       <div
         {...bind()}
-        className="flex items-center justify-center h-full w-full p-4"
+        className="flex items-center justify-center h-full w-full p-4 touch-none"
       >
         {loading ? (
           <LoadingSpinner label="Loading images..." />
@@ -134,11 +149,21 @@ const ImageGalleryViewer = ({ storyId, initialImageUrl, onClose, isOpen = true }
             key={currentIndex}
             src={images[currentIndex]}
             alt={`Story image ${currentIndex + 1}`}
-            className="max-h-[80vh] md:max-h-[90vh] max-w-[90vw] w-full object-contain"
+            loading="lazy"
+            decoding="async"
+            className="max-h-[80vh] md:max-h-[90vh] max-w-[90vw] w-full object-contain transition-opacity duration-300"
+            style={{
+              backgroundColor: '#1a1a1a',
+              opacity: 0,
+            }}
             animate={{ x: dragState.x, opacity: 1 }}
             transition={{ duration: 0.3 }}
+            onLoad={(e) => {
+              e.target.style.opacity = '1';
+            }}
             onError={(e) => {
               e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBhdmFpbGFibGU8L3RleHQ+PC9zdmc+';
+              e.target.style.opacity = '0.5';
             }}
           />
         )}

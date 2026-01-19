@@ -14,6 +14,7 @@ import HeartAnimation from '../components/animations/HeartAnimation.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ImageGalleryViewer from '../components/ImageGalleryViewer.jsx';
+import { triggerHaptic } from '../utils/haptics.js';
 
 const PAGE_SIZE = 20;
 
@@ -229,10 +230,12 @@ const StoryFeed = () => {
 
   const handleConnect = async (story) => {
     if (tokenBalance !== null && tokenBalance < 5) {
+      triggerHaptic('error');
       setError('You need at least 5 tokens to send a connection request.');
       return;
     }
 
+    triggerHaptic('success');
     setHeartTrigger((prev) => prev + 1);
     removeStory(story, 'connect');
     setTokenBalance((prev) => (prev !== null ? prev - 5 : prev));
@@ -251,10 +254,12 @@ const StoryFeed = () => {
 
   const handleAccept = async (story) => {
     if (tokenBalance !== null && tokenBalance < 3) {
+      triggerHaptic('error');
       setError('You need at least 3 tokens to accept a connection request.');
       return;
     }
 
+    triggerHaptic('success');
     removeStory(story, 'accept');
     setTokenBalance((prev) => (prev !== null ? prev - 3 : prev));
 
@@ -271,6 +276,7 @@ const StoryFeed = () => {
   };
 
   const handlePass = (story) => {
+    triggerHaptic('light');
     removeStory(story, 'pass');
   };
 
@@ -291,6 +297,8 @@ const StoryFeed = () => {
     if (!last) {
       return;
     }
+    
+    triggerHaptic('medium');
     setSwipeHistory((prev) => prev.slice(1));
     restoreStory(last.story);
   };
@@ -324,7 +332,7 @@ const StoryFeed = () => {
   const renderCard = (story) => (
     <div className="glass-card rounded-3xl overflow-hidden shadow-2xl h-full flex flex-col relative">
       {/* Mobile Action Buttons */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 flex gap-4 md:hidden">
+      <div className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-1/2 transform -translate-x-1/2 z-10 flex gap-4 md:hidden">
         <button
           type="button"
           onClick={() => handlePass(story)}
@@ -349,16 +357,27 @@ const StoryFeed = () => {
         </button>
       </div>
       
-      <div className="relative h-[50%] md:h-80" onClick={(e) => handleImageClick(story, e)}>
+      <div className="relative h-[55%] sm:h-[50%] md:h-80" onClick={(e) => handleImageClick(story, e)}>
         {story.blurred_image_url ? (
           <img
             src={story.blurred_image_url}
             alt="Story"
             loading="lazy"
-            className="h-full w-full object-cover"
+            decoding="async"
+            className="h-full w-full object-cover transition-opacity duration-300"
+            style={{
+              backgroundImage: 'linear-gradient(to bottom right, rgb(233, 213, 255), rgb(251, 207, 232))',
+              backgroundSize: 'cover',
+            }}
+            onLoad={(e) => {
+              e.target.style.opacity = '1';
+            }}
+            onError={(e) => {
+              e.target.style.opacity = '0.5';
+            }}
           />
         ) : (
-          <div className="h-full w-full bg-gradient-to-br from-purple-200 to-pink-200" />
+          <div className="h-full w-full bg-gradient-to-br from-purple-200 to-pink-200 animate-pulse" />
         )}
         
         {/* Gradient overlay */}
@@ -447,7 +466,7 @@ const StoryFeed = () => {
   );
 
   return (
-    <div className="h-screen md:min-h-screen overflow-hidden md:overflow-auto bg-premium-mesh relative">
+    <div className="h-screen md:min-h-screen overflow-hidden md:overflow-auto bg-premium-mesh relative pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
       {/* Background Elements */}
       <div className="fixed inset-0 bg-gradient-to-br from-purple-900/10 via-pink-900/10 to-rose-900/10" />
       <div className="absolute top-40 left-20 w-64 h-64 bg-purple-500/5 rounded-full blur-2xl md:blur-3xl animate-pulse" />
@@ -479,7 +498,7 @@ const StoryFeed = () => {
           </motion.div>
 
           {/* Mobile Token Badge */}
-          <div className="fixed top-4 right-4 z-40 md:hidden glass-card rounded-full px-4 py-2 flex items-center gap-2">
+          <div className="fixed top-[calc(1rem+env(safe-area-inset-top,0px))] right-4 z-40 md:hidden glass-card rounded-full px-4 py-2 flex items-center gap-2">
             <span className="text-lg">🪙</span>
             <span className="text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
               {tokenBalance === null ? '...' : tokenBalance}
@@ -490,7 +509,7 @@ const StoryFeed = () => {
           <button
             type="button"
             onClick={() => setShowFilters((prev) => !prev)}
-            className="fixed top-4 left-4 z-40 md:hidden glass-card rounded-full w-12 h-12 flex items-center justify-center"
+            className="fixed top-[calc(1rem+env(safe-area-inset-top,0px))] left-4 z-40 md:hidden glass-card rounded-full w-12 h-12 flex items-center justify-center"
           >
             <FaFilter className="text-purple-600" />
             {activeFilterCount > 0 && (
@@ -655,7 +674,7 @@ const StoryFeed = () => {
           )}
 
           {/* Stories Content */}
-          <div className="flex flex-col items-center h-[calc(100dvh-140px)] md:h-auto pt-16 md:pt-0 stories-container">
+          <div className="flex flex-col items-center h-[calc(100dvh-120px)] sm:h-[calc(100dvh-140px)] md:h-auto pt-16 md:pt-0 stories-container">
             {loading ? (
               <div className="flex items-center justify-center h-full w-full max-w-md">
                 <div className="grid gap-8">
@@ -673,6 +692,7 @@ const StoryFeed = () => {
                   onSwipeUp={(story) => setSelectedStory(story)}
                   onCardClick={(story) => setSelectedStory(story)}
                   renderCard={renderCard}
+                  disabled={showImageViewer || selectedStory !== null}
                 />
                 <HeartAnimation trigger={heartTrigger} />
               </div>
@@ -770,7 +790,7 @@ const StoryFeed = () => {
           onClick={handleUndo}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="fixed bottom-[120px] left-4 z-40 glass-card rounded-full px-4 py-2 text-sm font-semibold text-gray-600 shadow-lg md:bottom-12 md:left-6"
+          className="fixed bottom-[calc(120px+env(safe-area-inset-bottom,0px))] left-4 z-40 glass-card rounded-full px-4 py-2 text-sm font-semibold text-gray-600 shadow-lg md:bottom-12 md:left-6"
         >
           ↶ Undo
         </motion.button>

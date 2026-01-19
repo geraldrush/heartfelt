@@ -96,3 +96,65 @@ a {
     height: calc(100vh - 140px) !important;
   }
 }
+
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Small phones (iPhone SE, etc.) */
+@media (max-height: 700px) {
+  .stories-container {
+    height: calc(100dvh - 100px) !important;
+  }
+}
+
+/* Large tablets/iPad */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .stories-container {
+    height: auto !important;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+}
+
+img[loading="lazy"] {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+img[loading="lazy"].loaded {
+  opacity: 1;
+}
+
+/* Prevent layout shift when keyboard appears */
+@supports (height: 100dvh) {
+  .stories-container {
+    height: calc(100dvh - 140px);
+  }
+}
+
+/* Prevent zoom on input focus (iOS) */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Smooth transitions for viewport changes */
+.stories-container {
+  transition: height 0.2s ease-out;
+}

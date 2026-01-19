@@ -2,10 +2,11 @@ import React, { useMemo } from 'react';
 import { useDrag } from 'react-use-gesture';
 import { motion } from 'framer-motion';
 import { FaArrowUp, FaHeart, FaTimes } from 'react-icons/fa';
+import { triggerHaptic } from '../../utils/haptics.js';
 
 const SWIPE_THRESHOLD = 150;
 
-const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, onCardClick }) => {
+const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, onCardClick, disabled = false }) => {
   const [dragState, setDragState] = React.useState({ x: 0, y: 0, rot: 0, scale: 1 });
   const [isVisible, setIsVisible] = React.useState(true);
 
@@ -14,9 +15,14 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
   }, [items]);
 
   const bind = useDrag(({ down, movement: [mx, my], tap }) => {
+    if (disabled) return; // Prevent gestures when disabled
     if (tap) return; // Ignore tap events
     
     if (down) {
+      // Light haptic on drag start
+      if (Math.abs(mx) > 10 || Math.abs(my) > 10) {
+        triggerHaptic('light');
+      }
       setDragState({ x: mx, y: my, rot: mx / 15, scale: 1.02 });
       return;
     }
@@ -26,6 +32,8 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
     const swipeUp = my < -SWIPE_THRESHOLD;
 
     if (swipeRight || swipeLeft || swipeUp) {
+      // Medium haptic on successful swipe
+      triggerHaptic('medium');
       const toX = swipeRight ? 500 : swipeLeft ? -500 : 0;
       const toY = swipeUp ? -500 : 0;
       setDragState({ x: toX, y: toY, rot: mx / 10, scale: 1 });
@@ -55,7 +63,7 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
   }
 
   return (
-    <div className="relative h-full md:h-[520px] w-full max-w-md mx-auto">
+    <div className="relative h-[calc(100dvh-180px)] md:h-[520px] w-full max-w-md mx-auto">
       {visibleCards
         .slice()
         .reverse()
@@ -69,7 +77,7 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
             return (
               <motion.div
                 key={item.story_id || item.id}
-                {...bind()}
+                {...(!disabled ? bind() : {})}
                 onClick={() => onCardClick?.(item)}
                 initial={{ opacity: 1, scale: 1 }}
                 animate={{ x: dragState.x, y: dragState.y, rotate: dragState.rot, scale: dragState.scale, opacity: 1 }}
