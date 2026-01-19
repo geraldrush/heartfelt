@@ -613,10 +613,10 @@ const StoryFeed = () => {
 
           {/* Stories Content */}
           <div 
-            className="flex flex-col items-center h-[calc(100vh-160px)] md:h-auto"
+            className="flex flex-col items-center h-[calc(100vh-200px)] md:h-auto pt-16 md:pt-0"
             style={{
-              '--card-height': 'calc(100dvh - 160px)',
-              height: 'var(--card-height, calc(100vh - 160px))'
+              '--card-height': 'calc(100dvh - 200px)',
+              height: 'var(--card-height, calc(100vh - 200px))'
             }}
           >
             {loading ? (
