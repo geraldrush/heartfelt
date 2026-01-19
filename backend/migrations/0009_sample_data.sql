@@ -1,0 +1,42 @@
+-- Sample seed data for development
+INSERT OR IGNORE INTO users (id, email, full_name, age, gender, location_city_id, religion, race, education, nationality, has_kids, num_kids, smoker, drinks_alcohol, created_at, token_balance) VALUES
+  ('user1', 'sarah@example.com', 'Sarah Johnson', 28, 'female', 'cpt', 'christian', 'white', 'bachelor', 'South Africa', false, 0, false, true, datetime('now'), 50),
+  ('user2', 'mike@example.com', 'Michael Chen', 32, 'male', 'jhb', 'buddhist', 'indian_asian', 'masters', 'South Africa', false, 0, false, false, datetime('now'), 75),
+  ('user3', 'priya@example.com', 'Priya Patel', 26, 'female', 'dbn', 'hindu', 'indian_asian', 'bachelor', 'South Africa', false, 0, false, true, datetime('now'), 30),
+  ('user4', 'james@example.com', 'James Williams', 35, 'male', 'cpt', 'christian', 'black_african', 'diploma', 'South Africa', true, 2, false, true, datetime('now'), 40),
+  ('user5', 'zara@example.com', 'Zara Ndlovu', 29, 'female', 'jhb', 'christian', 'black_african', 'honours', 'South Africa', false, 0, false, false, datetime('now'), 60),
+  ('user6', 'david@example.com', 'David Smith', 31, 'male', 'pe', 'atheist', 'white', 'masters', 'South Africa', false, 0, true, true, datetime('now'), 45),
+  ('user7', 'amara@example.com', 'Amara Okafor', 27, 'female', 'dbn', 'christian', 'black_african', 'bachelor', 'Nigeria', false, 0, false, true, datetime('now'), 55),
+  ('user8', 'ryan@example.com', 'Ryan Thompson', 33, 'male', 'cpt', 'agnostic', 'coloured', 'diploma', 'South Africa', true, 1, false, true, datetime('now'), 35);
+
+INSERT OR IGNORE INTO stories (id, user_id, story_text, image_url, blurred_image_url, created_at, is_active) VALUES
+  ('story1', 'user1', 'Love hiking Table Mountain at sunrise! Looking for someone who shares my passion for adventure and early mornings. I believe the best conversations happen over coffee with a view. What''s your favorite way to start the day?', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&blur=20', datetime('now', '-2 hours'), true),
+  ('story2', 'user2', 'Tech entrepreneur by day, chef by night. I find peace in creating both digital solutions and culinary masterpieces. Seeking someone who appreciates good food and meaningful conversations about life''s possibilities.', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&blur=20', datetime('now', '-4 hours'), true),
+  ('story3', 'user3', 'Dance is my language of love! From classical Indian to contemporary, movement tells stories words cannot. Looking for someone who appreciates art, culture, and isn''t afraid to dance in the rain with me.', 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400', 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&blur=20', datetime('now', '-6 hours'), true),
+  ('story4', 'user4', 'Single dad raising two amazing kids who keep me on my toes! I believe in building a legacy of love and laughter. Seeking a partner who understands that family comes first and love multiplies when shared.', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&blur=20', datetime('now', '-8 hours'), true),
+  ('story5', 'user5', 'Marketing maven with a heart for social impact. I spend weekends volunteering and weekdays building brands that matter. Looking for someone who believes business can be a force for good in the world.', 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400', 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&blur=20', datetime('now', '-10 hours'), true),
+  ('story6', 'user6', 'Photographer capturing life''s beautiful moments. I see art in everyday scenes and believe every person has a story worth telling. Seeking someone who appreciates the beauty in simplicity and isn''t camera shy!', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&blur=20', datetime('now', '-12 hours'), true),
+  ('story7', 'user7', 'Doctor by profession, healer by heart. I believe in the power of compassion and human connection. Looking for someone who values kindness, has a curious mind, and isn''t afraid of deep conversations about life.', 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400', 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&blur=20', datetime('now', '-14 hours'), true),
+  ('story8', 'user8', 'Musician and music teacher sharing the gift of melody. My son and I jam together every evening - he''s my biggest fan! Seeking someone who appreciates music''s power to heal and bring people together.', 'https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=400', 'https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=400&blur=20', datetime('now', '-16 hours'), true);
+
+-- Add some sample face metadata
+INSERT OR IGNORE INTO face_metadata (story_id, face_detected, face_count, blur_applied, processing_status) VALUES
+  ('story1', true, 1, true, 'completed'),
+  ('story2', true, 1, true, 'completed'),
+  ('story3', true, 1, true, 'completed'),
+  ('story4', true, 1, true, 'completed'),
+  ('story5', true, 1, true, 'completed'),
+  ('story6', true, 1, true, 'completed'),
+  ('story7', true, 1, true, 'completed'),
+  ('story8', true, 1, true, 'completed');
+
+-- Add some sample connection requests
+INSERT OR IGNORE INTO connection_requests (id, sender_id, receiver_id, message, status, created_at) VALUES
+  ('req1', 'user2', 'user1', 'Hi Sarah! I love your hiking photos. Would love to explore Table Mountain together sometime!', 'pending', datetime('now', '-1 hour')),
+  ('req2', 'user4', 'user3', 'Your dance videos are amazing! I''d love to learn more about Indian classical dance.', 'accepted', datetime('now', '-3 hours')),
+  ('req3', 'user6', 'user5', 'Your work in social impact marketing really resonates with me. Would love to connect!', 'pending', datetime('now', '-5 hours')),
+  ('req4', 'user8', 'user7', 'As a fellow parent, I admire your dedication to both family and career. Coffee sometime?', 'accepted', datetime('now', '-7 hours'));
+
+-- Update token balances after connections
+UPDATE users SET token_balance = token_balance - 5 WHERE id IN ('user2', 'user4', 'user6', 'user8');
+UPDATE users SET token_balance = token_balance - 3 WHERE id IN ('user3', 'user7');

@@ -2,15 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  }
+:root {
+  --color-primary: #f43f5e;
+  --color-primary-dark: #be123c;
+  --color-success: #10b981;
+  --color-success-dark: #047857;
+  --color-amber: #f59e0b;
+  --color-slate: #0f172a;
+  --color-slate-mid: #475569;
+  --color-slate-light: #f8fafc;
+  --color-muted: #94a3b8;
+  --font-sans: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Fraunces', 'Inter', serif;
+  --body-bg: #f8fafc;
+}
 
-  h1,
-  h2,
-  h3,
-  h4 {
-    font-family: 'Fraunces', serif;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--body-bg);
+  color: var(--color-slate);
+  letter-spacing: 0.01em;
+  min-height: 100vh;
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+.display-font {
+  font-family: var(--font-display);
+  color: var(--color-slate);
+}
+
+a {
+  color: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--body-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.25rem 3rem;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+  border-radius: 12px;
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 15px 30px rgba(244, 63, 94, 0.25);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 40px rgba(244, 63, 94, 0.35);
+}
+
+.fade-in {
+  animation: fade 0.4s ease forwards;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

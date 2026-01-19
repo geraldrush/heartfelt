@@ -26,6 +26,23 @@ payments.get('/packages', async (c) => {
 });
 
 payments.post('/initiate', authMiddleware, async (c) => {
+  // CSRF protection for payment initiation
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+  
+  const raw = c.env.CORS_ORIGIN || '';
+  const allowed = raw.split(',').map(value => value.trim()).filter(Boolean);
+  const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
+  const list = allowed.length > 0 ? allowed : defaultOrigins;
+  
+  if (origin && !list.includes(origin)) {
+    return c.json({ error: 'Forbidden origin' }, 403);
+  }
+  
+  if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
+    return c.json({ error: 'Invalid referer' }, 403);
+  }
+
   const body = await c.req.json().catch(() => null);
   const parsed = paymentInitiateSchema.safeParse(body);
 
@@ -226,6 +243,23 @@ payments.post('/notify', async (c) => {
 });
 
 payments.post('/refund/:paymentId', async (c) => {
+  // CSRF protection for refund operations
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+  
+  const raw = c.env.CORS_ORIGIN || '';
+  const allowed = raw.split(',').map(value => value.trim()).filter(Boolean);
+  const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
+  const list = allowed.length > 0 ? allowed : defaultOrigins;
+  
+  if (origin && !list.includes(origin)) {
+    return c.json({ error: 'Forbidden origin' }, 403);
+  }
+  
+  if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
+    return c.json({ error: 'Invalid referer' }, 403);
+  }
+
   const secret = c.req.header('x-internal-secret');
   const expectedSecret = c.env.PAYFAST_REFUND_SECRET;
 

@@ -28,6 +28,13 @@ export class ChatRoom {
     const url = new URL(request.url);
     const connectionId = url.pathname.split('/').pop();
 
+    // Validate origin for cross-origin security
+    const origin = request.headers.get('Origin');
+    const allowedOrigins = this.env.CORS_ORIGIN?.split(',').map(o => o.trim()) || [];
+    if (origin && !allowedOrigins.includes(origin)) {
+      return new Response('Forbidden origin', { status: 403 });
+    }
+
     const userId = await this.authenticate(request);
     const isAllowed = await verifyUserInConnection(this.env.DB, connectionId, userId);
     if (!isAllowed) {
@@ -61,7 +68,27 @@ export class ChatRoom {
 
     server.addEventListener('message', async (event) => {
       try {
+        // Validate message size to prevent DoS
+        if (event.data.length > 10000) {
+          server.send(JSON.stringify({ type: 'error', message: 'Message too large.' }));
+          return;
+        }
+        
         const payload = JSON.parse(event.data);
+        
+        // Validate payload structure
+        if (!payload || typeof payload !== 'object' || !payload.type) {
+          server.send(JSON.stringify({ type: 'error', message: 'Invalid message format.' }));
+          return;
+        }
+        
+        // Whitelist allowed message types
+        const allowedTypes = ['chat_message', 'typing_indicator', 'delivery_confirmation', 'read_receipt', 'pong'];
+        if (!allowedTypes.includes(payload.type)) {
+          server.send(JSON.stringify({ type: 'error', message: 'Invalid message type.' }));
+          return;
+        }
+        
         await this.handleMessage(payload, userId, connectionId);
       } catch (error) {
         server.send(JSON.stringify({ type: 'error', message: 'Invalid message format.' }));
@@ -77,7 +104,22 @@ export class ChatRoom {
       this.cleanupConnection(userId);
     });
 
-    return new Response(null, { status: 101, webSocket: client });
+    // CSRF protection - validate referer header
+    const referer = request.headers.get('Referer');
+    if (referer && !allowedOrigins.some(origin => referer.startsWith(origin))) {
+      return new Response('Invalid referer', { status: 403 });
+    }
+
+    return new Response(null, { 
+      status: 101, 
+      webSocket: client,
+      headers: {
+        'Access-Control-Allow-Origin': origin || '*',
+        'Access-Control-Allow-Credentials': 'true',
+        'X-Frame-Options': 'DENY',
+        'X-Content-Type-Options': 'nosniff'
+      }
+    });
   }
 
   broadcast(message, excludeUserId) {

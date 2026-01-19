@@ -27,13 +27,38 @@ app.use(
         return list;
       }
 
-      return list.includes(origin) ? origin : '';
+      return list.includes(origin) ? origin : null;
     },
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
     credentials: true,
   })
 );
+
+// CSRF protection middleware
+app.use('/*', async (c, next) => {
+  const method = c.req.method;
+  if (['POST', 'PUT', 'DELETE'].includes(method)) {
+    const origin = c.req.header('Origin');
+    const referer = c.req.header('Referer');
+    
+    const raw = c.env.CORS_ORIGIN || '';
+    const allowed = raw
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const list = allowed.length > 0 ? allowed : defaultOrigins;
+    
+    if (origin && !list.includes(origin)) {
+      return c.json({ error: 'Forbidden origin' }, 403);
+    }
+    
+    if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
+      return c.json({ error: 'Invalid referer' }, 403);
+    }
+  }
+  await next();
+});
 
 app.get('/health', (c) => c.json({ status: 'ok' }));
 

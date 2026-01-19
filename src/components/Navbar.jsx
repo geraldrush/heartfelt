@@ -7,6 +7,7 @@ import { FaComments, FaFire, FaHome, FaPlusCircle, FaUser } from 'react-icons/fa
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUnreadCounts } from '../utils/api.js';
+import { FaSignOutAlt } from 'react-icons/fa';
 import TokenSparkle from './animations/TokenSparkle.jsx';
 
 const MotionLink = motion.create(Link);
@@ -46,8 +47,15 @@ const Navbar = () => {
   }, [user]);
 
   const handleLogout = () => {
+    const shouldProceed =
+      typeof window !== 'undefined'
+        ? window.confirm('Are you sure you want to sign out?')
+        : true;
+    if (!shouldProceed) {
+      return;
+    }
     logout();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   const isActive = (path) => {
@@ -66,6 +74,7 @@ const Navbar = () => {
     { to: '/create-profile', label: 'Create', icon: FaPlusCircle },
     { to: '/connections', label: 'Chat', icon: FaComments, badge: unreadTotal },
     { to: '/profile', label: 'Profile', icon: FaUser },
+    { action: handleLogout, label: 'Logout', icon: FaSignOutAlt },
   ];
 
   return (
@@ -130,6 +139,19 @@ const Navbar = () => {
         >
           {mobileItems.map((item) => {
             const Icon = item.icon;
+            if (item.action) {
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={item.action}
+                  className="relative flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs font-semibold text-slate-500 transition hover:text-rose-500"
+                >
+                  <Icon className="text-lg" />
+                  {item.label}
+                </button>
+              );
+            }
             const active = isActive(item.to);
             return (
               <MotionLink

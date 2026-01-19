@@ -35,6 +35,23 @@ function userResponse(user) {
 }
 
 auth.post('/email-signup', async (c) => {
+  // CSRF protection for state-changing auth operations
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+  
+  const raw = c.env.CORS_ORIGIN || '';
+  const allowed = raw.split(',').map(value => value.trim()).filter(Boolean);
+  const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
+  const list = allowed.length > 0 ? allowed : defaultOrigins;
+  
+  if (origin && !list.includes(origin)) {
+    return c.json({ error: 'Forbidden origin' }, 403);
+  }
+  
+  if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
+    return c.json({ error: 'Invalid referer' }, 403);
+  }
+
   const body = await c.req.json().catch(() => null);
   const parsed = emailSignupSchema.safeParse(body);
 
@@ -129,6 +146,23 @@ auth.post('/email-login', async (c) => {
 });
 
 auth.post('/google', async (c) => {
+  // CSRF protection for state-changing auth operations
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+  
+  const raw = c.env.CORS_ORIGIN || '';
+  const allowed = raw.split(',').map(value => value.trim()).filter(Boolean);
+  const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
+  const list = allowed.length > 0 ? allowed : defaultOrigins;
+  
+  if (origin && !list.includes(origin)) {
+    return c.json({ error: 'Forbidden origin' }, 403);
+  }
+  
+  if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
+    return c.json({ error: 'Invalid referer' }, 403);
+  }
+
   const body = await c.req.json().catch(() => null);
   const parsed = googleAuthSchema.safeParse(body);
 
@@ -139,11 +173,23 @@ auth.post('/google', async (c) => {
     );
   }
 
-  const tokenInfoResponse = await fetch(
-    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(
-      parsed.data.credential
-    )}`
-  );
+  // SSRF protection - validate and restrict external requests
+  const allowedGoogleUrl = 'https://oauth2.googleapis.com/tokeninfo';
+  const tokenInfoUrl = new URL(allowedGoogleUrl);
+  tokenInfoUrl.searchParams.set('id_token', parsed.data.credential);
+  
+  // Ensure we're only making requests to Google's OAuth endpoint
+  if (tokenInfoUrl.origin !== 'https://oauth2.googleapis.com' || 
+      !tokenInfoUrl.pathname.startsWith('/tokeninfo')) {
+    return c.json({ error: 'Invalid request destination.' }, 400);
+  }
+
+  const tokenInfoResponse = await fetch(tokenInfoUrl.toString(), {
+    method: 'GET',
+    headers: {
+      'User-Agent': 'Heartfelt-Backend/1.0'
+    }
+  });
 
   if (!tokenInfoResponse.ok) {
     return c.json({ error: 'Invalid Google credential.' }, 401);

@@ -22,6 +22,23 @@ stories.get('/reference/data', async (c) => {
 });
 
 stories.post('/upload-image', authMiddleware, async (c) => {
+  // CSRF protection for file upload operations
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+  
+  const raw = c.env.CORS_ORIGIN || '';
+  const allowed = raw.split(',').map(value => value.trim()).filter(Boolean);
+  const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
+  const list = allowed.length > 0 ? allowed : defaultOrigins;
+  
+  if (origin && !list.includes(origin)) {
+    return c.json({ error: 'Forbidden origin' }, 403);
+  }
+  
+  if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
+    return c.json({ error: 'Invalid referer' }, 403);
+  }
+
   const body = await c.req.parseBody();
   const originalFile = body?.image_original;
   const blurredFile = body?.image_blurred;
@@ -78,6 +95,23 @@ stories.post('/upload-image', authMiddleware, async (c) => {
 });
 
 stories.post('/create-story', authMiddleware, async (c) => {
+  // CSRF protection for story creation
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+  
+  const raw = c.env.CORS_ORIGIN || '';
+  const allowed = raw.split(',').map(value => value.trim()).filter(Boolean);
+  const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
+  const list = allowed.length > 0 ? allowed : defaultOrigins;
+  
+  if (origin && !list.includes(origin)) {
+    return c.json({ error: 'Forbidden origin' }, 403);
+  }
+  
+  if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
+    return c.json({ error: 'Invalid referer' }, 403);
+  }
+
   const body = await c.req.json().catch(() => null);
   const parsed = createStorySchema.safeParse(body);
 
@@ -112,6 +146,23 @@ stories.post('/create-story', authMiddleware, async (c) => {
 });
 
 stories.put('/update-profile', authMiddleware, async (c) => {
+  // CSRF protection for profile updates
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+  
+  const raw = c.env.CORS_ORIGIN || '';
+  const allowed = raw.split(',').map(value => value.trim()).filter(Boolean);
+  const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
+  const list = allowed.length > 0 ? allowed : defaultOrigins;
+  
+  if (origin && !list.includes(origin)) {
+    return c.json({ error: 'Forbidden origin' }, 403);
+  }
+  
+  if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
+    return c.json({ error: 'Invalid referer' }, 403);
+  }
+
   const body = await c.req.json().catch(() => null);
   const parsed = updateProfileSchema.safeParse(body);
 

@@ -1,56 +1,59 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   createStory,
   getReferenceData,
   updateProfile,
   uploadStoryImage,
-} from '../utils/api.js';
-import { useAuth } from '../context/AuthContext.jsx';
-import { detectAndBlurFaces } from '../utils/faceBlur.js';
+} from "../utils/api.js";
+import { useAuth } from "../context/AuthContext.jsx";
+import { detectAndBlurFaces } from "../utils/faceBlur.js";
 
 const stepTitles = [
-  'Personal Details',
-  'Lifestyle & Family',
-  'Location',
-  'Your Story',
+  "Personal Details",
+  "Lifestyle & Family",
+  "Location",
+  "Your Story",
 ];
 
 const MAX_IMAGES = 5;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const CreateProfile = () => {
   const navigate = useNavigate();
   const { updateUser, user } = useAuth();
   const [step, setStep] = useState(1);
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('');
-  const [nationality, setNationality] = useState('');
-  const [religion, setReligion] = useState('');
-  const [race, setRace] = useState('');
-  const [education, setEducation] = useState('');
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
+  const [nationality, setNationality] = useState("");
+  const [religion, setReligion] = useState("");
+  const [race, setRace] = useState("");
+  const [education, setEducation] = useState("");
   const [hasKids, setHasKids] = useState(null);
-  const [numKids, setNumKids] = useState('');
+  const [numKids, setNumKids] = useState("");
   const [smoker, setSmoker] = useState(null);
   const [drinksAlcohol, setDrinksAlcohol] = useState(null);
-  const [locationCity, setLocationCity] = useState('');
-  const [locationProvince, setLocationProvince] = useState('');
-  const [storyText, setStoryText] = useState('');
+  const [locationCity, setLocationCity] = useState("");
+  const [locationProvince, setLocationProvince] = useState("");
+  const [storyText, setStoryText] = useState("");
   const [images, setImages] = useState([]);
   const [errors, setErrors] = useState({});
-  const [formError, setFormError] = useState('');
+  const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
-  const [statusMessage, setStatusMessage] = useState('');
+  const [uploadProgress, setUploadProgress] = useState({
+    current: 0,
+    total: 0,
+  });
+  const [statusMessage, setStatusMessage] = useState("");
   const [referenceData, setReferenceData] = useState(null);
   const [referenceLoading, setReferenceLoading] = useState(true);
-  const [referenceError, setReferenceError] = useState('');
+  const [referenceError, setReferenceError] = useState("");
   const imagesRef = useRef([]);
 
   const updateImageById = (id, updater) => {
     setImages((prev) =>
-      prev.map((image) => (image.id === id ? updater(image) : image))
+      prev.map((image) => (image.id === id ? updater(image) : image)),
     );
   };
 
@@ -59,7 +62,7 @@ const CreateProfile = () => {
 
     const fetchReferenceData = async () => {
       setReferenceLoading(true);
-      setReferenceError('');
+      setReferenceError("");
       try {
         const data = await getReferenceData();
         if (mounted) {
@@ -67,7 +70,7 @@ const CreateProfile = () => {
         }
       } catch (error) {
         if (mounted) {
-          setReferenceError(error.message || 'Failed to load reference data.');
+          setReferenceError(error.message || "Failed to load reference data.");
         }
       } finally {
         if (mounted) {
@@ -95,49 +98,49 @@ const CreateProfile = () => {
 
   const inputClass = (field) =>
     `mt-2 w-full rounded-xl border px-4 py-3 text-sm focus:border-emerald-400 focus:outline-none ${
-      errors[field] ? 'border-red-300' : 'border-slate-200'
+      errors[field] ? "border-red-300" : "border-slate-200"
     }`;
 
   const validateStep1 = () => {
     const nextErrors = {};
     if (!age || Number(age) < 18) {
-      nextErrors.age = 'Please enter a valid age (18+).';
+      nextErrors.age = "Please enter a valid age (18+).";
     }
     if (!gender) {
-      nextErrors.gender = 'Please select a gender.';
+      nextErrors.gender = "Please select a gender.";
     }
     if (!nationality) {
-      nextErrors.nationality = 'Please select a nationality.';
+      nextErrors.nationality = "Please select a nationality.";
     }
     if (!religion) {
-      nextErrors.religion = 'Please select a religion.';
+      nextErrors.religion = "Please select a religion.";
     }
     if (!race) {
-      nextErrors.race = 'Please select a race.';
+      nextErrors.race = "Please select a race.";
     }
     if (!education) {
-      nextErrors.education = 'Please select an education level.';
+      nextErrors.education = "Please select an education level.";
     }
     return nextErrors;
   };
 
   const validateStep2 = () => {
     const nextErrors = {};
-    if (typeof hasKids !== 'boolean') {
-      nextErrors.has_kids = 'Please tell us if you have kids.';
+    if (typeof hasKids !== "boolean") {
+      nextErrors.has_kids = "Please tell us if you have kids.";
     }
     const kidsCount = Number(numKids || 0);
     if (![0, 1, 2, 3].includes(kidsCount)) {
-      nextErrors.num_kids = 'Please select a valid number of kids.';
+      nextErrors.num_kids = "Please select a valid number of kids.";
     }
     if (hasKids && kidsCount === 0) {
-      nextErrors.num_kids = 'Please select the number of kids.';
+      nextErrors.num_kids = "Please select the number of kids.";
     }
-    if (typeof smoker !== 'boolean') {
-      nextErrors.smoker = 'Please select an option.';
+    if (typeof smoker !== "boolean") {
+      nextErrors.smoker = "Please select an option.";
     }
-    if (typeof drinksAlcohol !== 'boolean') {
-      nextErrors.drinks_alcohol = 'Please select an option.';
+    if (typeof drinksAlcohol !== "boolean") {
+      nextErrors.drinks_alcohol = "Please select an option.";
     }
     return nextErrors;
   };
@@ -145,7 +148,7 @@ const CreateProfile = () => {
   const validateStep3 = () => {
     const nextErrors = {};
     if (!locationCity || !locationProvince) {
-      nextErrors.location_city = 'Please select your city.';
+      nextErrors.location_city = "Please select your city.";
     }
     return nextErrors;
   };
@@ -153,13 +156,13 @@ const CreateProfile = () => {
   const validateStep4 = () => {
     const nextErrors = {};
     if (storyText.trim().length < 50) {
-      nextErrors.story_text = 'Story must be at least 50 characters.';
+      nextErrors.story_text = "Story must be at least 50 characters.";
     }
     if (images.length < 1) {
-      nextErrors.images = 'Upload at least one photo.';
+      nextErrors.images = "Upload at least one photo.";
     }
     if (images.length > MAX_IMAGES) {
-      nextErrors.images = 'You can upload up to 5 photos.';
+      nextErrors.images = "You can upload up to 5 photos.";
     }
     return nextErrors;
   };
@@ -209,7 +212,7 @@ const CreateProfile = () => {
         ...image,
         file: blurredFile,
         preview,
-        status: result.facesDetected > 0 ? 'blurred' : 'no-faces',
+        status: result.facesDetected > 0 ? "blurred" : "no-faces",
         facesDetected: result.facesDetected,
       };
     });
@@ -223,8 +226,8 @@ const CreateProfile = () => {
 
     updateImageById(id, (image) => ({
       ...image,
-      status: 'processing',
-      errorMessage: '',
+      status: "processing",
+      errorMessage: "",
     }));
 
     try {
@@ -232,8 +235,8 @@ const CreateProfile = () => {
     } catch (error) {
       updateImageById(id, (image) => ({
         ...image,
-        status: 'error',
-        errorMessage: 'Blur failed. Try again.',
+        status: "error",
+        errorMessage: "Blur failed. Try again.",
       }));
     }
   };
@@ -245,20 +248,20 @@ const CreateProfile = () => {
     }
 
     const nextImages = [...images];
-    let fileError = '';
+    let fileError = "";
     const processingQueue = [];
 
     for (const file of files) {
       if (!ACCEPTED_TYPES.has(file.type)) {
-        fileError = 'Only JPG, PNG, or WEBP files are allowed.';
+        fileError = "Only JPG, PNG, or WEBP files are allowed.";
         continue;
       }
       if (file.size > MAX_IMAGE_SIZE) {
-        fileError = 'Each image must be smaller than 5MB.';
+        fileError = "Each image must be smaller than 5MB.";
         continue;
       }
       if (nextImages.length >= MAX_IMAGES) {
-        fileError = 'You can upload up to 5 photos.';
+        fileError = "You can upload up to 5 photos.";
         break;
       }
       const entry = {
@@ -266,9 +269,9 @@ const CreateProfile = () => {
         file,
         originalFile: file,
         preview: URL.createObjectURL(file),
-        status: 'processing',
+        status: "processing",
         facesDetected: 0,
-        errorMessage: '',
+        errorMessage: "",
       };
       nextImages.push(entry);
       processingQueue.push(entry);
@@ -276,7 +279,7 @@ const CreateProfile = () => {
 
     setImages(nextImages);
     setErrors((prev) => ({ ...prev, images: fileError }));
-    event.target.value = '';
+    event.target.value = "";
 
     processingQueue.forEach(async (entry) => {
       try {
@@ -284,8 +287,8 @@ const CreateProfile = () => {
       } catch (error) {
         updateImageById(entry.id, (image) => ({
           ...image,
-          status: 'error',
-          errorMessage: 'Blur failed. Try again.',
+          status: "error",
+          errorMessage: "Blur failed. Try again.",
         }));
       }
     });
@@ -304,13 +307,13 @@ const CreateProfile = () => {
 
   const handleCityChange = (value) => {
     if (!value) {
-      setLocationCity('');
-      setLocationProvince('');
+      setLocationCity("");
+      setLocationProvince("");
       return;
     }
-    const [cityName, provinceName] = value.split('|||');
-    setLocationCity(cityName || '');
-    setLocationProvince(provinceName || '');
+    const [cityName, provinceName] = value.split("|||");
+    setLocationCity(cityName || "");
+    setLocationProvince(provinceName || "");
   };
 
   const handleSubmit = async (event) => {
@@ -321,17 +324,17 @@ const CreateProfile = () => {
       return;
     }
     if (isImageProcessing) {
-      setFormError('Please wait for face detection to finish.');
+      setFormError("Please wait for face detection to finish.");
       return;
     }
     if (hasBlurFailures) {
-      setFormError('Please retry failed images before submitting.');
+      setFormError("Please retry failed images before submitting.");
       return;
     }
 
     setLoading(true);
-    setFormError('');
-    setStatusMessage('Uploading blurred images...');
+    setFormError("");
+    setStatusMessage("Uploading blurred images...");
     setUploadProgress({ current: 0, total: images.length });
 
     try {
@@ -341,13 +344,16 @@ const CreateProfile = () => {
       for (let i = 0; i < images.length; i += 1) {
         setUploadProgress({ current: i + 1, total: images.length });
         const formData = new FormData();
-        formData.append('image_original', images[i].originalFile || images[i].file);
-        formData.append('image_blurred', images[i].file);
+        formData.append(
+          "image_original",
+          images[i].originalFile || images[i].file,
+        );
+        formData.append("image_blurred", images[i].file);
 
         try {
           const response = await uploadStoryImage(formData);
           if (!response?.image_id) {
-            throw new Error('Image upload failed.');
+            throw new Error("Image upload failed.");
           }
           uploadedImageIds.push(response.image_id);
         } catch (error) {
@@ -356,16 +362,16 @@ const CreateProfile = () => {
       }
 
       if (uploadedImageIds.length === 0) {
-        throw new Error('At least one image must upload successfully.');
+        throw new Error("At least one image must upload successfully.");
       }
 
       if (failedUploads.length > 0) {
         setFormError(
-          `Some images failed to upload and were skipped: ${failedUploads.join(', ')}.`
+          `Some images failed to upload and were skipped: ${failedUploads.join(", ")}.`,
         );
       }
 
-      setStatusMessage('Saving profile...');
+      setStatusMessage("Saving profile...");
       const profilePayload = {
         age: Number(age),
         gender,
@@ -390,16 +396,16 @@ const CreateProfile = () => {
         updateUser({ ...(user || {}), profile_complete: true });
       }
 
-      setStatusMessage('Creating story...');
+      setStatusMessage("Creating story...");
       await createStory({
         story_text: storyText.trim(),
         image_ids: uploadedImageIds,
       });
 
-      setStatusMessage('Complete!');
-      setTimeout(() => navigate('/landing'), 800);
+      setStatusMessage("Complete!");
+      setTimeout(() => navigate("/landing"), 800);
     } catch (error) {
-      setFormError(error.message || 'Something went wrong. Please try again.');
+      setFormError(error.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -408,7 +414,7 @@ const CreateProfile = () => {
   const selectedCityValue =
     locationCity && locationProvince
       ? `${locationCity}|||${locationProvince}`
-      : '';
+      : "";
 
   const renderStepContent = () => {
     if (referenceLoading) {
@@ -431,13 +437,12 @@ const CreateProfile = () => {
       return (
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="text-sm font-medium text-slate-700">Age</label>
             <input
               type="number"
               min="18"
               value={age}
               onChange={(event) => setAge(event.target.value)}
-              className={inputClass('age')}
+              className={inputClass("age")}
               placeholder="18+"
             />
             {errors.age && (
@@ -449,7 +454,7 @@ const CreateProfile = () => {
             <select
               value={gender}
               onChange={(event) => setGender(event.target.value)}
-              className={inputClass('gender')}
+              className={inputClass("gender")}
             >
               <option value="">Select gender</option>
               <option value="male">Male</option>
@@ -468,7 +473,7 @@ const CreateProfile = () => {
             <select
               value={nationality}
               onChange={(event) => setNationality(event.target.value)}
-              className={inputClass('nationality')}
+              className={inputClass("nationality")}
             >
               <option value="">Select nationality</option>
               <option value="South Africa">South Africa</option>
@@ -483,11 +488,13 @@ const CreateProfile = () => {
             )}
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700">Religion</label>
+            <label className="text-sm font-medium text-slate-700">
+              Religion
+            </label>
             <select
               value={religion}
               onChange={(event) => setReligion(event.target.value)}
-              className={inputClass('religion')}
+              className={inputClass("religion")}
             >
               <option value="">Select religion</option>
               {(referenceData?.religions || []).map((option) => (
@@ -505,7 +512,7 @@ const CreateProfile = () => {
             <select
               value={race}
               onChange={(event) => setRace(event.target.value)}
-              className={inputClass('race')}
+              className={inputClass("race")}
             >
               <option value="">Select race</option>
               {(referenceData?.races || []).map((option) => (
@@ -525,7 +532,7 @@ const CreateProfile = () => {
             <select
               value={education}
               onChange={(event) => setEducation(event.target.value)}
-              className={inputClass('education')}
+              className={inputClass("education")}
             >
               <option value="">Select education</option>
               {(referenceData?.education_levels || []).map((option) => (
@@ -550,15 +557,15 @@ const CreateProfile = () => {
               Do you have kids?
             </label>
             <select
-              value={hasKids === null ? '' : hasKids ? 'yes' : 'no'}
+              value={hasKids === null ? "" : hasKids ? "yes" : "no"}
               onChange={(event) => {
                 const value = event.target.value;
-                setHasKids(value === '' ? null : value === 'yes');
-                if (value !== 'yes') {
-                  setNumKids('0');
+                setHasKids(value === "" ? null : value === "yes");
+                if (value !== "yes") {
+                  setNumKids("0");
                 }
               }}
-              className={inputClass('has_kids')}
+              className={inputClass("has_kids")}
             >
               <option value="">Select option</option>
               <option value="yes">Yes</option>
@@ -576,7 +583,7 @@ const CreateProfile = () => {
               <select
                 value={numKids}
                 onChange={(event) => setNumKids(event.target.value)}
-                className={inputClass('num_kids')}
+                className={inputClass("num_kids")}
               >
                 <option value="">Select count</option>
                 <option value="1">1</option>
@@ -591,11 +598,15 @@ const CreateProfile = () => {
           <div>
             <label className="text-sm font-medium text-slate-700">Smoker</label>
             <select
-              value={smoker === null ? '' : smoker ? 'yes' : 'no'}
+              value={smoker === null ? "" : smoker ? "yes" : "no"}
               onChange={(event) =>
-                setSmoker(event.target.value === '' ? null : event.target.value === 'yes')
+                setSmoker(
+                  event.target.value === ""
+                    ? null
+                    : event.target.value === "yes",
+                )
               }
-              className={inputClass('smoker')}
+              className={inputClass("smoker")}
             >
               <option value="">Select option</option>
               <option value="yes">Yes</option>
@@ -606,22 +617,28 @@ const CreateProfile = () => {
             )}
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700">Drinks alcohol</label>
+            <label className="text-sm font-medium text-slate-700">
+              Drinks alcohol
+            </label>
             <select
-              value={drinksAlcohol === null ? '' : drinksAlcohol ? 'yes' : 'no'}
+              value={drinksAlcohol === null ? "" : drinksAlcohol ? "yes" : "no"}
               onChange={(event) =>
                 setDrinksAlcohol(
-                  event.target.value === '' ? null : event.target.value === 'yes'
+                  event.target.value === ""
+                    ? null
+                    : event.target.value === "yes",
                 )
               }
-              className={inputClass('drinks_alcohol')}
+              className={inputClass("drinks_alcohol")}
             >
               <option value="">Select option</option>
               <option value="yes">Yes</option>
               <option value="no">No</option>
             </select>
             {errors.drinks_alcohol && (
-              <p className="mt-2 text-xs text-red-600">{errors.drinks_alcohol}</p>
+              <p className="mt-2 text-xs text-red-600">
+                {errors.drinks_alcohol}
+              </p>
             )}
           </div>
         </div>
@@ -635,14 +652,11 @@ const CreateProfile = () => {
           <select
             value={selectedCityValue}
             onChange={(event) => handleCityChange(event.target.value)}
-            className={inputClass('location_city')}
+            className={inputClass("location_city")}
           >
             <option value="">Select city</option>
             {(referenceData?.cities || []).map((city) => (
-              <option
-                key={city.id}
-                value={`${city.name}|||${city.province}`}
-              >
+              <option key={city.id} value={`${city.name}|||${city.province}`}>
                 {city.name}, {city.province}
               </option>
             ))}
@@ -657,12 +671,14 @@ const CreateProfile = () => {
     return (
       <div className="space-y-6">
         <div>
-          <label className="text-sm font-medium text-slate-700">Your story</label>
+          <label className="text-sm font-medium text-slate-700">
+            Your story
+          </label>
           <textarea
             value={storyText}
             onChange={(event) => setStoryText(event.target.value)}
             rows="6"
-            className={`${inputClass('story_text')} resize-none`}
+            className={`${inputClass("story_text")} resize-none`}
             placeholder="Share your story, values, and what you are hoping to find..."
           />
           {errors.story_text && (
@@ -699,26 +715,26 @@ const CreateProfile = () => {
                   alt={`Upload ${index + 1}`}
                   className="h-36 w-full rounded-2xl object-cover"
                 />
-                {image.status === 'processing' && (
+                {image.status === "processing" && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/70">
                     <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
                   </div>
                 )}
                 <div
                   className={`absolute left-2 bottom-2 rounded-full px-2 py-1 text-[10px] font-semibold ${
-                    image.status === 'blurred'
-                      ? 'bg-emerald-500/90 text-white'
-                      : image.status === 'no-faces'
-                      ? 'bg-amber-500/90 text-white'
-                      : image.status === 'error'
-                      ? 'bg-red-500/90 text-white'
-                      : 'bg-slate-900/70 text-white'
+                    image.status === "blurred"
+                      ? "bg-emerald-500/90 text-white"
+                      : image.status === "no-faces"
+                        ? "bg-amber-500/90 text-white"
+                        : image.status === "error"
+                          ? "bg-red-500/90 text-white"
+                          : "bg-slate-900/70 text-white"
                   }`}
                 >
-                  {image.status === 'processing' && 'Processing...'}
-                  {image.status === 'blurred' && 'Faces blurred ✓'}
-                  {image.status === 'no-faces' && 'No faces detected'}
-                  {image.status === 'error' && 'Blur failed'}
+                  {image.status === "processing" && "Processing..."}
+                  {image.status === "blurred" && "Faces blurred ✓"}
+                  {image.status === "no-faces" && "No faces detected"}
+                  {image.status === "error" && "Blur failed"}
                 </div>
                 <button
                   type="button"
@@ -727,7 +743,7 @@ const CreateProfile = () => {
                 >
                   Remove
                 </button>
-                {image.status === 'error' && (
+                {image.status === "error" && (
                   <button
                     type="button"
                     onClick={() => retryBlur(image.id)}
@@ -744,8 +760,10 @@ const CreateProfile = () => {
     );
   };
 
-  const isImageProcessing = images.some((image) => image.status === 'processing');
-  const hasBlurFailures = images.some((image) => image.status === 'error');
+  const isImageProcessing = images.some(
+    (image) => image.status === "processing",
+  );
+  const hasBlurFailures = images.some((image) => image.status === "error");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-200 via-sky-100 to-amber-100 pb-24">
@@ -765,7 +783,7 @@ const CreateProfile = () => {
                 <span
                   key={`step-dot-${index}`}
                   className={`h-2.5 w-2.5 rounded-full ${
-                    index + 1 <= step ? 'bg-emerald-500' : 'bg-slate-200'
+                    index + 1 <= step ? "bg-emerald-500" : "bg-slate-200"
                   }`}
                 />
               ))}
@@ -789,7 +807,8 @@ const CreateProfile = () => {
 
             {loading && uploadProgress.total > 0 && (
               <div className="text-sm text-slate-500">
-                Uploading image {uploadProgress.current} of {uploadProgress.total}...
+                Uploading image {uploadProgress.current} of{" "}
+                {uploadProgress.total}...
               </div>
             )}
 
@@ -822,7 +841,7 @@ const CreateProfile = () => {
                   disabled={loading || isImageProcessing}
                   className="rounded-xl bg-rose-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {loading ? 'Saving...' : 'Submit'}
+                  {loading ? "Saving..." : "Submit"}
                 </button>
               )}
             </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const buildWebSocketUrl = (connectionId, token) => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+  const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://localhost:8787' : 'http://localhost:8787');
   const url = new URL(apiUrl);
   const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${url.host}/api/chat/connect/${connectionId}?token=${token}`;
@@ -48,7 +48,24 @@ export const useWebSocket = ({
 
     ws.onmessage = (event) => {
       try {
+        // Validate message size to prevent DoS
+        if (event.data.length > 10000) {
+          return;
+        }
+        
         const data = JSON.parse(event.data);
+        
+        // Validate payload structure
+        if (!data || typeof data !== 'object' || !data.type) {
+          return;
+        }
+        
+        // Whitelist allowed message types
+        const allowedTypes = ['chat_message', 'typing_indicator', 'presence', 'delivery_confirmation', 'read_receipt', 'ping', 'error'];
+        if (!allowedTypes.includes(data.type)) {
+          return;
+        }
+        
         switch (data.type) {
           case 'chat_message':
             onMessage?.(data);

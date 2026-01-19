@@ -16,13 +16,13 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 const PAGE_SIZE = 20;
 
 const StoryCardSkeleton = () => (
-  <div className="overflow-hidden rounded-[32px] border border-rose-100 bg-white shadow-xl">
-    <div className="h-56 w-full animate-shimmer bg-gradient-to-r from-rose-100 via-rose-200 to-rose-100 bg-[length:200%_100%]" />
-    <div className="space-y-3 p-5">
-      <div className="h-4 w-1/2 animate-shimmer rounded bg-gradient-to-r from-rose-100 via-rose-200 to-rose-100 bg-[length:200%_100%]" />
-      <div className="h-3 w-2/3 animate-shimmer rounded bg-gradient-to-r from-rose-100 via-rose-200 to-rose-100 bg-[length:200%_100%]" />
-      <div className="h-3 w-3/4 animate-shimmer rounded bg-gradient-to-r from-rose-100 via-rose-200 to-rose-100 bg-[length:200%_100%]" />
-      <div className="h-10 w-32 animate-shimmer rounded bg-gradient-to-r from-rose-100 via-rose-200 to-rose-100 bg-[length:200%_100%]" />
+  <div className="glass-card rounded-3xl overflow-hidden shadow-2xl">
+    <div className="h-80 w-full animate-shimmer bg-gradient-to-r from-purple-100 via-pink-200 to-purple-100 bg-[length:200%_100%]" />
+    <div className="space-y-4 p-6">
+      <div className="h-6 w-2/3 animate-shimmer rounded-2xl bg-gradient-to-r from-purple-100 via-pink-200 to-purple-100 bg-[length:200%_100%]" />
+      <div className="h-4 w-3/4 animate-shimmer rounded-xl bg-gradient-to-r from-purple-100 via-pink-200 to-purple-100 bg-[length:200%_100%]" />
+      <div className="h-4 w-1/2 animate-shimmer rounded-xl bg-gradient-to-r from-purple-100 via-pink-200 to-purple-100 bg-[length:200%_100%]" />
+      <div className="h-12 w-40 animate-shimmer rounded-2xl bg-gradient-to-r from-purple-100 via-pink-200 to-purple-100 bg-[length:200%_100%]" />
     </div>
   </div>
 );
@@ -296,23 +296,16 @@ const StoryFeed = () => {
   const currentStory = stories[0];
 
   const emptyIcon = (
-    <svg
-      viewBox="0 0 64 64"
-      className="h-12 w-12 text-rose-400"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20 20c-4 0-8 3-8 8 0 6 6 12 13 17l7 5 7-5c7-5 13-11 13-17 0-5-4-8-8-8-4 0-7 2-9 5-2-3-5-5-9-5z" />
-      <path d="M32 20l8 12-8 10-8-10 8-12z" />
-    </svg>
+    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+      <svg viewBox="0 0 24 24" className="w-8 h-8 text-white" fill="currentColor">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      </svg>
+    </div>
   );
 
   const renderCard = (story) => (
-    <div className="flex h-full flex-col">
-      <div className="relative h-64">
+    <div className="glass-card rounded-3xl overflow-hidden shadow-2xl h-full flex flex-col">
+      <div className="relative h-80">
         {story.blurred_image_url ? (
           <img
             src={story.blurred_image_url}
@@ -321,429 +314,416 @@ const StoryFeed = () => {
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="h-full w-full bg-rose-100" />
+          <div className="h-full w-full bg-gradient-to-br from-purple-200 to-pink-200" />
         )}
-        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-rose-600">
-          {story.distance_km && story.distance_km < 999000
-            ? `${story.distance_km.toFixed(1)} km away`
-            : 'Distance unknown'}
-        </span>
-        <span className="absolute right-3 top-3 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-600">
-          <span
-            className={`h-2.5 w-2.5 rounded-full ${
-              story.is_online ? 'bg-emerald-500' : 'bg-slate-300'
-            }`}
-          />
-          {story.is_online ? 'Online' : 'Offline'}
-        </span>
-      </div>
-      <div className="flex flex-1 flex-col justify-between p-5">
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">
-              {story.age} · {story.gender} · {story.location_city}
-            </p>
-            <p className="text-xs text-slate-500">{story.location_province}</p>
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-            <span>{story.religion || '—'}</span>
-            <span>{story.race || '—'}</span>
-            <span>{story.education || '—'}</span>
-          </div>
-          <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-            <span>{story.has_kids ? `Has ${story.num_kids} kids` : 'No kids'}</span>
-            <span>{story.smoker ? '🚬 Smoker' : '🚭 Non-smoker'}</span>
-            <span>{story.drinks_alcohol ? '🍷 Drinks' : '🚫 No alcohol'}</span>
-          </div>
-          <p className="text-sm text-slate-600">{truncateText(story.story_text)}</p>
+        
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        
+        {/* Distance badge */}
+        <div className="absolute left-4 top-4">
+          <span className="glass-card px-3 py-1.5 text-xs font-semibold text-white rounded-full">
+            {story.distance_km && story.distance_km < 999000
+              ? `${story.distance_km.toFixed(1)} km away`
+              : 'Distance unknown'}
+          </span>
         </div>
+        
+        {/* Online status */}
+        <div className="absolute right-4 top-4">
+          <span className={`glass-card px-3 py-1.5 text-xs font-semibold rounded-full flex items-center gap-2 ${
+            story.is_online ? 'text-emerald-400' : 'text-gray-300'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${
+              story.is_online ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'
+            }`} />
+            {story.is_online ? 'Online' : 'Offline'}
+          </span>
+        </div>
+
+        {/* Name and age overlay */}
+        <div className="absolute bottom-4 left-4 right-4">
+          <h3 className="text-2xl font-bold text-white mb-1">
+            {story.age} • {story.gender}
+          </h3>
+          <p className="text-white/90 text-sm">
+            {story.location_city}, {story.location_province}
+          </p>
+        </div>
+      </div>
+      
+      <div className="flex-1 p-6 space-y-4">
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2">
+          {[story.religion, story.race, story.education].filter(Boolean).map((tag, index) => (
+            <span key={index} className="px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-xs font-medium rounded-full">
+              {tag}
+            </span>
+          ))}
+        </div>
+
+        {/* Lifestyle info */}
+        <div className="flex flex-wrap gap-3 text-xs text-gray-600">
+          <span className="flex items-center gap-1">
+            👶 {story.has_kids ? `Has ${story.num_kids} kids` : 'No kids'}
+          </span>
+          <span className="flex items-center gap-1">
+            {story.smoker ? '🚬 Smoker' : '🚭 Non-smoker'}
+          </span>
+          <span className="flex items-center gap-1">
+            {story.drinks_alcohol ? '🍷 Drinks' : '🚫 No alcohol'}
+          </span>
+        </div>
+
+        {/* Story text */}
+        <p className="text-gray-700 text-sm leading-relaxed">
+          {truncateText(story.story_text)}
+        </p>
+
+        {/* Connection status */}
         {story.connection_status !== 'none' && (
-          <span
-            className={`mt-4 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+          <div className="pt-2">
+            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
               story.connection_status === 'connected'
                 ? 'bg-emerald-100 text-emerald-700'
                 : story.connection_status === 'pending_sent'
                 ? 'bg-amber-100 text-amber-700'
-                : 'bg-sky-100 text-sky-700'
-            }`}
-          >
-            {story.connection_status === 'connected'
-              ? 'Connected'
-              : story.connection_status === 'pending_sent'
-              ? 'Request Sent'
-              : 'Wants to Connect'}
-          </span>
+                : 'bg-blue-100 text-blue-700'
+            }`}>
+              {story.connection_status === 'connected'
+                ? '✨ Connected'
+                : story.connection_status === 'pending_sent'
+                ? '⏳ Request Sent'
+                : '💕 Wants to Connect'}
+            </span>
+          </div>
         )}
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-50 to-peach-100 px-4 pb-28 pt-8 text-slate-900">
-      <div className="mx-auto w-full max-w-5xl">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-3xl font-semibold">Discover Stories</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Explore by distance and values.
-            </p>
-          </div>
-          <div className="rounded-2xl bg-white/80 px-5 py-3 text-center shadow">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Tokens</p>
-            <p className="mt-1 text-2xl font-semibold">
-              {tokenBalance === null ? '...' : tokenBalance}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 flex items-center justify-between">
-          <motion.button
-            type="button"
-            onClick={() => setShowFilters((prev) => !prev)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-rose-600 shadow hover:bg-rose-50"
+    <div className="min-h-screen bg-premium-mesh relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/10 via-pink-900/10 to-rose-900/10" />
+      <div className="absolute top-40 left-20 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-40 right-20 w-80 h-80 bg-pink-500/5 rounded-full blur-3xl animate-pulse" />
+      
+      <div className="relative z-10 px-4 pb-28 pt-8">
+        <div className="mx-auto w-full max-w-6xl">
+          {/* Header */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8"
           >
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
-          </motion.button>
-          <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-slate-600">
-            {activeFilterCount} filters
-          </span>
-        </div>
-
-        {showFilters && (
-          <div className="mt-4 rounded-2xl bg-white p-6 text-slate-700 shadow">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="text-sm font-medium">Age min</label>
-                <input
-                  type="number"
-                  min="18"
-                  value={ageMin}
-                  onChange={(event) => setAgeMin(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Age max</label>
-                <input
-                  type="number"
-                  min="18"
-                  value={ageMax}
-                  onChange={(event) => setAgeMax(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Gender</label>
-                <select
-                  value={gender}
-                  onChange={(event) => setGender(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
-                >
-                  <option value="">Any</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="non-binary">Non-binary</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Religion</label>
-                <select
-                  value={religion}
-                  onChange={(event) => setReligion(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
-                >
-                  <option value="">Any</option>
-                  {(referenceData?.religions || []).map((option) => (
-                    <option key={option.id} value={option.name}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Race</label>
-                <select
-                  value={race}
-                  onChange={(event) => setRace(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
-                >
-                  <option value="">Any</option>
-                  {(referenceData?.races || []).map((option) => (
-                    <option key={option.id} value={option.name}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Education</label>
-                <select
-                  value={education}
-                  onChange={(event) => setEducation(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
-                >
-                  <option value="">Any</option>
-                  {(referenceData?.education_levels || []).map((option) => (
-                    <option key={option.id} value={option.name}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Nationality</label>
-                <select
-                  value={nationality}
-                  onChange={(event) => setNationality(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
-                >
-                  <option value="">Any</option>
-                  <option value="South Africa">South Africa</option>
-                  <option value="Zimbabwe">Zimbabwe</option>
-                  <option value="Namibia">Namibia</option>
-                  <option value="Botswana">Botswana</option>
-                  <option value="Mozambique">Mozambique</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Has Kids</label>
-                <select
-                  value={hasKids}
-                  onChange={(event) => setHasKids(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
-                >
-                  <option value="">Any</option>
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
-                </select>
-              </div>
-              {hasKids === 'true' && (
-                <div>
-                  <label className="text-sm font-medium">Number of Kids</label>
-                  <select
-                    value={numKids}
-                    onChange={(event) => setNumKids(event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
-                  >
-                    <option value="">Any</option>
-                    <option value="0">0</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3+</option>
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className="text-sm font-medium">Smoker</label>
-                <select
-                  value={smoker}
-                  onChange={(event) => setSmoker(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
-                >
-                  <option value="">Any</option>
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Drinks Alcohol</label>
-                <select
-                  value={drinksAlcohol}
-                  onChange={(event) => setDrinksAlcohol(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
-                >
-                  <option value="">Any</option>
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
-                </select>
-              </div>
-              <div className="md:col-span-2">
-                <label className="text-sm font-medium">Max Distance</label>
-                <input
-                  type="range"
-                  min="10"
-                  max="500"
-                  step="10"
-                  value={maxDistance}
-                  onChange={(event) => setMaxDistance(Number(event.target.value))}
-                  className="mt-2 w-full accent-rose-400"
-                />
-                <p className="mt-1 text-xs text-slate-500">{maxDistance} km</p>
-              </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 bg-clip-text text-transparent mb-2">
+                Discover Stories
+              </h1>
+              <p className="text-gray-600">
+                Find meaningful connections through authentic stories
+              </p>
             </div>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <motion.button
-                type="button"
-                onClick={() => setFiltersApplied(filtersDraft)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:from-rose-500 hover:to-pink-500"
-              >
-                Apply Filters
-              </motion.button>
-              <motion.button
-                type="button"
-                onClick={clearFilters}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600"
-              >
-                Clear All
-              </motion.button>
+            
+            <div className="glass-card rounded-3xl px-6 py-4 text-center">
+              <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Tokens</p>
+              <p className="text-3xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                {tokenBalance === null ? '...' : tokenBalance}
+              </p>
             </div>
-          </div>
-        )}
+          </motion.div>
 
-        {error && (
-          <div className="mt-6 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
-            {error}
-            {error.toLowerCase().includes('insufficient') && (
-              <span className="ml-2">
-                <a href="/tokens" className="font-semibold text-rose-600">
-                  Buy tokens
-                </a>
+          {/* Filter Controls */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="flex items-center justify-between mb-6"
+          >
+            <motion.button
+              type="button"
+              onClick={() => setShowFilters((prev) => !prev)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="glass-card rounded-2xl px-6 py-3 font-semibold text-purple-600 hover:text-purple-700 transition-colors"
+            >
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </motion.button>
+            
+            {activeFilterCount > 0 && (
+              <span className="glass-card rounded-full px-4 py-2 text-sm font-medium text-gray-600">
+                {activeFilterCount} active filters
               </span>
             )}
-          </div>
-        )}
+          </motion.div>
 
-        <div className="mt-10 flex flex-col items-center">
-          {loading ? (
-            <div className="grid w-full max-w-md gap-6">
-              {Array.from({ length: 2 }).map((_, index) => (
-                <StoryCardSkeleton key={`skeleton-${index}`} />
-              ))}
-            </div>
-          ) : stories.length > 0 ? (
-            <div className="relative">
-              <CardStack
-                items={stories}
-                onSwipeLeft={handlePass}
-                onSwipeRight={handleSwipeRight}
-                onSwipeUp={(story) => setSelectedStory(story)}
-                onCardClick={(story) => setSelectedStory(story)}
-                renderCard={renderCard}
-              />
-              <HeartAnimation trigger={heartTrigger} />
-            </div>
-          ) : (
-            <div className="w-full max-w-md">
-              <EmptyState
-                icon={emptyIcon}
-                title="No Stories Found"
-                description="Try adjusting your filters or check back later!"
-                actionButton={(
+          {/* Filters Panel */}
+          {showFilters && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="glass-card rounded-3xl p-8 mb-8"
+            >
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Age Range</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="18"
+                      placeholder="Min"
+                      value={ageMin}
+                      onChange={(e) => setAgeMin(e.target.value)}
+                      className="premium-input flex-1"
+                    />
+                    <input
+                      type="number"
+                      min="18"
+                      placeholder="Max"
+                      value={ageMax}
+                      onChange={(e) => setAgeMax(e.target.value)}
+                      className="premium-input flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="premium-input w-full"
+                  >
+                    <option value="">Any</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="non-binary">Non-binary</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Religion</label>
+                  <select
+                    value={religion}
+                    onChange={(e) => setReligion(e.target.value)}
+                    className="premium-input w-full"
+                  >
+                    <option value="">Any</option>
+                    {(referenceData?.religions || []).map((option) => (
+                      <option key={option.id} value={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Distance</label>
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="10"
+                      max="500"
+                      step="10"
+                      value={maxDistance}
+                      onChange={(e) => setMaxDistance(Number(e.target.value))}
+                      className="w-full accent-purple-500"
+                    />
+                    <p className="text-sm text-gray-600 text-center">{maxDistance} km</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-4 mt-8">
+                <motion.button
+                  type="button"
+                  onClick={() => setFiltersApplied(filtersDraft)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="premium-button"
+                >
+                  Apply Filters
+                </motion.button>
+                <motion.button
+                  type="button"
+                  onClick={clearFilters}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="glass-card rounded-2xl px-6 py-3 font-semibold text-gray-600 hover:text-gray-700 transition-colors"
+                >
+                  Clear All
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-card rounded-2xl px-6 py-4 text-red-600 mb-8 max-w-2xl mx-auto"
+            >
+              {error}
+              {error.toLowerCase().includes('insufficient') && (
+                <span className="ml-2">
+                  <a href="/tokens" className="font-semibold text-purple-600 hover:text-purple-700">
+                    Buy tokens
+                  </a>
+                </span>
+              )}
+            </motion.div>
+          )}
+
+          {/* Stories Content */}
+          <div className="flex flex-col items-center">
+            {loading ? (
+              <div className="grid w-full max-w-md gap-8">
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <StoryCardSkeleton key={`skeleton-${index}`} />
+                ))}
+              </div>
+            ) : stories.length > 0 ? (
+              <div className="relative">
+                <CardStack
+                  items={stories}
+                  onSwipeLeft={handlePass}
+                  onSwipeRight={handleSwipeRight}
+                  onSwipeUp={(story) => setSelectedStory(story)}
+                  onCardClick={(story) => setSelectedStory(story)}
+                  renderCard={renderCard}
+                />
+                <HeartAnimation trigger={heartTrigger} />
+              </div>
+            ) : (
+              <div className="w-full max-w-md">
+                <EmptyState
+                  icon={emptyIcon}
+                  title="No Stories Found"
+                  description="Try adjusting your filters or check back later for new connections!"
+                  actionButton={
+                    <motion.button
+                      type="button"
+                      onClick={clearFilters}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="premium-button"
+                    >
+                      Clear Filters
+                    </motion.button>
+                  }
+                />
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            {currentStory && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-8 hidden w-full max-w-md items-center justify-between gap-4 md:flex"
+              >
+                <motion.button
+                  type="button"
+                  onClick={() => handlePass(currentStory)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex-1 glass-card rounded-2xl py-3 font-semibold text-gray-600 hover:text-gray-700 transition-colors"
+                >
+                  Pass
+                </motion.button>
+                
+                {currentStory.connection_status === 'pending_received' ? (
                   <motion.button
                     type="button"
-                    onClick={clearFilters}
+                    onClick={() => handleAccept(currentStory)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-5 py-2 text-sm font-semibold text-white shadow transition hover:from-rose-500 hover:to-pink-500"
+                    className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-3 rounded-2xl shadow-lg"
                   >
-                    Clear Filters
+                    Accept (3 tokens)
                   </motion.button>
+                ) : currentStory.connection_status === 'none' ? (
+                  <motion.button
+                    type="button"
+                    onClick={() => handleConnect(currentStory)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex-1 premium-button"
+                  >
+                    Connect (5 tokens)
+                  </motion.button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="flex-1 glass-card rounded-2xl py-3 font-semibold text-gray-400"
+                  >
+                    {currentStory.connection_status === 'connected' ? 'Connected' : 'Request Sent'}
+                  </button>
                 )}
-              />
-            </div>
-          )}
-
-          {currentStory && (
-            <div className="mt-6 hidden w-full max-w-md items-center justify-between gap-4 md:flex">
-              <motion.button
-                type="button"
-                onClick={() => handlePass(currentStory)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex-1 rounded-full border border-rose-200 bg-white px-6 py-3 text-sm font-semibold text-rose-600 shadow"
-              >
-                Pass
-              </motion.button>
-              {currentStory.connection_status === 'pending_received' ? (
-                <motion.button
-                  type="button"
-                  onClick={() => handleAccept(currentStory)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow"
-                >
-                  Accept (3 tokens)
-                </motion.button>
-              ) : currentStory.connection_status === 'none' ? (
-                <motion.button
-                  type="button"
-                  onClick={() => handleConnect(currentStory)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-6 py-3 text-sm font-semibold text-white shadow"
-                >
-                  Connect (5 tokens)
-                </motion.button>
-              ) : (
-                <button
-                  type="button"
-                  disabled
-                  className="flex-1 rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-500"
-                >
-                  {currentStory.connection_status === 'connected' ? 'Connected' : 'Request Sent'}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {loadingMore && (
-          <div className="mt-6 flex justify-center">
-            <LoadingSpinner label="Loading more stories..." />
+              </motion.div>
+            )}
           </div>
-        )}
 
-        {!hasMore && stories.length > 0 && (
-          <div className="mt-6 text-center text-sm text-slate-500">No more stories.</div>
-        )}
+          {loadingMore && (
+            <div className="mt-8 flex justify-center">
+              <LoadingSpinner label="Loading more stories..." />
+            </div>
+          )}
 
-        <div ref={sentinelRef} className="h-6" />
+          {!hasMore && stories.length > 0 && (
+            <div className="mt-8 text-center text-gray-500">
+              You've seen all available stories. Check back later for more!
+            </div>
+          )}
+
+          <div ref={sentinelRef} className="h-8" />
+        </div>
       </div>
 
+      {/* Undo Button */}
       {swipeHistory.length > 0 && (
         <motion.button
           type="button"
           onClick={handleUndo}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="fixed bottom-24 left-6 z-40 rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-lg md:bottom-10"
+          className="fixed bottom-32 left-6 z-40 glass-card rounded-full px-4 py-2 text-sm font-semibold text-gray-600 shadow-lg md:bottom-12"
         >
-          Undo
+          ↶ Undo
         </motion.button>
       )}
 
+      {/* Story Detail Modal */}
       {selectedStory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-2xl glass-card rounded-3xl overflow-hidden shadow-2xl"
           >
-            <div className="flex items-center justify-between border-b px-6 py-4">
+            <div className="flex items-center justify-between border-b border-white/20 px-6 py-4">
               <div>
-                <h3 className="text-xl font-semibold text-slate-900">
-                  {selectedStory.age} · {selectedStory.gender}
+                <h3 className="text-xl font-bold text-gray-800">
+                  {selectedStory.age} • {selectedStory.gender}
                 </h3>
-                <p className="text-sm text-slate-500">{selectedStory.location_city}</p>
+                <p className="text-gray-600">{selectedStory.location_city}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedStory(null)}
-                className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
+                className="glass-card rounded-full px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-700"
               >
                 Close
               </button>
             </div>
+            
             <div className="max-h-[70vh] overflow-y-auto">
-              <div className="h-64 w-full bg-rose-100">
+              <div className="h-64 w-full bg-gradient-to-br from-purple-200 to-pink-200">
                 {selectedStory.blurred_image_url && (
                   <img
                     src={selectedStory.blurred_image_url}
@@ -752,15 +732,35 @@ const StoryFeed = () => {
                   />
                 )}
               </div>
-              <div className="space-y-4 px-6 py-5 text-sm text-slate-600">
-                <p>{selectedStory.story_text}</p>
-                <div className="grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
-                  <span>Religion: {selectedStory.religion || '—'}</span>
-                  <span>Race: {selectedStory.race || '—'}</span>
-                  <span>Education: {selectedStory.education || '—'}</span>
-                  <span>Kids: {selectedStory.has_kids ? selectedStory.num_kids : 'No'}</span>
-                  <span>Smoker: {selectedStory.smoker ? 'Yes' : 'No'}</span>
-                  <span>Drinks: {selectedStory.drinks_alcohol ? 'Yes' : 'No'}</span>
+              
+              <div className="space-y-6 px-6 py-6">
+                <p className="text-gray-700 leading-relaxed">{selectedStory.story_text}</p>
+                
+                <div className="grid gap-3 text-sm text-gray-600 sm:grid-cols-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Religion:</span>
+                    <span>{selectedStory.religion || '—'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Race:</span>
+                    <span>{selectedStory.race || '—'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Education:</span>
+                    <span>{selectedStory.education || '—'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Kids:</span>
+                    <span>{selectedStory.has_kids ? selectedStory.num_kids : 'No'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Smoker:</span>
+                    <span>{selectedStory.smoker ? 'Yes' : 'No'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Drinks:</span>
+                    <span>{selectedStory.drinks_alcohol ? 'Yes' : 'No'}</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -7,7 +7,7 @@ import ChatList from '../components/ChatList.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 
-const MotionLink = motion(Link);
+const MotionLink = motion.create(Link);
 
 const Connections = () => {
   const [connections, setConnections] = useState([]);

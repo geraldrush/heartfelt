@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://localhost:8787' : 'http://localhost:8787');
 
 async function request(method, path, data) {
   const token = localStorage.getItem('token');
@@ -10,7 +10,24 @@ async function request(method, path, data) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  // SSRF protection - validate URL and path
+  if (!path.startsWith('/api/')) {
+    throw new Error('Invalid API path');
+  }
+  
+  const fullUrl = `${API_URL}${path}`;
+  try {
+    const url = new URL(fullUrl);
+    // Only allow requests to the configured API domain
+    const apiUrl = new URL(API_URL);
+    if (url.origin !== apiUrl.origin) {
+      throw new Error('Invalid request destination');
+    }
+  } catch (error) {
+    throw new Error('Invalid URL format');
+  }
+
+  const response = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -49,10 +66,18 @@ export const getCurrentUser = () => apiClient.get('/api/auth/me');
 
 export const uploadStoryImage = (formData) => {
   const token = localStorage.getItem('token');
+  const headers = { Authorization: `Bearer ${token}` };
+  
+  // CSRF protection - add origin header for state-changing requests
+  if (window.location.origin) {
+    headers['X-Requested-With'] = 'XMLHttpRequest';
+  }
+  
   return fetch(`${API_URL}/api/stories/upload-image`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
+    headers,
     body: formData,
+    credentials: 'same-origin',
   }).then(async (res) => {
     const payload = await res.json().catch(() => ({}));
     if (!res.ok) {

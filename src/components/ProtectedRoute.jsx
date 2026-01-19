@@ -9,8 +9,8 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <LoadingSpinner label="Loading..." />
+      <div className="flex h-screen items-center justify-center bg-white">
+        <LoadingSpinner label="Checking credentials..." />
       </div>
     );
   }
