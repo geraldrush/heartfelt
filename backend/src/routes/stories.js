@@ -238,7 +238,7 @@ stories.get('/feed', authMiddleware, async (c) => {
 
   const conditions = [
     'stories.is_active = 1',
-    'users.profile_complete = 1',
+    // 'users.profile_complete = 1', // Temporarily disabled for testing
     'stories.user_id != ?',
     'c.id IS NULL',
   ];
