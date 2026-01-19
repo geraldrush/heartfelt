@@ -8,7 +8,9 @@ const SWIPE_THRESHOLD = 150;
 const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, onCardClick }) => {
   const [dragState, setDragState] = React.useState({ x: 0, y: 0, rot: 0, scale: 1 });
 
-  const bind = useDrag(({ down, movement: [mx, my] }) => {
+  const bind = useDrag(({ down, movement: [mx, my], tap }) => {
+    if (tap) return; // Ignore tap events
+    
     if (down) {
       setDragState({ x: mx, y: my, rot: mx / 15, scale: 1.02 });
       return;
@@ -62,14 +64,12 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
             return (
               <motion.div
                 key={item.story_id || item.id}
-                drag
-                dragElastic={0.2}
-                dragListener={false}
                 {...bind()}
                 onClick={() => onCardClick?.(item)}
                 animate={{ x: dragState.x, y: dragState.y, rotate: dragState.rot, scale: dragState.scale }}
                 transition={{ duration: 0.3 }}
                 className="absolute inset-0 cursor-grab select-none touch-none"
+                style={{ touchAction: 'none' }}
               >
                 <motion.div
                   className="relative h-full w-full overflow-hidden rounded-[32px] border border-rose-100 bg-white shadow-2xl"
