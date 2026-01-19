@@ -305,7 +305,33 @@ const StoryFeed = () => {
   );
 
   const renderCard = (story) => (
-    <div className="glass-card rounded-3xl overflow-hidden shadow-2xl h-full flex flex-col">
+    <div className="glass-card rounded-3xl overflow-hidden shadow-2xl h-full flex flex-col relative">
+      {/* Mobile Action Buttons */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 flex gap-4 md:hidden">
+        <button
+          type="button"
+          onClick={() => handlePass(story)}
+          className="w-14 h-14 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+        >
+          <span className="text-2xl text-gray-600">✕</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (story.connection_status === 'pending_received') {
+              handleAccept(story);
+            } else if (story.connection_status === 'none') {
+              handleConnect(story);
+            } else {
+              handlePass(story);
+            }
+          }}
+          className="w-14 h-14 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+        >
+          <span className="text-2xl text-red-500">♥</span>
+        </button>
+      </div>
+      
       <div className="relative h-[50%] md:h-80">
         {story.blurred_image_url ? (
           <img
@@ -612,13 +638,7 @@ const StoryFeed = () => {
           )}
 
           {/* Stories Content */}
-          <div 
-            className="flex flex-col items-center h-[calc(100vh-200px)] md:h-auto pt-16 md:pt-0"
-            style={{
-              '--card-height': 'calc(100dvh - 200px)',
-              height: 'var(--card-height, calc(100vh - 200px))'
-            }}
-          >
+          <div className="flex flex-col items-center h-[calc(100dvh-140px)] md:h-auto pt-16 md:pt-0 stories-container">
             {loading ? (
               <div className="flex items-center justify-center h-full w-full max-w-md">
                 <div className="grid gap-8">

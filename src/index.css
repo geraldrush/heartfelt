@@ -89,3 +89,10 @@ a {
     transform: translateY(0);
   }
 }
+
+/* Fallback for browsers without dvh support */
+@supports not (height: 1dvh) {
+  .stories-container {
+    height: calc(100vh - 140px) !important;
+  }
+}
