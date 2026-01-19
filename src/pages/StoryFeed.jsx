@@ -13,6 +13,7 @@ import CardStack from '../components/animations/CardStack.jsx';
 import HeartAnimation from '../components/animations/HeartAnimation.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import ImageGalleryViewer from '../components/ImageGalleryViewer.jsx';
 
 const PAGE_SIZE = 20;
 
@@ -41,6 +42,9 @@ const StoryFeed = () => {
   const [heartTrigger, setHeartTrigger] = useState(0);
   const [selectedStory, setSelectedStory] = useState(null);
   const [swipeHistory, setSwipeHistory] = useState([]);
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [viewerStoryId, setViewerStoryId] = useState(null);
+  const [viewerImageUrl, setViewerImageUrl] = useState(null);
 
   const [ageMin, setAgeMin] = useState('');
   const [ageMax, setAgeMax] = useState('');
@@ -291,6 +295,19 @@ const StoryFeed = () => {
     restoreStory(last.story);
   };
 
+  const handleCloseImageViewer = () => {
+    setShowImageViewer(false);
+    setViewerStoryId(null);
+    setViewerImageUrl(null);
+  };
+
+  const handleImageClick = (story, e) => {
+    e.stopPropagation();
+    setShowImageViewer(true);
+    setViewerStoryId(story.story_id);
+    setViewerImageUrl(story.blurred_image_url);
+  };
+
   const truncateText = (text) =>
     text.length > 150 ? `${text.slice(0, 150)}...` : text;
 
@@ -332,7 +349,7 @@ const StoryFeed = () => {
         </button>
       </div>
       
-      <div className="relative h-[50%] md:h-80">
+      <div className="relative h-[50%] md:h-80" onClick={(e) => handleImageClick(story, e)}>
         {story.blurred_image_url ? (
           <img
             src={story.blurred_image_url}
@@ -760,7 +777,7 @@ const StoryFeed = () => {
       )}
 
       {/* Story Detail Modal */}
-      {selectedStory && (
+      {!showImageViewer && selectedStory && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -827,6 +844,16 @@ const StoryFeed = () => {
             </div>
           </motion.div>
         </div>
+      )}
+
+      {/* Image Gallery Viewer */}
+      {showImageViewer && (
+        <ImageGalleryViewer
+          storyId={viewerStoryId}
+          initialImageUrl={viewerImageUrl}
+          onClose={handleCloseImageViewer}
+          isOpen={showImageViewer}
+        />
       )}
     </div>
   );
