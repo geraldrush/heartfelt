@@ -587,7 +587,7 @@ const StoryFeed = () => {
                 ))}
               </div>
             ) : stories.length > 0 ? (
-              <div className="relative">
+              <div className="relative w-full max-w-md mx-auto">
                 <CardStack
                   items={stories}
                   onSwipeLeft={handlePass}

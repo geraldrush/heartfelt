@@ -55,7 +55,7 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
   }
 
   return (
-    <div className="relative h-[520px] w-full max-w-md" style={{ opacity: isVisible ? 1 : 0 }}>
+    <div className="relative h-[520px] w-full max-w-md mx-auto">
       {visibleCards
         .slice()
         .reverse()
