@@ -82,7 +82,6 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
               <motion.div
                 key={item.story_id || item.id}
                 {...(!disabled && !isAnimating ? bind() : {})}
-                onClick={() => !isAnimating && onCardClick?.(item)}
                 initial={{ opacity: 1, scale: 1 }}
                 animate={{ 
                   x: dragState.x, 
@@ -92,7 +91,7 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
                   opacity: 1 
                 }}
                 transition={{ duration: isAnimating ? 0.25 : 0.15, ease: 'easeOut' }}
-                className="absolute inset-0 cursor-grab select-none"
+                className="absolute inset-0 cursor-grab select-none touch-none"
                 style={{ pointerEvents: isAnimating ? 'none' : 'auto' }}
               >
                 <motion.div

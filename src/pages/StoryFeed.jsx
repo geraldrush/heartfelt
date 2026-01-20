@@ -378,7 +378,7 @@ const StoryFeed = () => {
 
   const renderCard = (story) => (
     <div className="glass-card rounded-3xl overflow-hidden shadow-2xl h-full flex flex-col relative">
-      <div className="relative h-[55%] sm:h-[50%] md:h-80" onClick={(e) => handleImageClick(story, e)}>
+      <div className="relative h-[55%] sm:h-[50%] md:h-80">
         {story.blurred_image_url ? (
           <img
             src={story.blurred_image_url}

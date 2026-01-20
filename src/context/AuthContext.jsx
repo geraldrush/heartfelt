@@ -148,24 +148,20 @@ export const AuthProvider = ({ children }) => {
   const initializeSession = useCallback(async () => {
     setLoading(true);
     const storedToken = storage.getToken();
-    if (!storedToken || !isTokenValid(storedToken)) {
+    if (!storedToken) {
       setLoading(false);
       return;
     }
     
-    // Set token immediately if valid
+    // Always keep user logged in if token exists
     setToken(storedToken);
     
-    // Only refresh if token is close to expiry
-    if (shouldRefreshToken(storedToken)) {
-      try {
-        const data = await refreshToken();
-        commitSession(data.token, data.user, { skipLoading: true });
-      } catch {
-        // Keep existing session if refresh fails
-        setLoading(false);
-      }
-    } else {
+    // Try to refresh user data, but don't logout on failure
+    try {
+      const data = await refreshToken();
+      commitSession(data.token, data.user, { skipLoading: true });
+    } catch {
+      // Keep existing session even if refresh fails
       setLoading(false);
     }
   }, [commitSession]);
