@@ -326,7 +326,16 @@ const Chat = () => {
             <p className="text-sm text-slate-500">Chatting with</p>
             <h2 className="text-2xl font-semibold text-slate-900">{otherUserName}</h2>
             <p className="text-xs text-slate-500">
-              {isOtherUserOnline ? 'Online' : 'Offline'} · {connectionState}
+              {isOtherUserOnline ? 'Online' : 'Offline'} • 
+              <span className={`${
+                connectionState === 'connected' ? 'text-green-600' : 
+                connectionState === 'connecting' ? 'text-yellow-600' : 
+                connectionState === 'error' ? 'text-red-600' : 'text-gray-600'
+              }`}>
+                {connectionState === 'connected' ? 'Connected' :
+                 connectionState === 'connecting' ? 'Connecting...' :
+                 connectionState === 'error' ? 'Connection Error' : 'Disconnected'}
+              </span>
             </p>
           </div>
           <motion.button
@@ -344,6 +353,12 @@ const Chat = () => {
       {error && (
         <div className="mx-6 mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+
+      {connectionState === 'error' && (
+        <div className="mx-6 mt-4 rounded-xl bg-yellow-100 px-4 py-3 text-sm text-yellow-700">
+          Unable to connect to chat. Please check your connection and try refreshing the page.
         </div>
       )}
 

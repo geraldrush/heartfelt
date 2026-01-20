@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const buildWebSocketUrl = (connectionId, token) => {
-  const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://localhost:8787' : 'http://localhost:8787');
+  const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://heartfelt-api.gerryrushway.workers.dev' : 'http://localhost:8787');
   const url = new URL(apiUrl);
   const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${url.host}/api/chat/connect/${connectionId}?token=${token}`;
@@ -93,8 +93,20 @@ export const useWebSocket = ({
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       setConnectionState('disconnected');
+      
+      // Don't retry on auth failures (1000-1015 are standard close codes)
+      if (event.code === 1000 || event.code === 1001 || event.code === 1002 || event.code === 1003) {
+        return;
+      }
+      
+      // Don't retry on auth/permission errors (4xx equivalent)
+      if (event.code >= 4000 && event.code < 5000) {
+        setConnectionState('error');
+        return;
+      }
+      
       if (retryRef.current < 5) {
         const timeout = Math.min(30000, 1000 * 2 ** retryRef.current);
         retryRef.current += 1;

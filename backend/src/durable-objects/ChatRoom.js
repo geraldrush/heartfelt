@@ -30,8 +30,13 @@ export class ChatRoom {
 
     // Validate origin for cross-origin security
     const origin = request.headers.get('Origin');
-    const allowedOrigins = this.env.CORS_ORIGIN?.split(',').map(o => o.trim()) || [];
+    const allowedOrigins = this.env.CORS_ORIGIN?.split(',').map(o => o.trim()) || [
+      'http://localhost:5173', 
+      'https://heartfelt.pages.dev',
+      'https://heartfelt-2ti.pages.dev'
+    ];
     if (origin && !allowedOrigins.includes(origin)) {
+      console.log('Forbidden origin:', origin, 'Allowed:', allowedOrigins);
       return new Response('Forbidden origin', { status: 403 });
     }
 
@@ -107,6 +112,7 @@ export class ChatRoom {
     // CSRF protection - validate referer header
     const referer = request.headers.get('Referer');
     if (referer && !allowedOrigins.some(origin => referer.startsWith(origin))) {
+      console.log('Invalid referer:', referer, 'Allowed origins:', allowedOrigins);
       return new Response('Invalid referer', { status: 403 });
     }
 
