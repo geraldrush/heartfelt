@@ -1,6 +1,19 @@
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://heartfelt-api.79faac3a1f7c3b8ab3be66153def7484.workers.dev' : 'http://localhost:8787');
 
+// Simple cache for GET requests
+const cache = new Map();
+const CACHE_DURATION = 30000; // 30 seconds
+
 async function request(method, path, data) {
+  // Check cache for GET requests
+  if (method === 'GET' && !data) {
+    const cacheKey = `${method}:${path}`;
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return cached.data;
+    }
+  }
+
   const token = localStorage.getItem('token');
   const headers = {
     'Content-Type': 'application/json',
@@ -45,6 +58,18 @@ async function request(method, path, data) {
     error.status = response.status;
     error.details = payload?.details;
     throw error;
+  }
+
+  // Cache successful GET requests
+  if (method === 'GET' && !data) {
+    const cacheKey = `${method}:${path}`;
+    cache.set(cacheKey, { data: payload, timestamp: Date.now() });
+    
+    // Clean old cache entries
+    if (cache.size > 100) {
+      const oldestKey = cache.keys().next().value;
+      cache.delete(oldestKey);
+    }
   }
 
   return payload;

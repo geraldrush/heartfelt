@@ -6,6 +6,7 @@ export const usePullToRefresh = (onRefresh, threshold = 80) => {
   const startY = useRef(0);
   const currentY = useRef(0);
   const containerRef = useRef(null);
+  const lastRefresh = useRef(0);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -35,8 +36,17 @@ export const usePullToRefresh = (onRefresh, threshold = 80) => {
     const handleTouchEnd = async () => {
       if (!isAtTop || isRefreshing) return;
       
+      // Prevent rapid refresh calls
+      const now = Date.now();
+      if (now - lastRefresh.current < 2000) {
+        setPullDistance(0);
+        isAtTop = false;
+        return;
+      }
+      
       if (pullDistance >= threshold) {
         setIsRefreshing(true);
+        lastRefresh.current = now;
         try {
           await onRefresh();
         } finally {

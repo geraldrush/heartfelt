@@ -164,7 +164,12 @@ export const AuthProvider = ({ children }) => {
     if (typeof window === 'undefined') {
       return undefined;
     }
+    let lastActivity = Date.now();
     const handleActivity = () => {
+      const now = Date.now();
+      if (now - lastActivity < 1000) return; // Throttle to max 1 call per second
+      lastActivity = now;
+      
       if (token && shouldRefreshToken(token)) {
         refreshSession({ background: true, skipIdle: true }).catch(() => {});
       }
@@ -173,7 +178,7 @@ export const AuthProvider = ({ children }) => {
       }
     };
     const events = ['click', 'keydown', 'touchstart', 'scroll'];
-    events.forEach((eventName) => window.addEventListener(eventName, handleActivity));
+    events.forEach((eventName) => window.addEventListener(eventName, handleActivity, { passive: true }));
     return () => {
       events.forEach((eventName) => window.removeEventListener(eventName, handleActivity));
     };

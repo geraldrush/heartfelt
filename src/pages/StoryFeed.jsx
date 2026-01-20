@@ -171,7 +171,7 @@ const StoryFeed = () => {
         setLoadingMore(false);
       }
     },
-    [filtersApplied, offset]
+    [filtersApplied] // Remove offset dependency to prevent infinite loops
   );
 
   const fetchStoriesRef = useRef(fetchStories);
@@ -184,12 +184,13 @@ const StoryFeed = () => {
   }, [filtersApplied]);
 
   useEffect(() => {
-    if (loading || loadingMore || !hasMore) {
+    if (loading || loadingMore || !hasMore || stories.length >= 5) {
       return;
     }
-    if (stories.length < 5) {
+    const timeoutId = setTimeout(() => {
       fetchStoriesRef.current({ reset: false });
-    }
+    }, 100);
+    return () => clearTimeout(timeoutId);
   }, [stories.length, hasMore, loading, loadingMore]);
 
   useEffect(() => {
@@ -295,12 +296,10 @@ const StoryFeed = () => {
   };
 
   const handleSwipeLeft = (story) => {
-    console.log('Swiped LEFT - PASS:', story.age);
     handlePass(story);
   };
 
   const handleSwipeRight = (story) => {
-    console.log('Swiped RIGHT - CONNECT:', story.age);
     setConnectingStory(story);
     setShowMessageModal(true);
   };
