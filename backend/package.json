@@ -2,6 +2,9 @@
   "name": "heartfelt-backend",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20.18.1"
+  },
   "scripts": {
     "build": "echo 'No build needed for Cloudflare Workers'",
     "dev": "wrangler dev",
