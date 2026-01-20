@@ -121,7 +121,10 @@ export const AuthProvider = ({ children }) => {
           skipLoading: background,
         });
       } catch (error) {
-        logout();
+        if (!background) {
+          setToken(null);
+          setUser(null);
+        }
         throw error;
       } finally {
         if (!background) {
@@ -129,7 +132,7 @@ export const AuthProvider = ({ children }) => {
         }
       }
     },
-    [commitSession, logout]
+    [commitSession]
   );
 
   useEffect(() => {
@@ -150,13 +153,12 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     const storedToken = storage.getToken();
     if (!storedToken || !isTokenValid(storedToken)) {
-      logout();
+      setLoading(false);
       return;
     }
     
     // Set token immediately if valid
     setToken(storedToken);
-    setLoading(false);
     
     // Only refresh if token is close to expiry
     if (shouldRefreshToken(storedToken)) {
@@ -165,9 +167,12 @@ export const AuthProvider = ({ children }) => {
         commitSession(data.token, data.user, { skipLoading: true });
       } catch {
         // Keep existing session if refresh fails
+        setLoading(false);
       }
+    } else {
+      setLoading(false);
     }
-  }, [commitSession, logout]);
+  }, [commitSession]);
 
   useEffect(() => {
     initializeSession();
@@ -180,7 +185,7 @@ export const AuthProvider = ({ children }) => {
     let lastActivity = Date.now();
     const handleActivity = () => {
       const now = Date.now();
-      if (now - lastActivity < 30000) return; // Throttle to max 1 call per 30 seconds
+      if (now - lastActivity < 60000) return; // Throttle to max 1 call per minute
       lastActivity = now;
       
       if (token && shouldRefreshToken(token)) {
@@ -190,7 +195,7 @@ export const AuthProvider = ({ children }) => {
         resetIdleTimer(token);
       }
     };
-    const events = ['click', 'keydown'];
+    const events = ['click'];
     events.forEach((eventName) => window.addEventListener(eventName, handleActivity, { passive: true }));
     return () => {
       events.forEach((eventName) => window.removeEventListener(eventName, handleActivity));
