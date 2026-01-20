@@ -92,9 +92,10 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (typeof window !== 'undefined') {
-        refreshTimer.current = scheduleRefreshTimer(nextToken, () => {
-          refreshSessionRef.current?.({ background: true });
-        });
+        // Disable automatic refresh timer to prevent loops
+        // refreshTimer.current = scheduleRefreshTimer(nextToken, () => {
+        //   refreshSessionRef.current?.({ background: true });
+        // });
       }
 
       if (!options.skipIdle) {
@@ -110,6 +111,13 @@ export const AuthProvider = ({ children }) => {
 
   const refreshSession = useCallback(
     async ({ background = false, skipIdle = false } = {}) => {
+      // Prevent multiple simultaneous refresh calls
+      if (refreshSessionRef.current?.pending) {
+        return;
+      }
+      
+      refreshSessionRef.current.pending = true;
+      
       if (!background) {
         setLoading(true);
       }
@@ -126,6 +134,8 @@ export const AuthProvider = ({ children }) => {
         if (!background) {
           setLoading(false);
         }
+      } finally {
+        refreshSessionRef.current.pending = false;
       }
     },
     [commitSession]

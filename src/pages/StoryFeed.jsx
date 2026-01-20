@@ -183,8 +183,11 @@ const StoryFeed = () => {
   }, [fetchStories]);
 
   useEffect(() => {
-    fetchStoriesRef.current({ reset: true });
-  }, [filtersApplied]);
+    // Only fetch if we have applied filters and no stories
+    if (Object.keys(filtersApplied).length > 0 || stories.length === 0) {
+      fetchStoriesRef.current({ reset: true });
+    }
+  }, [filtersApplied]); // Remove stories dependency to prevent loops
 
 
 
@@ -423,17 +426,17 @@ const StoryFeed = () => {
         </div>
 
         {/* Name and age overlay */}
-        <div className="absolute bottom-4 left-4 right-4">
-          <h3 className="text-xl font-semibold text-white mb-1 drop-shadow-lg">
+        <div className="absolute bottom-3 left-3 right-3">
+          <h3 className="text-lg font-semibold text-white mb-1 drop-shadow-lg">
             {story.age} • {story.gender}
           </h3>
-          <p className="text-white/90 text-sm drop-shadow-md">
+          <p className="text-white/90 text-xs drop-shadow-md">
             {story.location_city}, {story.location_province}
           </p>
         </div>
       </div>
       
-      <div className="flex-1 p-6 space-y-4 overflow-y-auto max-h-[50%] md:max-h-none bg-gradient-to-b from-transparent via-white/30 to-white/60">
+      <div className="flex-1 p-4 space-y-3 overflow-y-auto max-h-[50%] md:max-h-none bg-gradient-to-b from-transparent via-white/30 to-white/60">
         {/* Tags */}
         <div className="flex flex-wrap gap-2">
           {[story.religion, story.race, story.education].filter(Boolean).map((tag, index) => (
@@ -457,8 +460,8 @@ const StoryFeed = () => {
         </div>
 
         {/* Story text */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
-          <p className="text-gray-700 text-sm leading-relaxed">
+        <div className="bg-white/70 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+          <p className="text-gray-700 text-xs leading-relaxed">
             {truncateText(story.story_text)}
           </p>
         </div>
@@ -510,17 +513,17 @@ const StoryFeed = () => {
             className="hidden md:flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8"
           >
             <div>
-              <h1 className="text-2xl font-semibold bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 bg-clip-text text-transparent mb-2">
+              <h1 className="text-xl font-semibold bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 bg-clip-text text-transparent mb-1">
                 Discover Stories
               </h1>
-              <p className="text-gray-600">
+              <p className="text-sm text-gray-600">
                 Find meaningful connections through authentic stories
               </p>
             </div>
             
-            <div className="hidden md:block glass-card rounded-3xl px-6 py-4 text-center">
+            <div className="hidden md:block glass-card rounded-3xl px-4 py-3 text-center">
               <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Tokens</p>
-              <p className="text-3xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+              <p className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
                 {tokenBalance === null ? '...' : tokenBalance}
               </p>
             </div>

@@ -31,11 +31,11 @@ INSERT OR IGNORE INTO face_metadata (story_id, face_detected, face_count, blur_a
   ('story8', true, 1, true, 'completed');
 
 -- Add some sample connection requests
-INSERT OR IGNORE INTO connection_requests (id, sender_id, receiver_id, message, status, created_at) VALUES
-  ('req1', 'user2', 'user1', 'Hi Sarah! I love your hiking photos. Would love to explore Table Mountain together sometime!', 'pending', datetime('now', '-1 hour')),
-  ('req2', 'user4', 'user3', 'Your dance videos are amazing! I''d love to learn more about Indian classical dance.', 'accepted', datetime('now', '-3 hours')),
-  ('req3', 'user6', 'user5', 'Your work in social impact marketing really resonates with me. Would love to connect!', 'pending', datetime('now', '-5 hours')),
-  ('req4', 'user8', 'user7', 'As a fellow parent, I admire your dedication to both family and career. Coffee sometime?', 'accepted', datetime('now', '-7 hours'));
+INSERT OR IGNORE INTO connection_requests (id, sender_id, receiver_id, message, status, expires_at, created_at) VALUES
+  ('req1', 'user2', 'user1', 'Hi Sarah! I love your hiking photos. Would love to explore Table Mountain together sometime!', 'pending', datetime('now', '+7 days'), datetime('now', '-1 hour')),
+  ('req2', 'user4', 'user3', 'Your dance videos are amazing! I''d love to learn more about Indian classical dance.', 'accepted', datetime('now', '+7 days'), datetime('now', '-3 hours')),
+  ('req3', 'user6', 'user5', 'Your work in social impact marketing really resonates with me. Would love to connect!', 'pending', datetime('now', '+7 days'), datetime('now', '-5 hours')),
+  ('req4', 'user8', 'user7', 'As a fellow parent, I admire your dedication to both family and career. Coffee sometime?', 'accepted', datetime('now', '+7 days'), datetime('now', '-7 hours'));
 
 -- Update token balances after connections
 UPDATE users SET token_balance = token_balance - 5 WHERE id IN ('user2', 'user4', 'user6', 'user8');

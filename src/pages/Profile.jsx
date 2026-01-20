@@ -161,7 +161,7 @@ const Profile = () => {
     <div className="mobile-container pull-to-refresh bg-premium-mesh p-4 pb-[calc(100px+env(safe-area-inset-bottom,0px))] md:pb-8">
       <div className="mx-auto max-w-2xl">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">Profile</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">Profile</h1>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={() => navigate('/landing')}>
               <FaTachometerAlt className="w-4 h-4 mr-1" />
@@ -181,11 +181,11 @@ const Profile = () => {
         )}
 
         {/* Token Balance */}
-        <div className="glass-card p-6 rounded-2xl shadow-lg mb-6">
+        <div className="glass-card p-4 rounded-2xl shadow-lg mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">Token Balance</h2>
-              <p className="text-3xl font-bold text-rose-600 mt-2">
+              <h2 className="text-lg font-semibold text-gray-800">Token Balance</h2>
+              <p className="text-2xl font-bold text-rose-600 mt-1">
                 {tokenBalance === null ? '...' : tokenBalance} Tokens
               </p>
             </div>
@@ -196,8 +196,8 @@ const Profile = () => {
         </div>
 
         {/* Basic Info */}
-        <div className="glass-card p-6 rounded-2xl shadow-lg mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Basic Information</h3>
+        <div className="glass-card p-4 rounded-2xl shadow-lg mb-4">
+          <h3 className="text-base font-semibold text-gray-800 mb-3">Basic Information</h3>
           <div className="space-y-1">
             {renderField('Full Name', 'full_name', user.full_name)}
             {renderField('Email', 'email', user.email)}
@@ -207,8 +207,8 @@ const Profile = () => {
         </div>
 
         {/* Location */}
-        <div className="glass-card p-6 rounded-2xl shadow-lg mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Location</h3>
+        <div className="glass-card p-4 rounded-2xl shadow-lg mb-4">
+          <h3 className="text-base font-semibold text-gray-800 mb-3">Location</h3>
           <div className="space-y-1">
             {renderField('City', 'location_city', user.location_city)}
             {renderField('Province', 'location_province', user.location_province)}
@@ -217,8 +217,8 @@ const Profile = () => {
         </div>
 
         {/* Personal Details */}
-        <div className="glass-card p-6 rounded-2xl shadow-lg mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Personal Details</h3>
+        <div className="glass-card p-4 rounded-2xl shadow-lg mb-4">
+          <h3 className="text-base font-semibold text-gray-800 mb-3">Personal Details</h3>
           <div className="space-y-1">
             {renderField('Religion', 'religion', user.religion)}
             {renderField('Race', 'race', user.race)}
@@ -227,8 +227,8 @@ const Profile = () => {
         </div>
 
         {/* Lifestyle */}
-        <div className="glass-card p-6 rounded-2xl shadow-lg mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Lifestyle</h3>
+        <div className="glass-card p-4 rounded-2xl shadow-lg mb-4">
+          <h3 className="text-base font-semibold text-gray-800 mb-3">Lifestyle</h3>
           <div className="space-y-1">
             {renderField('Has Kids', 'has_kids', user.has_kids ? 'Yes' : 'No')}
             {user.has_kids && renderField('Number of Kids', 'num_kids', user.num_kids, 'number')}
@@ -238,16 +238,16 @@ const Profile = () => {
         </div>
 
         {/* Story */}
-        <div className="glass-card p-6 rounded-2xl shadow-lg mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">My Story</h3>
+        <div className="glass-card p-4 rounded-2xl shadow-lg mb-4">
+          <h3 className="text-base font-semibold text-gray-800 mb-3">My Story</h3>
           {renderField('Story', 'story_text', user.story_text, 'textarea')}
         </div>
 
         {/* Profile Status */}
-        <div className="glass-card p-6 rounded-2xl shadow-lg">
+        <div className="glass-card p-4 rounded-2xl shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-gray-800">Profile Status</h3>
+              <h3 className="text-base font-semibold text-gray-800">Profile Status</h3>
               <p className={`text-sm mt-1 ${
                 user.profile_complete ? 'text-emerald-600' : 'text-amber-600'
               }`}>

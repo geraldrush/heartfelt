@@ -56,7 +56,7 @@ connections.post('/request', authMiddleware, async (c) => {
   const message = parsed.data.message || 'Connection request sent';
 
   const result = await db.batch([
-    db.prepare('UPDATE users SET token_balance = token_balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND token_balance >= ?')
+    db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ? AND token_balance >= ?')
       .bind(cost, senderId, cost),
     db.prepare('INSERT INTO connection_requests (id, sender_id, receiver_id, status, message, expires_at) VALUES (?, ?, ?, ?, ?, ?)')
       .bind(requestId, senderId, receiverId, 'pending', message, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
@@ -114,9 +114,9 @@ connections.post('/accept', authMiddleware, async (c) => {
   const transactionId = generateId();
 
   const result = await db.batch([
-    db.prepare('UPDATE users SET token_balance = token_balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND token_balance >= ?')
+    db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ? AND token_balance >= ?')
       .bind(cost, userId, cost),
-    db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND receiver_id = ?')
+    db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND receiver_id = ?')
       .bind('accepted', request.id, 'pending', userId),
     db.prepare('INSERT INTO connections (id, user_id_1, user_id_2, status) VALUES (?, ?, ?, ?)')
       .bind(connectionId, request.sender_id, userId, 'active'),
@@ -168,9 +168,9 @@ connections.post('/reject', authMiddleware, async (c) => {
   const transactionId = generateId();
 
   await db.batch([
-    db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND receiver_id = ?')
+    db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND receiver_id = ?')
       .bind('rejected', request.id, 'pending', userId),
-    db.prepare('UPDATE users SET token_balance = token_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+    db.prepare('UPDATE users SET token_balance = token_balance + ? WHERE id = ?')
       .bind(refund, request.sender_id),
     db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
       .bind(transactionId, request.sender_id, refund, 'refund', userId, request.id, request.sender_id, 'Connection request rejected', new Date().toISOString())
@@ -210,9 +210,9 @@ connections.post('/cancel', authMiddleware, async (c) => {
   const transactionId = generateId();
 
   await db.batch([
-    db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND sender_id = ?')
+    db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND sender_id = ?')
       .bind('rejected', request.id, 'pending', userId),
-    db.prepare('UPDATE users SET token_balance = token_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+    db.prepare('UPDATE users SET token_balance = token_balance + ? WHERE id = ?')
       .bind(refund, userId),
     db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
       .bind(transactionId, userId, refund, 'refund', null, request.id, userId, 'Connection request cancelled', new Date().toISOString())
