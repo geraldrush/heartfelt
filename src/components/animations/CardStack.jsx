@@ -27,24 +27,24 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
       return;
     }
 
-    const swipeRight = mx > SWIPE_THRESHOLD;
-    const swipeLeft = mx < -SWIPE_THRESHOLD;
+    const swipeLeft = mx < -SWIPE_THRESHOLD;  // Pass
+    const swipeRight = mx > SWIPE_THRESHOLD;  // Connect
     const swipeUp = my < -SWIPE_THRESHOLD;
 
     if (swipeRight || swipeLeft || swipeUp) {
       // Medium haptic on successful swipe
       triggerHaptic('medium');
-      const toX = swipeRight ? 500 : swipeLeft ? -500 : 0;
+      const toX = swipeLeft ? -500 : swipeRight ? 500 : 0;
       const toY = swipeUp ? -500 : 0;
       setDragState({ x: toX, y: toY, rot: mx / 10, scale: 1 });
       
       setTimeout(() => {
         const topItem = items[0];
         if (topItem) {
-          if (swipeRight && onSwipeRight) {
-            onSwipeRight(topItem);
-          } else if (swipeLeft && onSwipeLeft) {
-            onSwipeLeft(topItem);
+          if (swipeLeft && onSwipeLeft) {
+            onSwipeLeft(topItem);  // Pass
+          } else if (swipeRight && onSwipeRight) {
+            onSwipeRight(topItem);  // Connect
           } else if (swipeUp && onSwipeUp) {
             onSwipeUp(topItem);
           }
@@ -89,21 +89,21 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
                   whileTap={{ scale: 0.98 }}
                 >
                   <motion.div
-                    className="pointer-events-none absolute inset-0 z-10 flex items-start justify-start rounded-[32px] bg-emerald-500/20 p-4 text-emerald-600"
-                    animate={{ opacity: dragState.x > 30 ? Math.min(dragState.x / 150, 1) : 0 }}
-                  >
-                    <div className="flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold">
-                      <FaHeart />
-                      Connect
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    className="pointer-events-none absolute inset-0 z-10 flex items-start justify-end rounded-[32px] bg-rose-500/20 p-4 text-rose-600"
+                    className="pointer-events-none absolute inset-0 z-10 flex items-start justify-start rounded-[32px] bg-rose-500/20 p-4 text-rose-600"
                     animate={{ opacity: dragState.x < -30 ? Math.min(Math.abs(dragState.x) / 150, 1) : 0 }}
                   >
                     <div className="flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold">
                       <FaTimes />
                       Pass
+                    </div>
+                  </motion.div>
+                  <motion.div
+                    className="pointer-events-none absolute inset-0 z-10 flex items-start justify-end rounded-[32px] bg-emerald-500/20 p-4 text-emerald-600"
+                    animate={{ opacity: dragState.x > 30 ? Math.min(dragState.x / 150, 1) : 0 }}
+                  >
+                    <div className="flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold">
+                      <FaHeart />
+                      Connect
                     </div>
                   </motion.div>
                   <motion.div

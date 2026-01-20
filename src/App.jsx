@@ -153,7 +153,7 @@ const App = () => {
   const [modelReady, setModelReady] = useState(true); // Start as ready, load lazily
   const location = useLocation();
   
-  const showBottomNav = ['/stories', '/connections', '/tokens', '/profile'].includes(location?.pathname);
+  const showBottomNav = ['/landing', '/stories', '/connections', '/tokens', '/profile'].includes(location?.pathname);
 
   // Lazy load BlazeFace only when needed (CreateProfile page)
   useEffect(() => {

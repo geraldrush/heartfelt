@@ -1,9 +1,14 @@
 // src/pages/Profile.jsx
 import React, { useState } from 'react';
-import { FaPen } from 'react-icons/fa';
+import { FaPen, FaSignOutAlt, FaTachometerAlt } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 import Button from '../components/ui/Button.jsx';
 
 const Profile = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  
   // State for user profile details
   const [username, setUsername] = useState('User123');
   const [age, setAge] = useState(25);
@@ -13,6 +18,11 @@ const Profile = () => {
   const [story, setStory] = useState("I love exploring new cultures and sharing stories.");
   const [preferences, setPreferences] = useState("Looking for meaningful connections and friendships.");
   const [tokenBalance, setTokenBalance] = useState(200); // Token balance state
+
+  const handleSignOut = () => {
+    logout();
+    navigate('/');
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -34,7 +44,19 @@ const Profile = () => {
   return (
     <div className="mobile-container pull-to-refresh bg-premium-mesh p-4 pb-[calc(100px+env(safe-area-inset-bottom,0px))] md:pb-8">
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">User Profile</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">User Profile</h1>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={() => navigate('/landing')}>
+              <FaTachometerAlt className="mr-2" />
+              Dashboard
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <FaSignOutAlt className="mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
 
         {/* Token Balance Display */}
         <div className="glass-card p-6 rounded-2xl shadow-lg mb-6">

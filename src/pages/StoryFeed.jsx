@@ -15,6 +15,7 @@ import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ImageGalleryViewer from '../components/ImageGalleryViewer.jsx';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.js';
+import Button from '../components/ui/Button.jsx';
 import { triggerHaptic } from '../utils/haptics.js';
 
 const PAGE_SIZE = 20;
@@ -47,6 +48,9 @@ const StoryFeed = () => {
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [viewerStoryId, setViewerStoryId] = useState(null);
   const [viewerImageUrl, setViewerImageUrl] = useState(null);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageText, setMessageText] = useState('');
+  const [connectingStory, setConnectingStory] = useState(null);
 
   const [ageMin, setAgeMin] = useState('');
   const [ageMax, setAgeMax] = useState('');
@@ -238,7 +242,7 @@ const StoryFeed = () => {
     setStories((prev) => [story, ...prev]);
   };
 
-  const handleConnect = async (story) => {
+  const handleConnect = async (story, message = '') => {
     if (tokenBalance !== null && tokenBalance < 5) {
       triggerHaptic('error');
       setError('You need at least 5 tokens to send a connection request.');
@@ -251,7 +255,7 @@ const StoryFeed = () => {
     setTokenBalance((prev) => (prev !== null ? prev - 5 : prev));
 
     try {
-      await sendConnectionRequest({ receiver_id: story.user_id, message: '' });
+      await sendConnectionRequest({ receiver_id: story.user_id, message });
     } catch (err) {
       setError(err.message || 'Failed to send connection request.');
       restoreStory(story);
@@ -263,15 +267,15 @@ const StoryFeed = () => {
   };
 
   const handleAccept = async (story) => {
-    if (tokenBalance !== null && tokenBalance < 3) {
+    if (tokenBalance !== null && tokenBalance < 5) {
       triggerHaptic('error');
-      setError('You need at least 3 tokens to accept a connection request.');
+      setError('You need at least 5 tokens to accept a connection request.');
       return;
     }
 
     triggerHaptic('success');
     removeStory(story, 'accept');
-    setTokenBalance((prev) => (prev !== null ? prev - 3 : prev));
+    setTokenBalance((prev) => (prev !== null ? prev - 5 : prev));
 
     try {
       await acceptConnectionRequest(story.request_id);
@@ -281,7 +285,7 @@ const StoryFeed = () => {
       setSwipeHistory((prev) =>
         prev.filter((entry) => entry.story.story_id !== story.story_id)
       );
-      setTokenBalance((prev) => (prev !== null ? prev + 3 : prev));
+      setTokenBalance((prev) => (prev !== null ? prev + 5 : prev));
     }
   };
 
@@ -290,16 +294,28 @@ const StoryFeed = () => {
     removeStory(story, 'pass');
   };
 
-  const handleSwipeRight = (story) => {
-    if (story.connection_status === 'pending_received') {
-      handleAccept(story);
-      return;
-    }
-    if (story.connection_status === 'none') {
-      handleConnect(story);
-      return;
-    }
+  const handleSwipeLeft = (story) => {
     handlePass(story);
+  };
+
+  const handleSwipeRight = (story) => {
+    setConnectingStory(story);
+    setShowMessageModal(true);
+  };
+
+  const handleSendMessage = async () => {
+    if (!connectingStory) return;
+    
+    await handleConnect(connectingStory, messageText);
+    setShowMessageModal(false);
+    setMessageText('');
+    setConnectingStory(null);
+  };
+
+  const handleCancelMessage = () => {
+    setShowMessageModal(false);
+    setMessageText('');
+    setConnectingStory(null);
   };
 
   const handleUndo = () => {
@@ -353,13 +369,8 @@ const StoryFeed = () => {
         <button
           type="button"
           onClick={() => {
-            if (story.connection_status === 'pending_received') {
-              handleAccept(story);
-            } else if (story.connection_status === 'none') {
-              handleConnect(story);
-            } else {
-              handlePass(story);
-            }
+            setConnectingStory(story);
+            setShowMessageModal(true);
           }}
           className="w-14 h-14 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
         >
@@ -706,7 +717,7 @@ const StoryFeed = () => {
               <div className="relative w-full max-w-md mx-auto h-full flex items-center justify-center">
                 <CardStack
                   items={stories}
-                  onSwipeLeft={handlePass}
+                  onSwipeLeft={handleSwipeLeft}
                   onSwipeRight={handleSwipeRight}
                   onSwipeUp={(story) => setSelectedStory(story)}
                   onCardClick={(story) => setSelectedStory(story)}
@@ -761,12 +772,15 @@ const StoryFeed = () => {
                     whileTap={{ scale: 0.95 }}
                     className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-3 rounded-2xl shadow-lg"
                   >
-                    Accept (3 tokens)
+                    Accept (5 tokens)
                   </motion.button>
                 ) : currentStory.connection_status === 'none' ? (
                   <motion.button
                     type="button"
-                    onClick={() => handleConnect(currentStory)}
+                    onClick={() => {
+                      setConnectingStory(currentStory);
+                      setShowMessageModal(true);
+                    }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="flex-1 premium-button"
@@ -880,6 +894,47 @@ const StoryFeed = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Message Modal */}
+      {showMessageModal && connectingStory && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md glass-card rounded-2xl p-6 shadow-2xl"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-800">
+                Send Message to {connectingStory.age} • {connectingStory.gender}
+              </h3>
+              <button
+                type="button"
+                onClick={handleCancelMessage}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <textarea
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              placeholder="Write a thoughtful message to start the conversation..."
+              className="w-full h-32 premium-input resize-none mb-4"
+              maxLength={500}
+            />
+            
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={handleCancelMessage} className="flex-1">
+                Cancel
+              </Button>
+              <Button onClick={handleSendMessage} className="flex-1">
+                Send (5 tokens)
+              </Button>
             </div>
           </motion.div>
         </div>

@@ -297,7 +297,7 @@ const SignInPage = () => {
               <div className="mt-10 rounded-2xl bg-white/10 p-6 text-sm text-slate-200">
                 <p className="font-semibold text-white">What you get</p>
                 <ul className="mt-3 space-y-2">
-                  <li>50 welcome tokens to start connecting.</li>
+                  <li>10 welcome tokens to start connecting.</li>
                   <li>Location-aware matching across Southern Africa.</li>
                   <li>Stories-first profiles that put values upfront.</li>
                 </ul>
