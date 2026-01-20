@@ -186,15 +186,7 @@ const StoryFeed = () => {
     fetchStoriesRef.current({ reset: true });
   }, [filtersApplied]);
 
-  useEffect(() => {
-    if (loading || loadingMore || !hasMore || stories.length >= 5) {
-      return;
-    }
-    const timeoutId = setTimeout(() => {
-      fetchStoriesRef.current({ reset: false });
-    }, 100);
-    return () => clearTimeout(timeoutId);
-  }, [stories.length, hasMore, loading, loadingMore]);
+
 
   useEffect(() => {
     if (!hasMore || loadingMore || loading) {
@@ -204,7 +196,7 @@ const StoryFeed = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          fetchStories({ reset: false });
+          fetchStoriesRef.current({ reset: false });
         }
       },
       { threshold: 0.4 }
@@ -216,11 +208,9 @@ const StoryFeed = () => {
     }
 
     return () => {
-      if (sentinel) {
-        observer.unobserve(sentinel);
-      }
+      observer.disconnect();
     };
-  }, [hasMore, loadingMore, loading, fetchStories]);
+  }, [hasMore, loadingMore, loading]);
 
   const clearFilters = () => {
     setAgeMin('');
@@ -247,10 +237,8 @@ const StoryFeed = () => {
 
   const removeStory = (story, action) => {
     if (isAnimating) return;
-    setIsAnimating(true);
     setStories((prev) => prev.filter((item) => item.story_id !== story.story_id));
     setSwipeHistory((prev) => [{ story, action }, ...prev].slice(0, 5));
-    setTimeout(() => setIsAnimating(false), 300);
   };
 
   const restoreStory = (story) => {
@@ -378,27 +366,6 @@ const StoryFeed = () => {
 
   const renderCard = (story) => (
     <div className="relative h-full flex flex-col overflow-hidden rounded-[32px] bg-gradient-to-br from-purple-50 via-rose-50 to-pink-100 backdrop-blur-sm border border-purple-100/50 shadow-2xl">
-      {/* Action Buttons */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 flex gap-3">
-        <button
-          type="button"
-          onClick={() => handlePass(story)}
-          className="px-6 py-2 bg-red-500 backdrop-blur-sm rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
-        >
-          Skip
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setConnectingStory(story);
-            setShowMessageModal(true);
-          }}
-          className="px-6 py-2 bg-green-500 backdrop-blur-sm rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
-        >
-          Connect
-        </button>
-      </div>
-      
       <div className="relative h-[55%] sm:h-[50%] md:h-80">
         {story.blurred_image_url ? (
           <img
@@ -758,7 +725,7 @@ const StoryFeed = () => {
                 </div>
               </div>
             ) : stories.length > 0 ? (
-              <div className="relative w-full max-w-md mx-auto h-full flex items-center justify-center">
+              <div className="relative w-full max-w-md mx-auto h-full flex flex-col items-center justify-center">
                 <CardStack
                   items={stories}
                   onSwipeLeft={handleSwipeLeft}
@@ -768,6 +735,30 @@ const StoryFeed = () => {
                   renderCard={renderCard}
                   disabled={showImageViewer}
                 />
+                
+                {/* Action Buttons Below Card */}
+                {currentStory && (
+                  <div className="flex gap-4 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => handlePass(currentStory)}
+                      className="px-8 py-3 bg-red-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+                    >
+                      Skip
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConnectingStory(currentStory);
+                        setShowMessageModal(true);
+                      }}
+                      className="px-8 py-3 bg-green-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+                    >
+                      Connect
+                    </button>
+                  </div>
+                )}
+                
                 <HeartAnimation trigger={heartTrigger} />
               </div>
             ) : (

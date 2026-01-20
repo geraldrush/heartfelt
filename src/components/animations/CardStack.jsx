@@ -15,18 +15,16 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
     
     setIsAnimating(true);
     
-    setTimeout(() => {
-      if (direction === 'left' && onSwipeLeft) {
-        onSwipeLeft(topItem);
-      } else if (direction === 'right' && onSwipeRight) {
-        onSwipeRight(topItem);
-      } else if (direction === 'up' && onSwipeUp) {
-        onSwipeUp(topItem);
-      }
-      
-      setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
-      setIsAnimating(false);
-    }, 250);
+    if (direction === 'left' && onSwipeLeft) {
+      onSwipeLeft(topItem);
+    } else if (direction === 'right' && onSwipeRight) {
+      onSwipeRight(topItem);
+    } else if (direction === 'up' && onSwipeUp) {
+      onSwipeUp(topItem);
+    }
+    
+    setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
+    setIsAnimating(false);
   }, [isAnimating, onSwipeLeft, onSwipeRight, onSwipeUp]);
 
   const bind = useDrag(({ down, movement: [mx, my], tap }) => {

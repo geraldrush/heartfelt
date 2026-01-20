@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { refreshToken } from '../utils/api.js';
+import { refreshToken, getCurrentUser } from '../utils/api.js';
 import {
   getIdleTimeout,
   isTokenValid,
@@ -152,8 +152,17 @@ export const AuthProvider = ({ children }) => {
       return;
     }
     
-    // Always keep user logged in if token exists
+    // Set token and fetch user data
     setToken(storedToken);
+    
+    try {
+      const data = await getCurrentUser();
+      setUser(data.user);
+    } catch {
+      // Keep token but set empty user to prevent logout
+      setUser({ id: 'temp' });
+    }
+    
     setLoading(false);
   }, []);
 
