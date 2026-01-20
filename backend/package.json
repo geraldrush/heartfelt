@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20.18.1"
+    "node": ">=18.0.0"
   },
   "scripts": {
     "build": "echo 'No build needed for Cloudflare Workers'",
@@ -14,5 +14,8 @@
     "hono": "^4.0.0",
     "jose": "^5.2.4",
     "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.12"
   }
 }
