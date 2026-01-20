@@ -1,6 +1,7 @@
 // src/pages/Profile.jsx
 import React, { useState } from 'react';
-import { FaPen } from 'react-icons/fa'; // Ensure this line is correct
+import { FaPen } from 'react-icons/fa';
+import Button from '../components/ui/Button.jsx';
 
 const Profile = () => {
   // State for user profile details
@@ -31,29 +32,27 @@ const Profile = () => {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gradient-to-b from-blue-400 to-purple-500 p-4">
-      <h1 className="text-3xl font-bold mb-6 text-white">User Profile</h1>
+    <div className="mobile-container pull-to-refresh bg-premium-mesh p-4 pb-[calc(100px+env(safe-area-inset-bottom,0px))] md:pb-8">
+      <div className="mx-auto max-w-2xl">
+        <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">User Profile</h1>
 
-      {/* Token Balance Display */}
-      <div className="bg-white p-4 rounded-lg shadow-md w-full max-w-lg mb-4">
-        <h2 className="text-xl font-semibold mb-2">Token Balance</h2>
-        <p className="text-gray-700">{tokenBalance} Tokens</p>
-        <button
-          onClick={handleTopUp}
-          className="mt-2 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition"
-        >
-          Top Up Tokens
-        </button>
-      </div>
+        {/* Token Balance Display */}
+        <div className="glass-card p-6 rounded-2xl shadow-lg mb-6">
+          <h2 className="text-xl font-semibold mb-2 text-gray-800">Token Balance</h2>
+          <p className="text-2xl font-bold text-rose-600 mb-4">{tokenBalance} Tokens</p>
+          <Button onClick={handleTopUp} size="sm">
+            Top Up Tokens
+          </Button>
+        </div>
 
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg space-y-4">
+        <form onSubmit={handleSubmit} className="glass-card p-6 rounded-2xl shadow-lg space-y-6">
         {/* Username */}
         <div className="flex items-center justify-between">
           <div className="flex-grow">
             <label className="block mb-1 text-gray-700">Username</label>
             <p className="border-b border-gray-300 pb-1">{username}</p>
           </div>
-          <FaPen className="text-blue-500 cursor-pointer" onClick={() => setUsername(prompt("Enter new username:", username))} />
+          <FaPen className="text-rose-500 cursor-pointer hover:text-rose-600" onClick={() => setUsername(prompt("Enter new username:", username))} />
         </div>
 
         {/* Age */}
@@ -62,7 +61,7 @@ const Profile = () => {
             <label className="block mb-1 text-gray-700">Age</label>
             <p className="border-b border-gray-300 pb-1">{age}</p>
           </div>
-          <FaPen className="text-blue-500 cursor-pointer" onClick={() => setAge(prompt("Enter new age:", age))} />
+          <FaPen className="text-rose-500 cursor-pointer hover:text-rose-600" onClick={() => setAge(prompt("Enter new age:", age))} />
         </div>
 
         {/* Gender */}
@@ -71,7 +70,7 @@ const Profile = () => {
             <label className="block mb-1 text-gray-700">Gender</label>
             <p className="border-b border-gray-300 pb-1">{gender}</p>
           </div>
-          <FaPen className="text-blue-500 cursor-pointer" onClick={() => setGender(prompt("Enter new gender:", gender))} />
+          <FaPen className="text-rose-500 cursor-pointer hover:text-rose-600" onClick={() => setGender(prompt("Enter new gender:", gender))} />
         </div>
 
         {/* Race */}
@@ -80,7 +79,7 @@ const Profile = () => {
             <label className="block mb-1 text-gray-700">Race</label>
             <p className="border-b border-gray-300 pb-1">{race}</p>
           </div>
-          <FaPen className="text-blue-500 cursor-pointer" onClick={() => setRace(prompt("Enter new race:", race))} />
+          <FaPen className="text-rose-500 cursor-pointer hover:text-rose-600" onClick={() => setRace(prompt("Enter new race:", race))} />
         </div>
 
         {/* Religion */}
@@ -89,7 +88,7 @@ const Profile = () => {
             <label className="block mb-1 text-gray-700">Religion</label>
             <p className="border-b border-gray-300 pb-1">{religion}</p>
           </div>
-          <FaPen className="text-blue-500 cursor-pointer" onClick={() => setReligion(prompt("Enter new religion:", religion))} />
+          <FaPen className="text-rose-500 cursor-pointer hover:text-rose-600" onClick={() => setReligion(prompt("Enter new religion:", religion))} />
         </div>
 
         {/* My Story */}
@@ -98,7 +97,7 @@ const Profile = () => {
             <label className="block mb-1 text-gray-700">My Story</label>
             <p className="border-b border-gray-300 pb-1">{story}</p>
           </div>
-          <FaPen className="text-blue-500 cursor-pointer" onClick={() => setStory(prompt("Enter new story:", story))} />
+          <FaPen className="text-rose-500 cursor-pointer hover:text-rose-600" onClick={() => setStory(prompt("Enter new story:", story))} />
         </div>
 
         {/* Preferences */}
@@ -107,16 +106,14 @@ const Profile = () => {
             <label className="block mb-1 text-gray-700">Preferences</label>
             <p className="border-b border-gray-300 pb-1">{preferences}</p>
           </div>
-          <FaPen className="text-blue-500 cursor-pointer" onClick={() => setPreferences(prompt("Enter new preferences:", preferences))} />
+          <FaPen className="text-rose-500 cursor-pointer hover:text-rose-600" onClick={() => setPreferences(prompt("Enter new preferences:", preferences))} />
         </div>
 
-        <button
-          type="submit"
-          className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition"
-        >
+        <Button type="submit" className="w-full">
           Save Changes
-        </button>
+        </Button>
       </form>
+      </div>
     </div>
   );
 };

@@ -82,9 +82,9 @@ const SignInPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-200 via-sky-100 to-amber-100">
+    <div className="min-h-screen bg-premium-mesh">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-2 py-8 sm:px-6 sm:py-12">
-        <div className="w-full bg-white/80 p-6 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-12">
+        <div className="w-full glass-card p-6 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-12">
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
               <h1 className="text-4xl font-bold text-slate-900">
@@ -103,7 +103,7 @@ const SignInPage = () => {
                   <button
                     type="button"
                     onClick={() => setIsSignup((prev) => !prev)}
-                    className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                    className="text-sm font-semibold text-rose-600 hover:text-rose-700"
                   >
                     {isSignup ? 'Already have an account?' : 'Need an account?'}
                   </button>
@@ -116,7 +116,7 @@ const SignInPage = () => {
                       type="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-400 focus:outline-none"
+                      className="mt-2 w-full premium-input"
                       placeholder="you@example.com"
                       required
                     />
@@ -128,7 +128,7 @@ const SignInPage = () => {
                       type="password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-400 focus:outline-none"
+                      className="mt-2 w-full premium-input"
                       placeholder="Enter your password"
                       required
                     />
@@ -254,7 +254,7 @@ const SignInPage = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="w-full premium-button"
                   >
                     {loading
                       ? 'Please wait...'
@@ -282,7 +282,7 @@ const SignInPage = () => {
 
             <div className="flex flex-col justify-between rounded-2xl bg-slate-900 p-6 sm:p-10 text-white">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">
+                <p className="text-xs uppercase tracking-[0.3em] text-rose-300">
                   Your Story Starts Here
                 </p>
                 <h3 className="mt-4 text-3xl font-semibold">

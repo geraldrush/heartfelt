@@ -14,6 +14,7 @@ import HeartAnimation from '../components/animations/HeartAnimation.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ImageGalleryViewer from '../components/ImageGalleryViewer.jsx';
+import { usePullToRefresh } from '../hooks/usePullToRefresh.js';
 import { triggerHaptic } from '../utils/haptics.js';
 
 const PAGE_SIZE = 20;
@@ -64,6 +65,10 @@ const StoryFeed = () => {
 
   const sentinelRef = useRef(null);
 
+  const { containerRef, isRefreshing, pullDistance } = usePullToRefresh(
+    () => fetchStories({ reset: true })
+  );
+
   const activeFilterCount = useMemo(() => {
     const entries = Object.entries(filtersApplied).filter(([key, value]) => {
       if (value === '' || value === null || value === undefined) {
@@ -92,6 +97,11 @@ const StoryFeed = () => {
     };
     fetchMeta();
   }, []);
+
+  // Reset selectedStory when stories change
+  useEffect(() => {
+    setSelectedStory(null);
+  }, [stories]);
 
   useEffect(() => {
     const nextDraft = {
@@ -466,7 +476,16 @@ const StoryFeed = () => {
   );
 
   return (
-    <div className="h-screen md:min-h-screen overflow-hidden md:overflow-auto bg-premium-mesh relative pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+    <div ref={containerRef} className="mobile-container pull-to-refresh bg-premium-mesh relative pt-[env(safe-area-inset-top,0px)] pb-[calc(80px+env(safe-area-inset-bottom,0px))] md:pb-[env(safe-area-inset-bottom,0px)]">
+      {/* Pull to refresh indicator */}
+      {pullDistance > 0 && (
+        <div 
+          className="fixed top-[env(safe-area-inset-top,0px)] left-1/2 transform -translate-x-1/2 z-50 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium text-gray-600 transition-all duration-200"
+          style={{ transform: `translateX(-50%) translateY(${Math.min(pullDistance / 2, 40)}px)` }}
+        >
+          {isRefreshing ? '🔄 Refreshing...' : pullDistance > 80 ? '↓ Release to refresh' : '↓ Pull to refresh'}
+        </div>
+      )}
       {/* Background Elements */}
       <div className="fixed inset-0 bg-gradient-to-br from-purple-900/10 via-pink-900/10 to-rose-900/10" />
       <div className="absolute top-40 left-20 w-64 h-64 bg-purple-500/5 rounded-full blur-2xl md:blur-3xl animate-pulse" />
@@ -546,10 +565,10 @@ const StoryFeed = () => {
           {/* Filters Panel */}
           {showFilters && (
             <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto z-50 glass-card rounded-t-3xl md:rounded-3xl p-8 mb-0 md:mb-8 max-h-[90vh] md:max-h-none overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] md:pb-8"
+              initial={{ opacity: 0, y: '100%' }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: '100%' }}
+              className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto z-50 glass-card rounded-t-3xl md:rounded-3xl p-6 mb-0 md:mb-8 max-h-[70vh] md:max-h-none overflow-y-auto pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-8"
             >
               <div className="flex justify-between items-center mb-6 md:hidden">
                 <h3 className="text-lg font-semibold text-gray-800">Filters</h3>
@@ -692,7 +711,7 @@ const StoryFeed = () => {
                   onSwipeUp={(story) => setSelectedStory(story)}
                   onCardClick={(story) => setSelectedStory(story)}
                   renderCard={renderCard}
-                  disabled={showImageViewer || selectedStory !== null}
+                  disabled={showImageViewer}
                 />
                 <HeartAnimation trigger={heartTrigger} />
               </div>

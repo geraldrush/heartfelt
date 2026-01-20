@@ -75,6 +75,47 @@ a {
   box-shadow: 0 18px 40px rgba(244, 63, 94, 0.35);
 }
 
+.premium-button {
+  background: linear-gradient(135deg, #f43f5e, #ec4899);
+  color: white;
+  border-radius: 16px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 25px rgba(244, 63, 94, 0.3);
+}
+
+.premium-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 35px rgba(244, 63, 94, 0.4);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.premium-input {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.premium-input:focus {
+  outline: none;
+  border-color: #f43f5e;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.1);
+}
+
+.bg-premium-mesh {
+  background: linear-gradient(135deg, #fdf2f8, #fce7f3, #fbcfe8);
+}
+
 .fade-in {
   animation: fade 0.4s ease forwards;
 }
@@ -157,4 +198,29 @@ input, select, textarea {
 /* Smooth transitions for viewport changes */
 .stories-container {
   transition: height 0.2s ease-out;
+}
+
+/* Mobile keyboard and pull-to-refresh handling */
+.pull-to-refresh {
+  overscroll-behavior-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.keyboard-safe {
+  padding-bottom: env(keyboard-inset-height, 0px);
+}
+
+/* Prevent content jump when keyboard opens */
+@media (max-width: 768px) {
+  .mobile-container {
+    height: 100vh;
+    height: 100dvh;
+    overflow: auto;
+  }
+  
+  @supports (-webkit-touch-callout: none) {
+    .mobile-container {
+      height: -webkit-fill-available;
+    }
+  }
 }

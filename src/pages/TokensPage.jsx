@@ -197,7 +197,7 @@ const TokensPage = () => {
   }, [packages]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-50 to-peach-100 px-4 py-10 pb-28 text-slate-900">
+    <div className="mobile-container pull-to-refresh bg-gradient-to-br from-rose-100 via-pink-50 to-peach-100 px-4 py-10 pb-[calc(100px+env(safe-area-inset-bottom,0px))] md:pb-28 text-slate-900">
       <div className="mx-auto w-full max-w-4xl">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div>
@@ -246,41 +246,77 @@ const TokensPage = () => {
         </div>
 
         <div className="mt-4 overflow-hidden rounded-2xl bg-white text-slate-700 shadow">
-          <div className="grid grid-cols-5 gap-2 border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase text-slate-500">
-            <span>Date</span>
-            <span>Type</span>
-            <span>Amount</span>
-            <span>Description</span>
-            <span>Balance</span>
-          </div>
-          {loading ? (
-            <div className="px-4 py-6 text-center">
-              <LoadingSpinner label="Loading..." />
-            </div>
-          ) : transactions.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm text-slate-500">No transactions yet.</div>
-          ) : (
-            transactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="grid grid-cols-5 gap-2 border-b border-slate-100 px-4 py-3 text-sm"
-              >
-                <span>{new Date(tx.created_at).toLocaleDateString()}</span>
-                <span className="flex items-center gap-2">
-                  <FontAwesomeIcon
-                    icon={tx.amount > 0 ? faArrowDown : faArrowUp}
-                    className={tx.amount > 0 ? 'text-emerald-500' : 'text-red-500'}
-                  />
-                  {tx.transaction_type}
-                </span>
-                <span className={tx.amount > 0 ? 'text-emerald-600' : 'text-red-600'}>
-                  {tx.amount > 0 ? '+' : ''}{tx.amount}
-                </span>
-                <span>{tx.description || '—'}</span>
-                <span>{tx.balance_after}</span>
+          {/* Mobile Card Layout */}
+          <div className="md:hidden">
+            {loading ? (
+              <div className="px-4 py-6 text-center">
+                <LoadingSpinner label="Loading..." />
               </div>
-            ))
-          )}
+            ) : transactions.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-slate-500">No transactions yet.</div>
+            ) : (
+              transactions.map((tx) => (
+                <div key={tx.id} className="border-b border-slate-100 px-4 py-4 last:border-b-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <FontAwesomeIcon
+                        icon={tx.amount > 0 ? faArrowDown : faArrowUp}
+                        className={tx.amount > 0 ? 'text-emerald-500' : 'text-red-500'}
+                      />
+                      <span className="font-medium text-sm">{tx.transaction_type}</span>
+                    </div>
+                    <span className={`font-semibold ${tx.amount > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {tx.amount > 0 ? '+' : ''}{tx.amount}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-500 space-y-1">
+                    <div>{new Date(tx.created_at).toLocaleDateString()}</div>
+                    <div>{tx.description || '—'}</div>
+                    <div>Balance: {tx.balance_after}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block">
+            <div className="grid grid-cols-5 gap-2 border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase text-slate-500">
+              <span>Date</span>
+              <span>Type</span>
+              <span>Amount</span>
+              <span>Description</span>
+              <span>Balance</span>
+            </div>
+            {loading ? (
+              <div className="px-4 py-6 text-center">
+                <LoadingSpinner label="Loading..." />
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-slate-500">No transactions yet.</div>
+            ) : (
+              transactions.map((tx) => (
+                <div
+                  key={tx.id}
+                  className="grid grid-cols-5 gap-2 border-b border-slate-100 px-4 py-3 text-sm"
+                >
+                  <span>{new Date(tx.created_at).toLocaleDateString()}</span>
+                  <span className="flex items-center gap-2">
+                    <FontAwesomeIcon
+                      icon={tx.amount > 0 ? faArrowDown : faArrowUp}
+                      className={tx.amount > 0 ? 'text-emerald-500' : 'text-red-500'}
+                    />
+                    {tx.transaction_type}
+                  </span>
+                  <span className={tx.amount > 0 ? 'text-emerald-600' : 'text-red-600'}>
+                    {tx.amount > 0 ? '+' : ''}{tx.amount}
+                  </span>
+                  <span>{tx.description || '—'}</span>
+                  <span>{tx.balance_after}</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         {hasMore && !loading && (

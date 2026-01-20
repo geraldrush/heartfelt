@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import FadeIn from './components/animations/FadeIn.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
+import BottomNavigation from './components/BottomNavigation.jsx';
 import SignInPage from './pages/SignInPage';
 import LandingPage from './pages/LandingPage';
 import CreateProfile from './pages/CreateProfile';
@@ -149,31 +150,41 @@ const AnimatedRoutes = () => {
 };
 
 const App = () => {
-  const [modelReady, setModelReady] = useState(false);
+  const [modelReady, setModelReady] = useState(true); // Start as ready, load lazily
+  const location = useLocation();
+  
+  const showBottomNav = ['/stories', '/connections', '/tokens', '/profile'].includes(location?.pathname);
 
+  // Lazy load BlazeFace only when needed (CreateProfile page)
   useEffect(() => {
-    let mounted = true;
-    loadBlazeFaceModel()
-      .catch(() => null)
-      .finally(() => {
-        if (mounted) {
-          setModelReady(true);
-        }
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    if (location?.pathname === '/create-profile') {
+      let mounted = true;
+      setModelReady(false);
+      loadBlazeFaceModel()
+        .catch(() => null)
+        .finally(() => {
+          if (mounted) {
+            setModelReady(true);
+          }
+        });
+      return () => {
+        mounted = false;
+      };
+    }
+  }, [location?.pathname]);
 
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <AuthProvider>
-        {!modelReady && (
-          <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-emerald-600 px-4 py-2 text-xs font-semibold text-white">
-            Loading face detection model...
-          </div>
-        )}
-        <AnimatedRoutes />
+        <div className="pull-to-refresh">
+          {!modelReady && location?.pathname === '/create-profile' && (
+            <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-emerald-600 px-4 py-2 text-xs font-semibold text-white">
+              Loading face detection model...
+            </div>
+          )}
+          <AnimatedRoutes />
+          {showBottomNav && <BottomNavigation />}
+        </div>
       </AuthProvider>
     </GoogleOAuthProvider>
   );
