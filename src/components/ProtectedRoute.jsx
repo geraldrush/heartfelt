@@ -2,7 +2,6 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import Navbar from './Navbar.jsx';
 
 const ProtectedRoute = ({ children, requireIncompleteProfile = false }) => {
   const { isAuthenticated, loading, user } = useAuth();
@@ -29,12 +28,7 @@ const ProtectedRoute = ({ children, requireIncompleteProfile = false }) => {
     return <Navigate to="/create-profile" replace />;
   }
 
-  return (
-    <>
-      <Navbar />
-      {children}
-    </>
-  );
+  return children;
 };
 
 export default ProtectedRoute;
