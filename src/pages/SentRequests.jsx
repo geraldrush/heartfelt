@@ -57,7 +57,11 @@ const SentRequests = () => {
       return null;
     }
     const diffMs = new Date(expiresAt).getTime() - Date.now();
-    return Math.max(Math.ceil(diffMs / (1000 * 60 * 60 * 24)), 0);
+    const totalDays = 7; // Assuming 7-day expiry
+    const daysRemaining = Math.max(Math.ceil(diffMs / (1000 * 60 * 60 * 24)), 0);
+    const progress = Math.max(0, Math.min(100, ((totalDays - daysRemaining) / totalDays) * 100));
+    
+    return { daysRemaining, progress };
   };
 
   return (
@@ -73,13 +77,16 @@ const SentRequests = () => {
         )}
 
         {sentRequests.map((request) => {
-          const daysRemaining = getDaysRemaining(request.expires_at);
+          const timeData = getDaysRemaining(request.expires_at);
+          const daysRemaining = timeData?.daysRemaining || 0;
+          const progress = timeData?.progress || 0;
+          
           return (
             <div
               key={request.id}
-              className="flex flex-col gap-2 border-b border-gray-200 py-3 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 border-b border-gray-200 py-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-2">
                 <span className="font-semibold">{request.full_name}</span>
                 <span className="text-gray-600">
                   {request.gender}, {request.age} years old
@@ -87,24 +94,32 @@ const SentRequests = () => {
                 <span className="text-xs text-gray-500">
                   Status: {request.status}
                 </span>
-                {daysRemaining !== null && (
-                  <span className="text-xs text-gray-500">
-                    Expires in {daysRemaining} day{daysRemaining === 1 ? '' : 's'}
-                  </span>
+                {timeData && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500">
+                      Expires in {daysRemaining} day{daysRemaining === 1 ? '' : 's'}
+                    </span>
+                    <div className="w-32 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-rose-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
               {request.status === 'pending' && (
                 <button
                   type="button"
                   onClick={() => handleCancel(request)}
-                  className="rounded bg-rose-500 px-4 py-1 text-white transition hover:bg-rose-600"
+                  className="rounded bg-rose-500 px-4 py-2 text-white transition hover:bg-rose-600 text-sm"
                 >
                   Cancel
                 </button>
               )}
             </div>
           );
-        })}
+        })}}
       </div>
     </div>
   );

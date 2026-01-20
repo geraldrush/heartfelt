@@ -1,6 +1,6 @@
 // src/pages/StoryFeed.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FaFilter } from 'react-icons/fa';
 import {
   acceptConnectionRequest,
@@ -14,6 +14,7 @@ import HeartAnimation from '../components/animations/HeartAnimation.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ImageGalleryViewer from '../components/ImageGalleryViewer.jsx';
+import Toast from '../components/Toast.jsx';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.js';
 import Button from '../components/ui/Button.jsx';
 import { triggerHaptic } from '../utils/haptics.js';
@@ -51,6 +52,8 @@ const StoryFeed = () => {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [connectingStory, setConnectingStory] = useState(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const [ageMin, setAgeMin] = useState('');
   const [ageMax, setAgeMax] = useState('');
@@ -234,9 +237,20 @@ const StoryFeed = () => {
     setMaxDistance(100);
   };
 
+  const showToast = (message, type = 'error') => {
+    setToast({ message, type });
+  };
+
+  const hideToast = () => {
+    setToast(null);
+  };
+
   const removeStory = (story, action) => {
+    if (isAnimating) return;
+    setIsAnimating(true);
     setStories((prev) => prev.filter((item) => item.story_id !== story.story_id));
     setSwipeHistory((prev) => [{ story, action }, ...prev].slice(0, 5));
+    setTimeout(() => setIsAnimating(false), 300);
   };
 
   const restoreStory = (story) => {
@@ -257,8 +271,10 @@ const StoryFeed = () => {
 
     try {
       await sendConnectionRequest({ receiver_id: story.user_id, message });
+      showToast('Connection request sent!', 'success');
     } catch (err) {
-      setError(err.message || 'Failed to send connection request.');
+      console.error('Connection request failed:', err);
+      setError(`Failed to send connection request: ${err.message}`);
       restoreStory(story);
       setSwipeHistory((prev) =>
         prev.filter((entry) => entry.story.story_id !== story.story_id)
@@ -280,8 +296,10 @@ const StoryFeed = () => {
 
     try {
       await acceptConnectionRequest(story.request_id);
+      showToast('Connection request accepted!', 'success');
     } catch (err) {
-      setError(err.message || 'Failed to accept connection request.');
+      console.error('Accept connection failed:', err);
+      setError(`Failed to accept connection request: ${err.message}`);
       restoreStory(story);
       setSwipeHistory((prev) =>
         prev.filter((entry) => entry.story.story_id !== story.story_id)
@@ -291,6 +309,7 @@ const StoryFeed = () => {
   };
 
   const handlePass = (story) => {
+    if (isAnimating) return; // Prevent multiple rapid passes
     triggerHaptic('light');
     removeStory(story, 'pass');
   };
@@ -362,18 +381,21 @@ const StoryFeed = () => {
       <div className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-1/2 transform -translate-x-1/2 z-10 flex gap-4 md:hidden">
         <button
           type="button"
-          onClick={() => handlePass(story)}
-          className="w-20 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+          onClick={() => !isAnimating && handlePass(story)}
+          className="w-20 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
+          disabled={isAnimating}
         >
           <span className="text-sm font-semibold text-gray-600">Pass</span>
         </button>
         <button
           type="button"
           onClick={() => {
+            if (isAnimating) return;
             setConnectingStory(story);
             setShowMessageModal(true);
           }}
-          className="w-20 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+          className="w-20 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
+          disabled={isAnimating}
         >
           <span className="text-sm font-semibold text-rose-600">Connect</span>
         </button>
@@ -428,7 +450,7 @@ const StoryFeed = () => {
 
         {/* Name and age overlay */}
         <div className="absolute bottom-4 left-4 right-4">
-          <h3 className="text-2xl font-bold text-white mb-1">
+          <h3 className="text-xl font-semibold text-white mb-1">
             {story.age} • {story.gender}
           </h3>
           <p className="text-white/90 text-sm">
@@ -512,7 +534,7 @@ const StoryFeed = () => {
             className="hidden md:flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8"
           >
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 bg-clip-text text-transparent mb-2">
+              <h1 className="text-2xl font-semibold bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 bg-clip-text text-transparent mb-2">
                 Discover Stories
               </h1>
               <p className="text-gray-600">
@@ -744,7 +766,7 @@ const StoryFeed = () => {
                   onSwipeUp={(story) => setSelectedStory(story)}
                   onCardClick={(story) => setSelectedStory(story)}
                   renderCard={renderCard}
-                  disabled={showImageViewer}
+                  disabled={showImageViewer || isAnimating}
                 />
                 <HeartAnimation trigger={heartTrigger} />
               </div>
@@ -861,7 +883,7 @@ const StoryFeed = () => {
           >
             <div className="flex items-center justify-between border-b border-white/20 px-6 py-4">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">
+                <h3 className="text-lg font-semibold text-gray-800">
                   {selectedStory.age} • {selectedStory.gender}
                 </h3>
                 <p className="text-gray-600">{selectedStory.location_city}</p>
@@ -930,7 +952,7 @@ const StoryFeed = () => {
             className="w-full max-w-md glass-card rounded-2xl p-6 shadow-2xl"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-800">
+              <h3 className="text-lg font-semibold text-gray-800">
                 Send Message to {connectingStory.age} • {connectingStory.gender}
               </h3>
               <button
@@ -942,19 +964,36 @@ const StoryFeed = () => {
               </button>
             </div>
             
-            <textarea
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              placeholder="Write a thoughtful message to start the conversation..."
-              className="w-full h-32 premium-input resize-none mb-4"
-              maxLength={500}
-            />
+            <div className="space-y-3 mb-4">
+              {[
+                "Hi! Let's connect 😊",
+                "You seem interesting, let's chat!",
+                "I'd love to get to know you better",
+                "Your story caught my attention!"
+              ].map((message, index) => (
+                <button
+                  key={index}
+                  onClick={() => setMessageText(message)}
+                  className={`w-full text-left p-3 rounded-xl border transition-colors ${
+                    messageText === message
+                      ? 'border-rose-400 bg-rose-50 text-rose-700'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  {message}
+                </button>
+              ))}
+            </div>
             
             <div className="flex gap-3">
               <Button variant="secondary" onClick={handleCancelMessage} className="flex-1">
                 Cancel
               </Button>
-              <Button onClick={handleSendMessage} className="flex-1">
+              <Button 
+                onClick={handleSendMessage} 
+                className="flex-1"
+                disabled={!messageText}
+              >
                 Send (5 tokens)
               </Button>
             </div>
@@ -971,6 +1010,16 @@ const StoryFeed = () => {
           isOpen={showImageViewer}
         />
       )}
+      {/* Toast Notifications */}
+      <AnimatePresence>
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={hideToast}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

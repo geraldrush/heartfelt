@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useDrag } from 'react-use-gesture';
 import { motion } from 'framer-motion';
 import { FaArrowUp, FaHeart, FaTimes } from 'react-icons/fa';
@@ -8,18 +8,32 @@ const SWIPE_THRESHOLD = 150;
 
 const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, onCardClick, disabled = false }) => {
   const [dragState, setDragState] = React.useState({ x: 0, y: 0, rot: 0, scale: 1 });
-  const [isVisible, setIsVisible] = React.useState(true);
+  const [isAnimating, setIsAnimating] = React.useState(false);
 
-  React.useEffect(() => {
-    setIsVisible(true);
-  }, [items]);
+  const handleSwipeComplete = useCallback((direction, topItem) => {
+    if (isAnimating) return;
+    
+    setIsAnimating(true);
+    
+    setTimeout(() => {
+      if (direction === 'left' && onSwipeLeft) {
+        onSwipeLeft(topItem);
+      } else if (direction === 'right' && onSwipeRight) {
+        onSwipeRight(topItem);
+      } else if (direction === 'up' && onSwipeUp) {
+        onSwipeUp(topItem);
+      }
+      
+      setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
+      setIsAnimating(false);
+    }, 250);
+  }, [isAnimating, onSwipeLeft, onSwipeRight, onSwipeUp]);
 
   const bind = useDrag(({ down, movement: [mx, my], tap }) => {
-    if (disabled) return; // Prevent gestures when disabled
-    if (tap) return; // Ignore tap events
+    if (disabled || isAnimating) return;
+    if (tap) return;
     
     if (down) {
-      // Light haptic on drag start
       if (Math.abs(mx) > 10 || Math.abs(my) > 10) {
         triggerHaptic('light');
       }
@@ -27,30 +41,21 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
       return;
     }
 
-    const swipeLeft = mx < -SWIPE_THRESHOLD;  // Pass
-    const swipeRight = mx > SWIPE_THRESHOLD;  // Connect
+    const swipeLeft = mx < -SWIPE_THRESHOLD;
+    const swipeRight = mx > SWIPE_THRESHOLD;
     const swipeUp = my < -SWIPE_THRESHOLD;
 
     if (swipeRight || swipeLeft || swipeUp) {
-      // Medium haptic on successful swipe
       triggerHaptic('medium');
       const toX = swipeLeft ? -500 : swipeRight ? 500 : 0;
       const toY = swipeUp ? -500 : 0;
       setDragState({ x: toX, y: toY, rot: mx / 10, scale: 1 });
       
-      setTimeout(() => {
-        const topItem = items[0];
-        if (topItem) {
-          if (swipeLeft && onSwipeLeft) {
-            onSwipeLeft(topItem);  // Pass
-          } else if (swipeRight && onSwipeRight) {
-            onSwipeRight(topItem);  // Connect
-          } else if (swipeUp && onSwipeUp) {
-            onSwipeUp(topItem);
-          }
-        }
-        setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
-      }, 300);
+      const topItem = items[0];
+      if (topItem) {
+        const direction = swipeLeft ? 'left' : swipeRight ? 'right' : 'up';
+        handleSwipeComplete(direction, topItem);
+      }
     } else {
       setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
     }
@@ -77,16 +82,23 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
             return (
               <motion.div
                 key={item.story_id || item.id}
-                {...(!disabled ? bind() : {})}
-                onClick={() => onCardClick?.(item)}
+                {...(!disabled && !isAnimating ? bind() : {})}
+                onClick={() => !isAnimating && onCardClick?.(item)}
                 initial={{ opacity: 1, scale: 1 }}
-                animate={{ x: dragState.x, y: dragState.y, rotate: dragState.rot, scale: dragState.scale, opacity: 1 }}
-                transition={{ duration: 0.3 }}
+                animate={{ 
+                  x: dragState.x, 
+                  y: dragState.y, 
+                  rotate: dragState.rot, 
+                  scale: dragState.scale, 
+                  opacity: 1 
+                }}
+                transition={{ duration: isAnimating ? 0.25 : 0.15, ease: 'easeOut' }}
                 className="absolute inset-0 cursor-grab select-none"
+                style={{ pointerEvents: isAnimating ? 'none' : 'auto' }}
               >
                 <motion.div
                   className="relative h-full w-full overflow-hidden rounded-[32px] border border-rose-100 bg-white shadow-2xl"
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={!isAnimating ? { scale: 0.98 } : {}}
                 >
                   <motion.div
                     className="pointer-events-none absolute inset-0 z-10 flex items-start justify-start rounded-[32px] bg-rose-500/20 p-4 text-rose-600"

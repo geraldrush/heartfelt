@@ -80,7 +80,7 @@ const ReceivedRequests = () => {
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-50 to-peach-100 p-4 pb-28 text-slate-900">
       <div className="mx-auto w-full max-w-3xl rounded-2xl bg-white p-6 shadow">
         <h1 className="text-2xl font-bold text-slate-900">Received Requests</h1>
-        <p className="mt-2 text-sm text-slate-500">Accepting a request costs 3 tokens.</p>
+        <p className="mt-2 text-sm text-slate-500">Accepting a request costs 5 tokens.</p>
 
         {error && (
           <div className="mt-4 rounded-lg bg-rose-100 px-3 py-2 text-sm text-rose-700">
@@ -127,7 +127,7 @@ const ReceivedRequests = () => {
                     disabled={processingId === request.id}
                     className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
                   >
-                    Accept (3 tokens)
+                    Accept (5 tokens)
                   </button>
                   <button
                     type="button"

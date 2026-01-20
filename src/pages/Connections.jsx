@@ -59,6 +59,10 @@ const Connections = () => {
       return;
     }
 
+    // Confirmation dialog
+    const confirmed = window.confirm(`Send ${numericAmount} tokens${message ? ` with message: "${message}"` : ''}?`);
+    if (!confirmed) return;
+
     try {
       await transferTokens({
         recipient_id: recipientId,
