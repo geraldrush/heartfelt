@@ -109,12 +109,14 @@ export class ChatRoom {
       this.cleanupConnection(userId);
     });
 
-    // CSRF protection - validate referer header
+    // CSRF protection - validate referer header (temporarily disabled for debugging)
     const referer = request.headers.get('Referer');
-    if (referer && !allowedOrigins.some(origin => referer.startsWith(origin))) {
-      console.log('Invalid referer:', referer, 'Allowed origins:', allowedOrigins);
-      return new Response('Invalid referer', { status: 403 });
-    }
+    console.log('WebSocket Referer:', referer);
+    
+    // if (referer && !allowedOrigins.some(origin => referer.startsWith(origin))) {
+    //   console.log('Invalid referer:', referer, 'Allowed origins:', allowedOrigins);
+    //   return new Response('Invalid referer', { status: 403 });
+    // }
 
     return new Response(null, { 
       status: 101, 

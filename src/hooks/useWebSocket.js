@@ -29,10 +29,17 @@ export const useWebSocket = ({
 
   const connect = useCallback(() => {
     if (!connectionId) {
+      setConnectionState('error');
       return;
     }
     const token = localStorage.getItem('token');
     if (!token) {
+      setConnectionState('error');
+      return;
+    }
+
+    // Don't retry if we've exceeded max retries
+    if (retryRef.current >= 5) {
       setConnectionState('error');
       return;
     }
@@ -107,11 +114,15 @@ export const useWebSocket = ({
         return;
       }
       
-      if (retryRef.current < 5) {
-        const timeout = Math.min(30000, 1000 * 2 ** retryRef.current);
-        retryRef.current += 1;
-        reconnectTimer.current = setTimeout(connect, timeout);
+      // Stop retrying after max attempts
+      if (retryRef.current >= 5) {
+        setConnectionState('error');
+        return;
       }
+      
+      const timeout = Math.min(30000, 1000 * 2 ** retryRef.current);
+      retryRef.current += 1;
+      reconnectTimer.current = setTimeout(connect, timeout);
     };
 
     ws.onerror = () => {

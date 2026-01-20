@@ -51,6 +51,17 @@ const Chat = () => {
     );
   }
 
+  // Don't attempt WebSocket connection if no valid connection found
+  if (!loading && !connection) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-100">
+        <div className="rounded-2xl bg-white px-6 py-8 text-center text-sm text-slate-600 shadow">
+          Connection not found. Please check your connection list.
+        </div>
+      </div>
+    );
+  }
+
   const updateMessageStatus = (id, status) => {
     setMessages((prev) =>
       prev.map((msg) => (msg.id === id ? { ...msg, status } : msg))
