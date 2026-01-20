@@ -1,13 +1,12 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaHeart, FaComments, FaCoins, FaUser } from 'react-icons/fa';
+import { FaHeart, FaComments, FaCoins, FaUser } from 'react-icons/fa';
 
 const BottomNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const navItems = [
-    { path: '/landing', icon: FaHome, label: 'Home' },
     { path: '/stories', icon: FaHeart, label: 'Stories' },
     { path: '/connections', icon: FaComments, label: 'Chats' },
     { path: '/tokens', icon: FaCoins, label: 'Tokens' },
