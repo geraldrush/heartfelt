@@ -146,7 +146,6 @@ export const AuthProvider = ({ children }) => {
   );
 
   const initializeSession = useCallback(async () => {
-    setLoading(true);
     const storedToken = storage.getToken();
     if (!storedToken) {
       setLoading(false);
@@ -155,19 +154,8 @@ export const AuthProvider = ({ children }) => {
     
     // Always keep user logged in if token exists
     setToken(storedToken);
-    
-    // Try to refresh user data with timeout, but don't logout on failure
-    try {
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 10000)
-      );
-      const data = await Promise.race([refreshToken(), timeoutPromise]);
-      commitSession(data.token, data.user, { skipLoading: true });
-    } catch {
-      // Keep existing session even if refresh fails or times out
-      setLoading(false);
-    }
-  }, [commitSession]);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     initializeSession();

@@ -377,7 +377,28 @@ const StoryFeed = () => {
   );
 
   const renderCard = (story) => (
-    <div className="relative h-full flex flex-col overflow-hidden rounded-[32px] bg-gradient-to-br from-white via-rose-50/30 to-pink-50/50 backdrop-blur-sm border border-white/20 shadow-2xl">
+    <div className="relative h-full flex flex-col overflow-hidden rounded-[32px] bg-gradient-to-br from-purple-50 via-rose-50 to-pink-100 backdrop-blur-sm border border-purple-100/50 shadow-2xl">
+      {/* Action Buttons */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 flex gap-3">
+        <button
+          type="button"
+          onClick={() => handlePass(story)}
+          className="px-6 py-2 bg-red-500 backdrop-blur-sm rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+        >
+          Skip
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setConnectingStory(story);
+            setShowMessageModal(true);
+          }}
+          className="px-6 py-2 bg-green-500 backdrop-blur-sm rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+        >
+          Connect
+        </button>
+      </div>
+      
       <div className="relative h-[55%] sm:h-[50%] md:h-80">
         {story.blurred_image_url ? (
           <img
@@ -436,7 +457,7 @@ const StoryFeed = () => {
         </div>
       </div>
       
-      <div className="flex-1 p-6 space-y-4 overflow-y-auto max-h-[50%] md:max-h-none bg-gradient-to-b from-transparent to-white/50">
+      <div className="flex-1 p-6 space-y-4 overflow-y-auto max-h-[50%] md:max-h-none bg-gradient-to-b from-transparent via-white/30 to-white/60">
         {/* Tags */}
         <div className="flex flex-wrap gap-2">
           {[story.religion, story.race, story.education].filter(Boolean).map((tag, index) => (
