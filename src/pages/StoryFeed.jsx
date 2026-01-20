@@ -295,10 +295,12 @@ const StoryFeed = () => {
   };
 
   const handleSwipeLeft = (story) => {
+    console.log('Swiped LEFT - PASS:', story.age);
     handlePass(story);
   };
 
   const handleSwipeRight = (story) => {
+    console.log('Swiped RIGHT - CONNECT:', story.age);
     setConnectingStory(story);
     setShowMessageModal(true);
   };
@@ -416,12 +418,12 @@ const StoryFeed = () => {
         {/* Online status */}
         <div className="absolute right-4 top-4">
           <span className={`glass-card px-3 py-1.5 text-xs font-semibold rounded-full flex items-center gap-2 ${
-            story.is_online ? 'text-emerald-400' : 'text-gray-300'
+            story.is_online === true ? 'text-emerald-400' : 'text-gray-300'
           }`}>
             <span className={`w-2 h-2 rounded-full ${
-              story.is_online ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'
+              story.is_online === true ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'
             }`} />
-            {story.is_online ? 'Online' : 'Offline'}
+            {story.is_online === true ? 'Online' : 'Offline'}
           </span>
         </div>
 

@@ -20,8 +20,10 @@ const Profile = () => {
   const [tokenBalance, setTokenBalance] = useState(200); // Token balance state
 
   const handleSignOut = () => {
-    logout();
-    navigate('/');
+    if (window.confirm('Are you sure you want to sign out?')) {
+      logout();
+      navigate('/', { replace: true });
+    }
   };
 
   const handleSubmit = (e) => {
@@ -48,11 +50,11 @@ const Profile = () => {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">User Profile</h1>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={() => navigate('/landing')}>
-              <FaTachometerAlt className="mr-2" />
+              <FaTachometerAlt className="w-4 h-4 mr-1" />
               Dashboard
             </Button>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <FaSignOutAlt className="mr-2" />
+              <FaSignOutAlt className="w-4 h-4 mr-1" />
               Sign Out
             </Button>
           </div>
