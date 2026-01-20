@@ -15,7 +15,7 @@ const Toast = ({ message, type = 'error', onClose, duration = 5000 }) => {
       initial={{ opacity: 0, y: -50, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -50, scale: 0.9 }}
-      className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] ${bgColor} text-white px-6 py-3 rounded-xl shadow-lg max-w-sm mx-4`}
+      className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100] ${bgColor} text-white px-6 py-3 rounded-xl shadow-lg max-w-sm mx-4`}
     >
       <div className="flex items-center gap-3">
         <span className="text-lg">{icon}</span>

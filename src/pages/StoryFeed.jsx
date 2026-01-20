@@ -274,7 +274,8 @@ const StoryFeed = () => {
       showToast('Connection request sent!', 'success');
     } catch (err) {
       console.error('Connection request failed:', err);
-      setError(`Failed to send connection request: ${err.message}`);
+      console.error('Error details:', { message: err.message, status: err.status, details: err.details });
+      showToast(`Failed to send connection request: ${err.message}`);
       restoreStory(story);
       setSwipeHistory((prev) =>
         prev.filter((entry) => entry.story.story_id !== story.story_id)
@@ -377,30 +378,6 @@ const StoryFeed = () => {
 
   const renderCard = (story) => (
     <div className="glass-card rounded-3xl overflow-hidden shadow-2xl h-full flex flex-col relative">
-      {/* Mobile Action Buttons */}
-      <div className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-1/2 transform -translate-x-1/2 z-10 flex gap-4 md:hidden">
-        <button
-          type="button"
-          onClick={() => !isAnimating && handlePass(story)}
-          className="w-20 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
-          disabled={isAnimating}
-        >
-          <span className="text-sm font-semibold text-gray-600">Pass</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (isAnimating) return;
-            setConnectingStory(story);
-            setShowMessageModal(true);
-          }}
-          className="w-20 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
-          disabled={isAnimating}
-        >
-          <span className="text-sm font-semibold text-rose-600">Connect</span>
-        </button>
-      </div>
-      
       <div className="relative h-[55%] sm:h-[50%] md:h-80" onClick={(e) => handleImageClick(story, e)}>
         {story.blurred_image_url ? (
           <img
@@ -766,7 +743,7 @@ const StoryFeed = () => {
                   onSwipeUp={(story) => setSelectedStory(story)}
                   onCardClick={(story) => setSelectedStory(story)}
                   renderCard={renderCard}
-                  disabled={showImageViewer || isAnimating}
+                  disabled={showImageViewer}
                 />
                 <HeartAnimation trigger={heartTrigger} />
               </div>

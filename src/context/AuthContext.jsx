@@ -121,12 +121,8 @@ export const AuthProvider = ({ children }) => {
           skipLoading: background,
         });
       } catch (error) {
-        if (!background) {
-          setToken(null);
-          setUser(null);
-        }
-        throw error;
-      } finally {
+        // Don't logout on refresh failures - keep existing session
+        console.warn('Token refresh failed:', error.message);
         if (!background) {
           setLoading(false);
         }
