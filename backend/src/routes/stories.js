@@ -126,6 +126,12 @@ stories.post('/create-story', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const storyId = generateId();
 
+  // Deactivate any existing active story for this user
+  await db
+    .prepare('UPDATE stories SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND is_active = 1')
+    .bind(userId)
+    .run();
+
   await db
     .prepare('INSERT INTO stories (id, user_id, story_text, is_active) VALUES (?, ?, ?, 1)')
     .bind(storyId, userId, parsed.data.story_text)

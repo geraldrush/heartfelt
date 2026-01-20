@@ -288,7 +288,8 @@ const StoryFeed = () => {
       showToast('Connection request accepted!', 'success');
     } catch (err) {
       console.error('Accept connection failed:', err);
-      setError(`Failed to accept connection request: ${err.message}`);
+      console.error('Accept error details:', { message: err.message, status: err.status, details: err.details });
+      showToast(`Failed to accept connection request: ${err.message}`);
       restoreStory(story);
       setSwipeHistory((prev) =>
         prev.filter((entry) => entry.story.story_id !== story.story_id)
@@ -392,13 +393,21 @@ const StoryFeed = () => {
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         
-        {/* Distance badge */}
+        {/* Nationality flag / Connection status */}
         <div className="absolute left-4 top-4">
-          <span className="glass-card px-3 py-1.5 text-xs font-semibold text-white rounded-full backdrop-blur-md">
-            {story.distance_km && story.distance_km < 999000
-              ? `${story.distance_km.toFixed(1)} km away`
-              : 'Distance unknown'}
-          </span>
+          {story.connection_status === 'pending_received' ? (
+            <span className="glass-card px-3 py-1.5 text-xs font-semibold bg-blue-100/80 text-blue-700 rounded-full backdrop-blur-md">
+              💕 Wants to Connect
+            </span>
+          ) : (
+            <span className="glass-card px-3 py-1.5 text-xs font-semibold text-white rounded-full backdrop-blur-md">
+              {story.nationality === 'South Africa' ? '🇿🇦' : 
+               story.nationality === 'Zimbabwe' ? '🇿🇼' : 
+               story.nationality === 'Namibia' ? '🇳🇦' : 
+               story.nationality === 'Botswana' ? '🇧🇼' : 
+               story.nationality === 'Mozambique' ? '🇲🇿' : '🌍'}
+            </span>
+          )}
         </div>
         
         {/* Online status */}

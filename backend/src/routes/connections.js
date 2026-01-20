@@ -167,49 +167,14 @@ connections.post('/reject', authMiddleware, async (c) => {
   const refund = 5;
   const transactionId = generateId();
 
-  await db
-    .prepare(
-      `WITH updated_request AS (
-        UPDATE connection_requests
-        SET status = 'rejected', responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ? AND status = 'pending' AND receiver_id = ?
-        RETURNING sender_id
-      ),
-      updated_sender AS (
-        UPDATE users
-        SET token_balance = token_balance + ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = (SELECT sender_id FROM updated_request)
-        RETURNING id, token_balance
-      ),
-      inserted_tx AS (
-        INSERT INTO token_transactions (
-          id,
-          user_id,
-          amount,
-          transaction_type,
-          related_user_id,
-          related_entity_id,
-          balance_after,
-          description,
-          created_at
-        )
-        SELECT ?, id, ?, 'refund', ?, ?, token_balance, ?, ?
-        FROM updated_sender
-      )
-      SELECT 1 FROM updated_request`
-    )
-    .bind(
-      request.id,
-      userId,
-      refund,
-      transactionId,
-      refund,
-      userId,
-      request.id,
-      'Connection request rejected',
-      new Date().toISOString()
-    )
-    .first();
+  await db.batch([
+    db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND receiver_id = ?')
+      .bind('rejected', request.id, 'pending', userId),
+    db.prepare('UPDATE users SET token_balance = token_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .bind(refund, request.sender_id),
+    db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
+      .bind(transactionId, request.sender_id, refund, 'refund', userId, request.id, request.sender_id, 'Connection request rejected', new Date().toISOString())
+  ]);
 
   return c.json({ success: true });
 });
@@ -244,54 +209,18 @@ connections.post('/cancel', authMiddleware, async (c) => {
   const refund = 5;
   const transactionId = generateId();
 
-  const result = await db
-    .prepare(
-      `WITH updated_request AS (
-        UPDATE connection_requests
-        SET status = 'rejected', responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ? AND status = 'pending' AND sender_id = ?
-        RETURNING sender_id
-      ),
-      updated_sender AS (
-        UPDATE users
-        SET token_balance = token_balance + ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = (SELECT sender_id FROM updated_request)
-        RETURNING id, token_balance
-      ),
-      inserted_tx AS (
-        INSERT INTO token_transactions (
-          id,
-          user_id,
-          amount,
-          transaction_type,
-          related_user_id,
-          related_entity_id,
-          balance_after,
-          description,
-          created_at
-        )
-        SELECT ?, id, ?, 'refund', NULL, ?, token_balance, ?, ?
-        FROM updated_sender
-      )
-      SELECT token_balance AS sender_balance FROM updated_sender`
-    )
-    .bind(
-      request.id,
-      userId,
-      refund,
-      transactionId,
-      refund,
-      request.id,
-      'Connection request cancelled',
-      new Date().toISOString()
-    )
-    .first();
+  await db.batch([
+    db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND sender_id = ?')
+      .bind('rejected', request.id, 'pending', userId),
+    db.prepare('UPDATE users SET token_balance = token_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .bind(refund, userId),
+    db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
+      .bind(transactionId, userId, refund, 'refund', null, request.id, userId, 'Connection request cancelled', new Date().toISOString())
+  ]);
 
-  if (!result) {
-    return c.json({ error: 'Unable to cancel request.' }, 400);
-  }
+  const updatedUser = await db.prepare('SELECT token_balance FROM users WHERE id = ?').bind(userId).first();
 
-  return c.json({ success: true, new_balance: result.sender_balance });
+  return c.json({ success: true, new_balance: updatedUser.token_balance });
 });
 
 connections.get('/sent', authMiddleware, async (c) => {
