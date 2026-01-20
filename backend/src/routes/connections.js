@@ -55,87 +55,25 @@ connections.post('/request', authMiddleware, async (c) => {
   const transactionId = generateId();
   const message = parsed.data.message || 'Connection request sent';
 
-  const result = await db
-    .prepare(
-      `WITH updated_sender AS (
-        UPDATE users
-        SET token_balance = token_balance - ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ? AND token_balance >= ?
-        RETURNING id, token_balance
-      ),
-      updated_request AS (
-        UPDATE connection_requests
-        SET status = 'pending',
-            message = ?,
-            expires_at = datetime('now', '+7 days'),
-            responded_at = NULL,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE sender_id = ? AND receiver_id = ? AND status != 'pending'
-          AND EXISTS (SELECT 1 FROM updated_sender)
-        RETURNING id
-      ),
-      inserted_request AS (
-        INSERT INTO connection_requests (
-          id,
-          sender_id,
-          receiver_id,
-          status,
-          message,
-          expires_at
-        )
-        SELECT ?, ?, ?, 'pending', ?, datetime('now', '+7 days')
-        FROM updated_sender
-        WHERE NOT EXISTS (SELECT 1 FROM updated_request)
-      ),
-      inserted_tx AS (
-        INSERT INTO token_transactions (
-          id,
-          user_id,
-          amount,
-          transaction_type,
-          related_user_id,
-          related_entity_id,
-          balance_after,
-          description,
-          created_at
-        )
-        SELECT ?, id, ?, 'connection_request_sent', ?, ?, token_balance, ?, ?
-        FROM updated_sender
-      )
-      SELECT
-        token_balance AS sender_balance,
-        COALESCE((SELECT id FROM updated_request), ?) AS request_id
-      FROM updated_sender`
-    )
-    .bind(
-      cost,
-      senderId,
-      cost,
-      message,
-      senderId,
-      receiverId,
-      requestId,
-      senderId,
-      receiverId,
-      message,
-      transactionId,
-      -cost,
-      receiverId,
-      requestId,
-      message,
-      new Date().toISOString(),
-      requestId
-    )
-    .first();
+  const result = await db.batch([
+    db.prepare('UPDATE users SET token_balance = token_balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND token_balance >= ?')
+      .bind(cost, senderId, cost),
+    db.prepare('INSERT INTO connection_requests (id, sender_id, receiver_id, status, message, expires_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(requestId, senderId, receiverId, 'pending', message, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
+    db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
+      .bind(transactionId, senderId, -cost, 'connection_request_sent', receiverId, requestId, senderId, message, new Date().toISOString())
+  ]);
 
-  if (!result) {
+  const updatedUser = await db.prepare('SELECT token_balance FROM users WHERE id = ?').bind(senderId).first();
+  
+  if (!updatedUser || updatedUser.token_balance < 0) {
     return c.json({ error: 'Insufficient tokens.' }, 402);
   }
 
   return c.json({
     success: true,
-    request_id: result.request_id,
-    new_balance: result.sender_balance,
+    request_id: requestId,
+    new_balance: updatedUser.token_balance,
   });
 });
 

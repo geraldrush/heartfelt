@@ -168,12 +168,9 @@ export const AuthProvider = ({ children }) => {
     let lastActivity = Date.now();
     const handleActivity = () => {
       const now = Date.now();
-      if (now - lastActivity < 60000) return; // Throttle to max 1 call per minute
+      if (now - lastActivity < 300000) return; // Throttle to max 1 call per 5 minutes
       lastActivity = now;
       
-      if (token && shouldRefreshToken(token)) {
-        refreshSession({ background: true, skipIdle: true }).catch(() => {});
-      }
       if (token) {
         resetIdleTimer(token);
       }
@@ -183,7 +180,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       events.forEach((eventName) => window.removeEventListener(eventName, handleActivity));
     };
-  }, [resetIdleTimer, refreshSession, token]);
+  }, [resetIdleTimer, token]);
 
   const value = useMemo(
     () => ({
