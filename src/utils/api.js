@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://heartfelt-api.79faac3a1f7c3b8ab3be66153def7484.workers.dev' : 'http://localhost:8787');
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://heartfelt-api.gerryrushway.workers.dev' : 'http://localhost:8787');
 
 // Simple cache for GET requests
 const cache = new Map();
