@@ -31,7 +31,6 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
 
   const bind = useDrag(({ down, movement: [mx, my], tap }) => {
     if (disabled || isAnimating) return;
-    if (tap) return;
     
     if (down) {
       if (Math.abs(mx) > 10 || Math.abs(my) > 10) {
