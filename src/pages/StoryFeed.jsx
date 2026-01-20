@@ -112,10 +112,10 @@ const StoryFeed = () => {
       age_min: ageMin,
       age_max: ageMax,
       gender,
-      religion,
-      race,
-      education,
       nationality,
+      race,
+      religion,
+      education,
       has_kids: hasKids,
       num_kids: hasKids === 'true' ? numKids : '',
       smoker,
@@ -223,10 +223,10 @@ const StoryFeed = () => {
     setAgeMin('');
     setAgeMax('');
     setGender('');
-    setReligion('');
-    setRace('');
-    setEducation('');
     setNationality('');
+    setRace('');
+    setReligion('');
+    setEducation('');
     setHasKids('');
     setNumKids('');
     setSmoker('');
@@ -363,9 +363,9 @@ const StoryFeed = () => {
         <button
           type="button"
           onClick={() => handlePass(story)}
-          className="w-14 h-14 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+          className="w-20 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
         >
-          <span className="text-2xl text-gray-600">✕</span>
+          <span className="text-sm font-semibold text-gray-600">Pass</span>
         </button>
         <button
           type="button"
@@ -373,9 +373,9 @@ const StoryFeed = () => {
             setConnectingStory(story);
             setShowMessageModal(true);
           }}
-          className="w-14 h-14 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+          className="w-20 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
         >
-          <span className="text-2xl text-red-500">♥</span>
+          <span className="text-sm font-semibold text-rose-600">Connect</span>
         </button>
       </div>
       
@@ -592,7 +592,7 @@ const StoryFeed = () => {
                   ✕
                 </button>
               </div>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Age Range</label>
                   <div className="flex gap-2">
@@ -631,6 +631,39 @@ const StoryFeed = () => {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Nationality</label>
+                  <select
+                    value={nationality}
+                    onChange={(e) => setNationality(e.target.value)}
+                    className="premium-input w-full"
+                  >
+                    <option value="">Any</option>
+                    <option value="South Africa">South Africa</option>
+                    <option value="Zimbabwe">Zimbabwe</option>
+                    <option value="Namibia">Namibia</option>
+                    <option value="Botswana">Botswana</option>
+                    <option value="Mozambique">Mozambique</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Race</label>
+                  <select
+                    value={race}
+                    onChange={(e) => setRace(e.target.value)}
+                    className="premium-input w-full"
+                  >
+                    <option value="">Any</option>
+                    {(referenceData?.races || []).map((option) => (
+                      <option key={option.id} value={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Religion</label>
                   <select
                     value={religion}
@@ -663,25 +696,13 @@ const StoryFeed = () => {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-4 mt-8">
-                <motion.button
-                  type="button"
-                  onClick={() => setFiltersApplied(filtersDraft)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="premium-button"
-                >
+              <div className="flex flex-col sm:flex-row gap-3 mt-6">
+                <Button onClick={() => setFiltersApplied(filtersDraft)} className="flex-1">
                   Apply Filters
-                </motion.button>
-                <motion.button
-                  type="button"
-                  onClick={clearFilters}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="glass-card rounded-2xl px-6 py-3 font-semibold text-gray-600 hover:text-gray-700 transition-colors"
-                >
+                </Button>
+                <Button variant="secondary" onClick={clearFilters} className="flex-1">
                   Clear All
-                </motion.button>
+                </Button>
               </div>
             </motion.div>
           )}

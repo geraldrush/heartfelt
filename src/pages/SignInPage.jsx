@@ -53,7 +53,7 @@ const SignInPage = () => {
       } else {
         const data = await emailLogin({ email, password });
         login(data.token, data.user);
-        navigate(data.user.profile_complete ? '/landing' : '/create-profile');
+        navigate(data.user.profile_complete ? '/stories' : '/create-profile');
       }
     } catch (err) {
       setError(err.message || 'Something went wrong.');
@@ -69,7 +69,7 @@ const SignInPage = () => {
     try {
       const data = await googleAuth(credentialResponse.credential);
       login(data.token, data.user);
-      navigate(data.user.profile_complete ? '/landing' : '/create-profile');
+      navigate(data.user.profile_complete ? '/stories' : '/create-profile');
     } catch (err) {
       setError(err.message || 'Google sign-in failed.');
     } finally {

@@ -1,5 +1,5 @@
 const TOKEN_STORAGE_KEY = 'token';
-const REFRESH_MARGIN_MS = 2 * 60 * 1000; // refresh 2 minutes before expiry
+const REFRESH_MARGIN_MS = 5 * 60 * 1000; // refresh 5 minutes before expiry
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minute idle logout
 
 const decodeBase64 = (value) => {

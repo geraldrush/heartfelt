@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaHeart, FaComments, FaCoins, FaUser } from 'react-icons/fa';
+import { FaHeart, FaComments, FaTachometerAlt, FaCoins, FaUser } from 'react-icons/fa';
 
 const BottomNavigation = () => {
   const location = useLocation();
@@ -9,20 +9,21 @@ const BottomNavigation = () => {
   const navItems = [
     { path: '/stories', icon: FaHeart, label: 'Stories' },
     { path: '/connections', icon: FaComments, label: 'Chats' },
+    { path: '/landing', icon: FaTachometerAlt, label: 'Dashboard' },
     { path: '/tokens', icon: FaCoins, label: 'Tokens' },
     { path: '/profile', icon: FaUser, label: 'Profile' },
   ];
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-sm border-t border-gray-200 pb-[env(safe-area-inset-bottom,0px)]">
-      <div className="flex items-center justify-around py-2">
+      <div className="grid grid-cols-5 gap-1 px-2 py-2">
         {navItems.map(({ path, icon: Icon, label }) => {
           const isActive = location.pathname === path;
           return (
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex flex-col items-center py-2 px-4 rounded-lg transition-colors ${
+              className={`flex flex-col items-center py-2 px-1 rounded-lg transition-colors ${
                 isActive 
                   ? 'text-purple-600 bg-purple-50' 
                   : 'text-gray-500 hover:text-gray-700'

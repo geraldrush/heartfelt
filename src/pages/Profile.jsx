@@ -163,9 +163,9 @@ const Profile = () => {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">Profile</h1>
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={() => navigate('/stories')}>
+            <Button variant="secondary" size="sm" onClick={() => navigate('/landing')}>
               <FaTachometerAlt className="w-4 h-4 mr-1" />
-              Stories
+              Dashboard
             </Button>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <FaSignOutAlt className="w-4 h-4 mr-1" />

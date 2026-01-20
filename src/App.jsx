@@ -32,7 +32,7 @@ const AuthRedirect = ({ children }) => {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/landing" replace />;
+    return <Navigate to="/stories" replace />;
   }
 
   return children;
@@ -153,7 +153,7 @@ const App = () => {
   const [modelReady, setModelReady] = useState(true); // Start as ready, load lazily
   const location = useLocation();
   
-  const showBottomNav = ['/stories', '/connections', '/tokens', '/profile'].includes(location?.pathname);
+  const showBottomNav = ['/stories', '/connections', '/landing', '/tokens', '/profile'].includes(location?.pathname);
 
   // Lazy load BlazeFace only when needed (CreateProfile page)
   useEffect(() => {

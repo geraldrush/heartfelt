@@ -44,6 +44,17 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
     setLoading(false);
+    
+    // Clear any cached data
+    if (typeof window !== 'undefined') {
+      // Clear session storage
+      try {
+        window.sessionStorage.clear();
+      } catch {}
+      
+      // Force page reload to clear all state
+      window.location.href = '/';
+    }
   }, [clearTimers]);
 
   const resetIdleTimer = useCallback(
@@ -147,12 +158,14 @@ export const AuthProvider = ({ children }) => {
     setToken(storedToken);
     setLoading(false);
     
-    // Try to refresh user data in background
-    try {
-      const data = await refreshToken();
-      commitSession(data.token, data.user, { skipLoading: true });
-    } catch {
-      // Keep existing session if refresh fails
+    // Only refresh if token is close to expiry
+    if (shouldRefreshToken(storedToken)) {
+      try {
+        const data = await refreshToken();
+        commitSession(data.token, data.user, { skipLoading: true });
+      } catch {
+        // Keep existing session if refresh fails
+      }
     }
   }, [commitSession, logout]);
 
@@ -167,7 +180,7 @@ export const AuthProvider = ({ children }) => {
     let lastActivity = Date.now();
     const handleActivity = () => {
       const now = Date.now();
-      if (now - lastActivity < 1000) return; // Throttle to max 1 call per second
+      if (now - lastActivity < 30000) return; // Throttle to max 1 call per 30 seconds
       lastActivity = now;
       
       if (token && shouldRefreshToken(token)) {
@@ -177,7 +190,7 @@ export const AuthProvider = ({ children }) => {
         resetIdleTimer(token);
       }
     };
-    const events = ['click', 'keydown', 'touchstart', 'scroll'];
+    const events = ['click', 'keydown'];
     events.forEach((eventName) => window.addEventListener(eventName, handleActivity, { passive: true }));
     return () => {
       events.forEach((eventName) => window.removeEventListener(eventName, handleActivity));
