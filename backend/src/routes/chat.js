@@ -145,4 +145,33 @@ chat.post('/token-requests', authMiddleware, async (c) => {
   }
 });
 
+chat.get('/unread-counts', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  
+  try {
+    const result = await c.env.DB.prepare(`
+      SELECT 
+        c.id as connection_id,
+        COUNT(m.id) as unread_count
+      FROM connections c
+      LEFT JOIN messages m ON c.id = m.connection_id 
+        AND m.sender_id != ? 
+        AND m.status != 'read'
+      WHERE (c.user_id_1 = ? OR c.user_id_2 = ?)
+        AND c.status = 'accepted'
+      GROUP BY c.id
+    `).bind(userId, userId, userId).all();
+    
+    const unreadCounts = {};
+    result.results.forEach(row => {
+      unreadCounts[row.connection_id] = row.unread_count;
+    });
+    
+    return c.json({ unread_counts: unreadCounts });
+  } catch (error) {
+    console.error('[Chat] Get unread counts error:', error);
+    return c.json({ error: 'Failed to load unread counts' }, 500);
+  }
+});
+
 export default chat;
