@@ -113,8 +113,13 @@ const Chat = () => {
     try {
       const data = await getConnections();
       const found = data.connections?.find((item) => item.id === connectionId);
+      if (!found) {
+        console.log('Connection not found in list:', connectionId);
+        console.log('Available connections:', data.connections?.map(c => c.id));
+      }
       setConnection(found || null);
     } catch (err) {
+      console.error('Load connection error:', err);
       setError(err.message || 'Unable to load connection.');
     }
   };

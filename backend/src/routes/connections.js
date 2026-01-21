@@ -82,6 +82,7 @@ connections.post('/accept', authMiddleware, async (c) => {
   const parsed = connectionActionSchema.safeParse(body);
 
   if (!parsed.success) {
+    console.log('Accept validation error:', parsed.error.flatten());
     return c.json(
       { error: 'Validation error', details: parsed.error.flatten() },
       400
@@ -93,19 +94,23 @@ connections.post('/accept', authMiddleware, async (c) => {
   const request = await getConnectionRequestById(db, parsed.data.request_id);
 
   if (!request) {
+    console.log('Accept: Request not found:', parsed.data.request_id);
     return c.json({ error: 'Request not found.' }, 404);
   }
 
   if (request.receiver_id !== userId) {
+    console.log('Accept: Unauthorized:', request.receiver_id, 'vs', userId);
     return c.json({ error: 'Unauthorized request action.' }, 401);
   }
 
   if (request.status !== 'pending') {
+    console.log('Accept: Request not pending:', request.status);
     return c.json({ error: 'Request is no longer pending.' }, 400);
   }
 
   if (request.expires_at && new Date(request.expires_at) < new Date()) {
     await updateConnectionRequestStatus(db, request.id, 'expired');
+    console.log('Accept: Request expired:', request.expires_at);
     return c.json({ error: 'Request has expired.' }, 400);
   }
 
@@ -113,28 +118,34 @@ connections.post('/accept', authMiddleware, async (c) => {
   const connectionId = generateId();
   const transactionId = generateId();
 
-  const result = await db.batch([
-    db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ? AND token_balance >= ?')
-      .bind(cost, userId, cost),
-    db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND receiver_id = ?')
-      .bind('accepted', request.id, 'pending', userId),
-    db.prepare('INSERT INTO connections (id, user_id_1, user_id_2, status) VALUES (?, ?, ?, ?)')
-      .bind(connectionId, request.sender_id, userId, 'active'),
-    db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
-      .bind(transactionId, userId, -cost, 'connection_request_accepted', request.sender_id, request.id, userId, 'Connection request accepted', new Date().toISOString())
-  ]);
+  try {
+    const result = await db.batch([
+      db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ? AND token_balance >= ?')
+        .bind(cost, userId, cost),
+      db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND receiver_id = ?')
+        .bind('accepted', request.id, 'pending', userId),
+      db.prepare('INSERT INTO connections (id, user_id_1, user_id_2, status) VALUES (?, ?, ?, ?)')
+        .bind(connectionId, request.sender_id, userId, 'active'),
+      db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
+        .bind(transactionId, userId, -cost, 'connection_request_accepted', request.sender_id, request.id, userId, 'Connection request accepted', new Date().toISOString())
+    ]);
 
-  const updatedUser = await db.prepare('SELECT token_balance FROM users WHERE id = ?').bind(userId).first();
-  
-  if (!updatedUser || updatedUser.token_balance < 0) {
-    return c.json({ error: 'Insufficient tokens.' }, 402);
+    const updatedUser = await db.prepare('SELECT token_balance FROM users WHERE id = ?').bind(userId).first();
+    
+    if (!updatedUser || updatedUser.token_balance < 0) {
+      console.log('Accept: Insufficient tokens:', updatedUser?.token_balance);
+      return c.json({ error: 'Insufficient tokens.' }, 402);
+    }
+
+    return c.json({
+      success: true,
+      connection_id: connectionId,
+      new_balance: updatedUser.token_balance,
+    });
+  } catch (error) {
+    console.error('Accept connection error:', error);
+    return c.json({ error: 'Database error occurred.' }, 500);
   }
-
-  return c.json({
-    success: true,
-    connection_id: connectionId,
-    new_balance: updatedUser.token_balance,
-  });
 });
 
 connections.post('/reject', authMiddleware, async (c) => {
