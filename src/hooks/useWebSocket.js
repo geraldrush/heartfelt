@@ -40,15 +40,18 @@ export const useWebSocket = ({
 
     // Don't retry if we've exceeded max retries
     if (retryRef.current >= 5) {
+      console.log('WebSocket: Max retries exceeded for connectionId:', connectionId);
       setConnectionState('error');
       return;
     }
 
+    console.log('WebSocket: Attempting connection to:', connectionId);
     const ws = new WebSocket(buildWebSocketUrl(connectionId, token));
     socketRef.current = ws;
     setConnectionState('connecting');
 
     ws.onopen = () => {
+      console.log('WebSocket: Connected successfully');
       retryRef.current = 0;
       setConnectionState('connected');
     };
@@ -126,13 +129,19 @@ export const useWebSocket = ({
     };
 
     ws.onerror = () => {
+      console.log('WebSocket: Connection error for connectionId:', connectionId);
       setConnectionState('error');
       ws.close();
     };
   }, [connectionId, onDelivered, onMessage, onPresence, onRead, onTyping, sendPayload]);
 
   useEffect(() => {
-    connect();
+    // Only connect if we have a valid connectionId
+    if (connectionId) {
+      connect();
+    } else {
+      setConnectionState('error');
+    }
     return () => {
       if (reconnectTimer.current) {
         clearTimeout(reconnectTimer.current);
