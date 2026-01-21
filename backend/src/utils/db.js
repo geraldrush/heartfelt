@@ -493,29 +493,72 @@ export async function verifyUserInConnection(db, connectionId, userId) {
   const timestamp = new Date().toISOString();
   console.log(`[DB] ${timestamp} Verifying user ${userId} for connection ${connectionId}`);
   
-  const query = `SELECT 1 FROM connections
-       WHERE id = ? AND status = 'active' AND (user_id_1 = ? OR user_id_2 = ?)`;
+  const query = `SELECT 
+    c.id, 
+    c.status, 
+    c.user_id_1, 
+    c.user_id_2,
+    u1.full_name as user1_name,
+    u2.full_name as user2_name
+  FROM connections c
+  LEFT JOIN users u1 ON c.user_id_1 = u1.id
+  LEFT JOIN users u2 ON c.user_id_2 = u2.id
+  WHERE c.id = ?`;
   
   console.log(`[DB] ${timestamp} Executing query: ${query}`);
-  console.log(`[DB] ${timestamp} Query parameters: [${connectionId}, ${userId}, ${userId}]`);
+  console.log(`[DB] ${timestamp} Query parameters: [${connectionId}]`);
   
   try {
-    const row = await db
-      .prepare(query)
-      .bind(connectionId, userId, userId)
-      .first();
+    const connection = await db.prepare(query).bind(connectionId).first();
     
-    if (row) {
-      console.log(`[DB] ${timestamp} Connection verification successful: user ${userId} is in connection ${connectionId}`);
-      return true;
-    } else {
-      console.log(`[DB] ${timestamp} Connection verification failed: user ${userId} not found in connection ${connectionId} or connection inactive`);
-      return false;
+    if (!connection) {
+      console.log(`[DB] ${timestamp} Connection not found: ${connectionId}`);
+      return { 
+        valid: false, 
+        reason: 'CONNECTION_NOT_FOUND',
+        message: 'Connection does not exist in database'
+      };
     }
+    
+    if (connection.status !== 'active') {
+      console.log(`[DB] ${timestamp} Connection inactive: ${connectionId}, status: ${connection.status}`);
+      return { 
+        valid: false, 
+        reason: 'CONNECTION_INACTIVE',
+        message: `Connection status is ${connection.status}`
+      };
+    }
+    
+    const isUserInConnection = connection.user_id_1 === userId || connection.user_id_2 === userId;
+    
+    if (!isUserInConnection) {
+      console.log(`[DB] ${timestamp} User ${userId} not in connection ${connectionId}`);
+      console.log(`[DB] ${timestamp} Connection users: ${connection.user_id_1}, ${connection.user_id_2}`);
+      return { 
+        valid: false, 
+        reason: 'USER_NOT_IN_CONNECTION',
+        message: 'User is not a participant in this connection'
+      };
+    }
+    
+    console.log(`[DB] ${timestamp} Connection verification successful`);
+    return { 
+      valid: true, 
+      connection: {
+        id: connection.id,
+        user_id_1: connection.user_id_1,
+        user_id_2: connection.user_id_2,
+        user1_name: connection.user1_name,
+        user2_name: connection.user2_name
+      }
+    };
   } catch (error) {
-    console.error(`[DB] ${timestamp} Database error in verifyUserInConnection:`, error);
-    console.error(`[DB] ${timestamp} Error details: ${error.message}`);
-    return false;
+    console.error(`[DB] ${timestamp} Database error:`, error.message);
+    return { 
+      valid: false, 
+      reason: 'DATABASE_ERROR',
+      message: error.message
+    };
   }
 }
 

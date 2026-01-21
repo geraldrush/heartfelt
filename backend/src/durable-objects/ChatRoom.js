@@ -119,12 +119,18 @@ export class ChatRoom {
 
     // Database verification with logging
     console.log(`[WS-Server] ${timestamp} Verifying user ${userId} for connection ${connectionId}`);
-    const isAllowed = await verifyUserInConnection(this.env.DB, connectionId, userId);
+    const verificationResult = await verifyUserInConnection(this.env.DB, connectionId, userId);
     
-    if (!isAllowed) {
-      console.log(`[WS-Server] ${timestamp} User ${userId} not authorized for connection ${connectionId}`);
+    if (!verificationResult.valid) {
+      console.log(`[WS-Server] ${timestamp} Verification failed: ${verificationResult.reason} - ${verificationResult.message}`);
       logRequestDiagnostics(request, connectionId, timestamp);
-      return new Response('Unauthorized', { status: 401 });
+      return new Response(JSON.stringify({ 
+        error: verificationResult.message,
+        code: verificationResult.reason 
+      }), { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
     
     console.log(`[WS-Server] ${timestamp} User ${userId} verified for connection ${connectionId}`);

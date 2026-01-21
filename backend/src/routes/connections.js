@@ -118,10 +118,26 @@ connections.post('/accept', authMiddleware, async (c) => {
   const connectionId = generateId();
   const transactionId = generateId();
 
+  // Pre-batch balance check
+  const balanceRow = await db.prepare('SELECT token_balance FROM users WHERE id = ?').bind(userId).first();
+  if (!balanceRow || balanceRow.token_balance < 3) {
+    return c.json({ error: 'Insufficient tokens.' }, 402);
+  }
+
   try {
+    // Verify connection was actually created
+    const createdConnection = await db.prepare(
+      'SELECT * FROM connections WHERE id = ?'
+    ).bind(connectionId).first();
+    
+    if (createdConnection) {
+      console.error('[Connections] Accept: Connection already exists, skipping batch operation');
+      return c.json({ error: 'Connection already exists' }, 409);
+    }
+
     const result = await db.batch([
-      db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ? AND token_balance >= ?')
-        .bind(cost, userId, cost),
+      db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ?')
+        .bind(cost, userId),
       db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND receiver_id = ?')
         .bind('accepted', request.id, 'pending', userId),
       db.prepare('INSERT INTO connections (id, user_id_1, user_id_2, status) VALUES (?, ?, ?, ?)')
@@ -129,6 +145,28 @@ connections.post('/accept', authMiddleware, async (c) => {
       db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
         .bind(transactionId, userId, -cost, 'connection_request_accepted', request.sender_id, request.id, userId, 'Connection request accepted', new Date().toISOString())
     ]);
+
+    // Verify all operations succeeded
+    const finalConnection = await db.prepare(
+      'SELECT * FROM connections WHERE id = ?'
+    ).bind(connectionId).first();
+    
+    const updatedRequest = await db.prepare(
+      'SELECT status FROM connection_requests WHERE id = ?'
+    ).bind(request.id).first();
+    
+    if (!finalConnection || updatedRequest?.status !== 'accepted') {
+      console.error('[Connections] Accept: Batch operation failed - connection or request status not updated');
+      return c.json({ error: 'Failed to create connection' }, 500);
+    }
+    
+    console.log(`[Connections] Accept: Connection created successfully: ${connectionId}`);
+    console.log(`[Connections] Accept: Connection details:`, {
+      id: finalConnection.id,
+      user_id_1: finalConnection.user_id_1,
+      user_id_2: finalConnection.user_id_2,
+      status: finalConnection.status
+    });
 
     const updatedUser = await db.prepare('SELECT token_balance FROM users WHERE id = ?').bind(userId).first();
     

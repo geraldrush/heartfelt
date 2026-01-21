@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS connections (
 );
 CREATE INDEX IF NOT EXISTS idx_connections_user1 ON connections(user_id_1);
 CREATE INDEX IF NOT EXISTS idx_connections_user2 ON connections(user_id_2);
+CREATE INDEX IF NOT EXISTS idx_connections_id_status ON connections(id, status);
+CREATE INDEX IF NOT EXISTS idx_connections_status ON connections(status);
 
 CREATE TABLE IF NOT EXISTS connection_requests (
   id TEXT PRIMARY KEY,
