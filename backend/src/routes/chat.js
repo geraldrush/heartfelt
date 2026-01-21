@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
-import { verifyUserInConnection } from '../utils/db.js';
+import { verifyUserInConnection, getMessagesByConnection } from '../utils/db.js';
 
 const chat = new Hono();
 
@@ -73,6 +73,29 @@ chat.get('/connection-status/:connectionId', authMiddleware, async (c) => {
       userId,
       timestamp
     }, 500);
+  }
+});
+
+chat.get('/messages/:connectionId', authMiddleware, async (c) => {
+  const connectionId = c.req.param('connectionId');
+  const userId = c.get('userId');
+  const limit = parseInt(c.req.query('limit')) || 50;
+  const offset = parseInt(c.req.query('offset')) || 0;
+  const before = c.req.query('before');
+  
+  try {
+    const verificationResult = await verifyUserInConnection(c.env.DB, connectionId, userId);
+    
+    if (!verificationResult.valid) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    
+    const messages = await getMessagesByConnection(c.env.DB, connectionId, limit, offset, before);
+    
+    return c.json({ messages });
+  } catch (error) {
+    console.error('[Chat] Get messages error:', error);
+    return c.json({ error: 'Failed to load messages' }, 500);
   }
 });
 
