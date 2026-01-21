@@ -40,3 +40,41 @@ export function isTokenValid(token) {
     return false;
   }
 }
+
+export function getIdleTimeout() {
+  return 30 * 60 * 1000; // 30 minutes
+}
+
+export function shouldRefreshToken(token) {
+  return isTokenExpiringSoon(token, 5);
+}
+
+export function scheduleRefreshTimer(token, callback) {
+  const expiry = getTokenExpiry(token);
+  if (!expiry) return null;
+  
+  const refreshTime = expiry - Date.now() - (5 * 60 * 1000); // 5 minutes before expiry
+  if (refreshTime <= 0) return null;
+  
+  return setTimeout(callback, refreshTime);
+}
+
+export const storage = {
+  getToken: () => {
+    try {
+      return localStorage.getItem('auth_token');
+    } catch {
+      return null;
+    }
+  },
+  setToken: (token) => {
+    try {
+      localStorage.setItem('auth_token', token);
+    } catch {}
+  },
+  clearToken: () => {
+    try {
+      localStorage.removeItem('auth_token');
+    } catch {}
+  }
+};

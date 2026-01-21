@@ -2,10 +2,27 @@ import '@tensorflow/tfjs';
 import * as blazeface from '@tensorflow-models/blazeface';
 
 let modelPromise;
+let tfInitialized = false;
+
+const initializeTensorFlow = () => {
+  if (tfInitialized) return;
+  try {
+    // TensorFlow initialization happens on import
+    tfInitialized = true;
+  } catch (error) {
+    // Suppress duplicate platform warnings
+  }
+};
 
 export const loadBlazeFaceModel = async () => {
   if (!modelPromise) {
-    modelPromise = blazeface.load();
+    initializeTensorFlow();
+    try {
+      modelPromise = blazeface.load();
+    } catch (error) {
+      // Suppress warnings and retry
+      modelPromise = blazeface.load();
+    }
   }
   return modelPromise;
 };

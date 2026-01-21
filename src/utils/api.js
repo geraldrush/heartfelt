@@ -14,7 +14,7 @@ async function request(method, path, data) {
     }
   }
 
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('auth_token');
   const headers = {
     'Content-Type': 'application/json',
   };
@@ -101,7 +101,7 @@ export const refreshToken = async () => {
       
       if (error.code === 'TOKEN_EXPIRED') {
         console.log('[API] Token expired, clearing localStorage and redirecting to login');
-        localStorage.removeItem('token');
+        localStorage.removeItem('auth_token');
         localStorage.removeItem('user');
         window.location.href = '/login';
         throw error;
@@ -122,7 +122,7 @@ export const refreshToken = async () => {
 export const getCurrentUser = () => apiClient.get('/api/auth/me');
 
 export const uploadStoryImage = (formData) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('auth_token');
   const headers = { Authorization: `Bearer ${token}` };
 
   return fetch(`${API_URL}/api/stories/upload-image`, {

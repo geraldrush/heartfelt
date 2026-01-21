@@ -4,18 +4,19 @@ main = "src/index.js"
 compatibility_flags = ["nodejs_compat"]
 
 [dev]
-local = true
 port = 8787
 
 [[d1_databases]]
 binding = "DB"
 database_name = "heartfelt-db"
 database_id = "b0e2b609-aa73-47af-8711-6b78fc8a5031"
+preview_database_id = "b0e2b609-aa73-47af-8711-6b78fc8a5031"
 migrations_dir = "./migrations"
 
 [[r2_buckets]]
 binding = "R2_BUCKET"
 bucket_name = "heartfelt-images"
+preview_bucket_name = "heartfelt-images"
 
 [vars]
 CORS_ORIGIN = "http://localhost:5173,https://heartfelt.pages.dev,https://heartfelt-2ti.pages.dev"
