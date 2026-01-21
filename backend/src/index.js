@@ -36,6 +36,14 @@ app.use(
 // CSRF protection middleware
 app.use('/*', async (c, next) => {
   const method = c.req.method;
+  const upgradeHeader = c.req.header('Upgrade');
+  
+  // Skip CSRF for WebSocket upgrade requests
+  if (upgradeHeader === 'websocket') {
+    await next();
+    return;
+  }
+  
   if (['POST', 'PUT', 'DELETE'].includes(method)) {
     const path = c.req.path;
     
