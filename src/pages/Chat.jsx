@@ -7,11 +7,112 @@ import {
   getConnections,
   getMessages,
   getTokenRequests,
+  refreshToken,
 } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useWebSocket } from '../hooks/useWebSocket.js';
 import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import { isTokenExpiringSoon } from '../utils/auth.js';
+
+// Connection Status Banner Component
+const ConnectionStatusBanner = ({ connectionState, isPolling, connectionQuality, averageLatency, retryCount, onReconnect }) => {
+  const [dismissed, setDismissed] = useState(false);
+  
+  useEffect(() => {
+    if (connectionState === 'connected') {
+      const timer = setTimeout(() => setDismissed(true), 3000);
+      return () => clearTimeout(timer);
+    } else {
+      setDismissed(false);
+    }
+  }, [connectionState]);
+  
+  if (dismissed && connectionState === 'connected') return null;
+  
+  const getStatusConfig = () => {
+    switch (connectionState) {
+      case 'connected':
+        return {
+          bg: 'bg-gradient-to-r from-green-500 to-green-600',
+          icon: '✓',
+          text: `● Connected ${averageLatency > 0 ? `(~${averageLatency}ms)` : ''}`,
+          textColor: 'text-white',
+          showDismiss: true
+        };
+      case 'connecting':
+        return {
+          bg: 'bg-gradient-to-r from-yellow-500 to-yellow-600',
+          icon: '⟳',
+          text: `Connecting... ${retryCount ? `Attempt ${retryCount}/5` : ''}`,
+          textColor: 'text-white',
+          animate: 'animate-pulse'
+        };
+      case 'polling':
+        return {
+          bg: 'bg-gradient-to-r from-orange-500 to-orange-600',
+          icon: '↻',
+          text: 'Limited connectivity - using fallback mode',
+          textColor: 'text-white',
+          showRetry: true,
+          animate: 'animate-spin'
+        };
+      case 'disconnected':
+        return {
+          bg: 'bg-gradient-to-r from-gray-500 to-gray-600',
+          icon: '○',
+          text: 'Disconnected',
+          textColor: 'text-white',
+          showRetry: true
+        };
+      case 'error':
+        return {
+          bg: 'bg-gradient-to-r from-red-500 to-red-600',
+          icon: '⚠',
+          text: 'Connection Error',
+          textColor: 'text-white',
+          showRetry: true
+        };
+      default:
+        return null;
+    }
+  };
+  
+  const config = getStatusConfig();
+  if (!config) return null;
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className={`${config.bg} px-4 py-2 mx-6 mt-4 rounded-xl shadow-lg flex items-center justify-between`}
+    >
+      <div className="flex items-center gap-2">
+        <span className={`${config.animate || ''} text-lg`}>{config.icon}</span>
+        <span className={`${config.textColor} text-sm font-medium`}>{config.text}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {config.showRetry && (
+          <button
+            onClick={onReconnect}
+            className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition"
+          >
+            {isPolling ? 'Retry WebSocket' : 'Reconnect'}
+          </button>
+        )}
+        {config.showDismiss && (
+          <button
+            onClick={() => setDismissed(true)}
+            className="text-white/70 hover:text-white text-xs"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 // Error Boundary Component
 class ChatErrorBoundary extends React.Component {
@@ -136,6 +237,9 @@ const Chat = () => {
     sendDeliveryConfirmation,
     connectionState,
     reconnect,
+    isPolling,
+    connectionQuality,
+    averageLatency
   } = useWebSocket({
     connectionId: connection ? connectionId : null, // Only connect if valid connection exists
     onMessage: (data) => {
@@ -439,24 +543,7 @@ const Chat = () => {
             <p className="text-sm text-slate-500">Chatting with</p>
             <h2 className="text-2xl font-semibold text-slate-900">{otherUserName}</h2>
             <p className="text-xs text-slate-500">
-              {isOtherUserOnline ? 'Online' : 'Offline'} • 
-              <span className={`${
-                connectionState === 'connected' ? 'text-green-600' : 
-                connectionState === 'connecting' ? 'text-yellow-600' : 
-                connectionState === 'error' ? 'text-red-600' : 'text-gray-600'
-              }`}>
-                {connectionState === 'connected' ? '● Connected' :
-                 connectionState === 'connecting' ? '● Connecting...' :
-                 connectionState === 'error' ? '● Connection Error' : '● Disconnected'}
-              </span>
-              {connectionState === 'error' && (
-                <button 
-                  onClick={reconnect}
-                  className="ml-2 text-xs text-blue-600 hover:text-blue-800 underline"
-                >
-                  Reconnect
-                </button>
-              )}
+              {isOtherUserOnline ? 'Online' : 'Offline'}
             </p>
           </div>
           <motion.button
@@ -470,6 +557,15 @@ const Chat = () => {
           </motion.button>
         </div>
       </div>
+
+      <ConnectionStatusBanner 
+        connectionState={connectionState}
+        isPolling={isPolling}
+        connectionQuality={connectionQuality}
+        averageLatency={averageLatency}
+        retryCount={0}
+        onReconnect={reconnect}
+      />
 
       {error && (
         <div className="mx-6 mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">

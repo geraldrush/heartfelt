@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isTokenExpiringSoon, isTokenExpired } from '../utils/auth.js';
-import { refreshToken } from '../utils/api.js';
+import { refreshToken, getMessages } from '../utils/api.js';
 
 const buildWebSocketUrl = (connectionId, token) => {
   // Validate connectionId format
@@ -75,6 +75,12 @@ export const useWebSocket = ({
   const networkListeners = useRef({ online: null, offline: null });
   const isManualCloseRef = useRef(false);
   const [connectionState, setConnectionState] = useState('disconnected');
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingInterval = useRef(null);
+  const lastMessageTimestamp = useRef(null);
+  const [connectionQuality, setConnectionQuality] = useState('unknown');
+  const latencyHistory = useRef([]);
+  const messageSentTimes = useRef(new Map());
 
   const errorClassifier = useCallback((closeCode) => {
     if (closeCode >= 4001 && closeCode <= 4003) {
@@ -93,6 +99,67 @@ export const useWebSocket = ({
       return { type: 'normal', message: 'Connection closed.', userAction: 'none' };
     }
     return { type: 'unknown', message: 'Connection error occurred.', userAction: 'retry' };
+  }, []);
+
+  const startPolling = useCallback(async () => {
+    if (pollingInterval.current || !connectionId) return;
+    
+    console.log('[WS-Client] Starting polling fallback');
+    setIsPolling(true);
+    setConnectionState('polling');
+    
+    let pollCount = 0;
+    const poll = async () => {
+      try {
+        const messages = await getMessages(connectionId, { 
+          limit: 50, 
+          before: lastMessageTimestamp.current 
+        });
+        
+        if (messages.messages && messages.messages.length > 0) {
+          messages.messages.forEach(msg => {
+            onMessage?.(msg);
+            lastMessageTimestamp.current = msg.created_at;
+          });
+        }
+        
+        pollCount++;
+        if (pollCount === 10) {
+          clearInterval(pollingInterval.current);
+          pollingInterval.current = setInterval(poll, 5000);
+        }
+      } catch (error) {
+        console.error('[WS-Client] Polling error:', error);
+      }
+    };
+    
+    pollingInterval.current = setInterval(poll, 3000);
+  }, [connectionId, onMessage]);
+  
+  const stopPolling = useCallback(() => {
+    if (pollingInterval.current) {
+      clearInterval(pollingInterval.current);
+      pollingInterval.current = null;
+    }
+    setIsPolling(false);
+    console.log('[WS-Client] Stopped polling fallback');
+  }, []);
+  
+  const updateConnectionQuality = useCallback((latency) => {
+    latencyHistory.current.push(latency);
+    if (latencyHistory.current.length > 10) {
+      latencyHistory.current.shift();
+    }
+    
+    const avgLatency = latencyHistory.current.reduce((a, b) => a + b, 0) / latencyHistory.current.length;
+    
+    if (avgLatency < 100) {
+      setConnectionQuality('excellent');
+    } else if (avgLatency < 300) {
+      setConnectionQuality('good');
+    } else {
+      setConnectionQuality('poor');
+    }
   }, []);
 
   const sendPayload = useCallback((payload) => {
@@ -232,6 +299,13 @@ export const useWebSocket = ({
             break;
           case 'delivery_confirmation':
             onDelivered?.(data);
+            // Calculate latency for quality monitoring
+            if (data.client_id && messageSentTimes.current.has(data.client_id)) {
+              const sentTime = messageSentTimes.current.get(data.client_id);
+              const latency = Date.now() - sentTime;
+              updateConnectionQuality(latency);
+              messageSentTimes.current.delete(data.client_id);
+            }
             break;
           case 'read_receipt':
             onRead?.(data);
@@ -296,7 +370,13 @@ export const useWebSocket = ({
       if (retryRef.current >= 5) {
         console.error(`[WS-Client] ${timestamp} Max retries reached, stopping`);
         setConnectionState('error');
-        onConnectionError?.({ type: 'retry', message: 'Max connection retries exceeded', userAction: 'retry', code: 0 });
+        
+        // Start polling fallback for network/unknown errors
+        if (errorInfo.type === 'network' || errorInfo.type === 'unknown') {
+          startPolling();
+        } else {
+          onConnectionError?.({ type: 'retry', message: 'Max connection retries exceeded', userAction: 'retry', code: 0 });
+        }
         return;
       }
       
@@ -326,6 +406,9 @@ export const useWebSocket = ({
   const reconnect = useCallback(() => {
     console.log('[WS-Client] Manual reconnect triggered');
     
+    // Stop polling if active
+    stopPolling();
+    
     // Close existing connection
     if (socketRef.current) {
       isManualCloseRef.current = true;
@@ -343,7 +426,7 @@ export const useWebSocket = ({
     
     // Attempt new connection
     connect();
-  }, [connect]);
+  }, [connect, stopPolling]);
 
   // Network change detection
   useEffect(() => {
@@ -398,6 +481,9 @@ export const useWebSocket = ({
         heartbeatInterval.current = null;
       }
       
+      // Stop polling
+      stopPolling();
+      
       // Remove network listeners
       if (networkListeners.current.online) {
         window.removeEventListener('online', networkListeners.current.online);
@@ -419,8 +505,13 @@ export const useWebSocket = ({
   }, [connect, connectionId]);
 
   const sendMessage = useCallback(
-    (content, clientId) =>
-      sendPayload({ type: 'chat_message', content, client_id: clientId }),
+    (content, clientId) => {
+      // Track send time for latency calculation
+      if (clientId) {
+        messageSentTimes.current.set(clientId, Date.now());
+      }
+      return sendPayload({ type: 'chat_message', content, client_id: clientId });
+    },
     [sendPayload]
   );
   const sendTypingIndicator = useCallback(
@@ -449,5 +540,10 @@ export const useWebSocket = ({
     connectionState,
     disconnect,
     reconnect,
+    isPolling,
+    connectionQuality,
+    averageLatency: latencyHistory.current.length > 0 
+      ? Math.round(latencyHistory.current.reduce((a, b) => a + b, 0) / latencyHistory.current.length)
+      : 0
   };
 };
