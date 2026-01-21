@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
-import { verifyUserInConnection, getMessagesByConnection } from '../utils/db.js';
+import { verifyUserInConnection, getMessagesByConnection, createTokenRequest, getPendingTokenRequests, generateId } from '../utils/db.js';
 
 const chat = new Hono();
 
@@ -8,19 +8,30 @@ chat.get('/connect/:connectionId', async (c) => {
   const connectionId = c.req.param('connectionId');
   const upgradeHeader = c.req.header('Upgrade');
   
+  console.log(`[Chat Route] WebSocket connection request for: ${connectionId}`);
+  console.log(`[Chat Route] Upgrade header: ${upgradeHeader}`);
+  console.log(`[Chat Route] Origin: ${c.req.header('Origin')}`);
+  
   // Validate WebSocket upgrade request
   if (upgradeHeader !== 'websocket') {
     console.log(`[Chat Route] Invalid upgrade header: ${upgradeHeader}`);
     return c.json({ error: 'Expected WebSocket upgrade' }, 426);
   }
   
-  // Get Durable Object stub using connectionId as the unique identifier
-  const id = c.env.CHAT_ROOM.idFromName(connectionId);
-  const stub = c.env.CHAT_ROOM.get(id);
-  
-  // Forward the entire request to the Durable Object
-  // The ChatRoom.fetch() method will handle authentication, authorization, and WebSocket upgrade
-  return stub.fetch(c.req.raw);
+  try {
+    // Get Durable Object stub using connectionId as the unique identifier
+    const id = c.env.CHAT_ROOM.idFromName(connectionId);
+    const stub = c.env.CHAT_ROOM.get(id);
+    
+    console.log(`[Chat Route] Forwarding to Durable Object: ${connectionId}`);
+    
+    // Forward the entire request to the Durable Object
+    // The ChatRoom.fetch() method will handle authentication, authorization, and WebSocket upgrade
+    return stub.fetch(c.req.raw);
+  } catch (error) {
+    console.error(`[Chat Route] Error forwarding to Durable Object:`, error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
 });
 
 chat.get('/connection-status/:connectionId', authMiddleware, async (c) => {
@@ -96,6 +107,41 @@ chat.get('/messages/:connectionId', authMiddleware, async (c) => {
   } catch (error) {
     console.error('[Chat] Get messages error:', error);
     return c.json({ error: 'Failed to load messages' }, 500);
+  }
+});
+
+chat.get('/token-requests', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  
+  try {
+    const requests = await getPendingTokenRequests(c.env.DB, userId);
+    return c.json({ requests });
+  } catch (error) {
+    console.error('[Chat] Get token requests error:', error);
+    return c.json({ error: 'Failed to load token requests' }, 500);
+  }
+});
+
+chat.post('/token-requests', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => null);
+  
+  if (!body || !body.recipient_id || !body.amount) {
+    return c.json({ error: 'Missing required fields' }, 400);
+  }
+  
+  try {
+    await createTokenRequest(c.env.DB, {
+      requester_id: userId,
+      recipient_id: body.recipient_id,
+      amount: body.amount,
+      reason: body.reason
+    });
+    
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('[Chat] Create token request error:', error);
+    return c.json({ error: 'Failed to create token request' }, 500);
   }
 });
 
