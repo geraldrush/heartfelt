@@ -75,7 +75,7 @@ const Chat = () => {
     sendDeliveryConfirmation,
     connectionState,
   } = useWebSocket({
-    connectionId,
+    connectionId: connection ? connectionId : null, // Only connect if valid connection exists
     onMessage: (data) => {
       setMessages((prev) => [...prev, data]);
       sendDeliveryConfirmation(data.id);
