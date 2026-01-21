@@ -5,6 +5,24 @@ import {
   verifyUserInConnection,
 } from '../utils/db.js';
 
+// Server-side diagnostics helper
+const logRequestDiagnostics = (request, connectionId, timestamp) => {
+  const origin = request.headers.get('Origin');
+  const referer = request.headers.get('Referer');
+  const userAgent = request.headers.get('User-Agent');
+  const upgradeHeader = request.headers.get('Upgrade');
+  
+  console.log(`[WS-Server] ${timestamp} === REQUEST DIAGNOSTICS ===`);
+  console.log(`[WS-Server] ${timestamp} Connection ID: ${connectionId}`);
+  console.log(`[WS-Server] ${timestamp} Origin: ${origin}`);
+  console.log(`[WS-Server] ${timestamp} Referer: ${referer}`);
+  console.log(`[WS-Server] ${timestamp} User-Agent: ${userAgent}`);
+  console.log(`[WS-Server] ${timestamp} Upgrade Header: ${upgradeHeader}`);
+  console.log(`[WS-Server] ${timestamp} Request URL: ${request.url}`);
+  console.log(`[WS-Server] ${timestamp} Request Method: ${request.method}`);
+  console.log(`[WS-Server] ${timestamp} === END DIAGNOSTICS ===`);
+};
+
 export class ChatRoom {
   constructor(state, env) {
     this.state = state;
@@ -16,37 +34,82 @@ export class ChatRoom {
   async authenticate(request) {
     const url = new URL(request.url);
     const token = url.searchParams.get('token');
+    const timestamp = new Date().toISOString();
+    
     if (!token) {
+      console.log(`[WS-Server] ${timestamp} Authentication failed: token missing from query params`);
       throw new Error('Missing token');
     }
-    const secret = new TextEncoder().encode(this.env.JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    return payload.sub;
+    
+    try {
+      console.log(`[WS-Server] ${timestamp} JWT verification attempt for token: ${token.slice(0, 4)}...${token.slice(-4)}`);
+      const secret = new TextEncoder().encode(this.env.JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret);
+      console.log(`[WS-Server] ${timestamp} JWT verification successful for user: ${payload.sub}`);
+      return payload.sub;
+    } catch (error) {
+      console.error(`[WS-Server] ${timestamp} JWT verification failed:`, error.message);
+      if (error.code === 'ERR_JWT_EXPIRED') {
+        throw new Error('Token expired');
+      } else if (error.code === 'ERR_JWS_INVALID') {
+        throw new Error('Invalid token signature');
+      } else {
+        throw new Error('Invalid token');
+      }
+    }
   }
 
   async fetch(request) {
+    const timestamp = new Date().toISOString();
     const url = new URL(request.url);
     const connectionId = url.pathname.split('/').pop();
 
-    // Validate origin for cross-origin security
+    // Origin validation with comprehensive logging
     const origin = request.headers.get('Origin');
     const allowedOrigins = this.env.CORS_ORIGIN?.split(',').map(o => o.trim()) || [
       'http://localhost:5173', 
       'https://heartfelt.pages.dev',
       'https://heartfelt-2ti.pages.dev'
     ];
+    
+    console.log(`[WS-Server] ${timestamp} Origin check: ${origin} against allowed: [${allowedOrigins.join(', ')}]`);
+    
     if (origin && !allowedOrigins.includes(origin)) {
-      console.log('Forbidden origin:', origin, 'Allowed:', allowedOrigins);
+      console.log(`[WS-Server] ${timestamp} Origin REJECTED: ${origin}`);
+      logRequestDiagnostics(request, connectionId, timestamp);
       return new Response('Forbidden origin', { status: 403 });
     }
+    
+    console.log(`[WS-Server] ${timestamp} Origin check: PASSED`);
 
-    const userId = await this.authenticate(request);
-    const isAllowed = await verifyUserInConnection(this.env.DB, connectionId, userId);
-    if (!isAllowed) {
+    // Authentication with logging
+    let userId;
+    try {
+      console.log(`[WS-Server] ${timestamp} Authenticating request for connection: ${connectionId}`);
+      userId = await this.authenticate(request);
+      console.log(`[WS-Server] ${timestamp} Authentication successful for user: ${userId}`);
+    } catch (error) {
+      console.error(`[WS-Server] ${timestamp} Authentication failed: ${error.message}`);
+      logRequestDiagnostics(request, connectionId, timestamp);
       return new Response('Unauthorized', { status: 401 });
     }
 
-    if (request.headers.get('Upgrade') !== 'websocket') {
+    // Database verification with logging
+    console.log(`[WS-Server] ${timestamp} Verifying user ${userId} for connection ${connectionId}`);
+    const isAllowed = await verifyUserInConnection(this.env.DB, connectionId, userId);
+    
+    if (!isAllowed) {
+      console.log(`[WS-Server] ${timestamp} User ${userId} not authorized for connection ${connectionId}`);
+      logRequestDiagnostics(request, connectionId, timestamp);
+      return new Response('Unauthorized', { status: 401 });
+    }
+    
+    console.log(`[WS-Server] ${timestamp} User ${userId} verified for connection ${connectionId}`);
+
+    // WebSocket upgrade check
+    const upgradeHeader = request.headers.get('Upgrade');
+    if (upgradeHeader !== 'websocket') {
+      console.log(`[WS-Server] ${timestamp} Invalid Upgrade header: ${upgradeHeader}, expected: websocket`);
       return new Response('Expected WebSocket', { status: 426 });
     }
 
@@ -57,6 +120,9 @@ export class ChatRoom {
     server.accept();
     this.connections.set(userId, server);
     this.startHeartbeat(userId);
+    
+    console.log(`[WS-Server] ${timestamp} WebSocket connection established for user ${userId} on connection ${connectionId}`);
+    console.log(`[WS-Server] ${timestamp} Active connections in room: ${this.connections.size}`);
 
     for (const [otherUserId] of this.connections.entries()) {
       if (otherUserId === userId) {

@@ -13,6 +13,45 @@ import { useWebSocket } from '../hooks/useWebSocket.js';
 import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 
+// Error Boundary Component
+class ChatErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    const timestamp = new Date().toISOString();
+    console.error(`[WS-Client] ${timestamp} Chat component error:`, error);
+    console.error(`[WS-Client] ${timestamp} Error info:`, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-gray-100">
+          <div className="rounded-2xl bg-white px-6 py-8 text-center text-sm text-slate-600 shadow">
+            <h2 className="text-lg font-semibold text-red-600 mb-2">Something went wrong</h2>
+            <p className="mb-4">The chat component encountered an error. Please refresh the page.</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const Chat = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -25,6 +64,7 @@ const Chat = () => {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const [error, setError] = useState('');
+  const [connectionError, setConnectionError] = useState('');
   const [isOtherUserOnline, setIsOtherUserOnline] = useState(false);
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const [showTokenRequest, setShowTokenRequest] = useState(false);
@@ -41,6 +81,15 @@ const Chat = () => {
   const otherUserId = connection?.other_user_id;
   const otherUserName = connection?.full_name || 'Connection';
 
+  // Log component lifecycle
+  useEffect(() => {
+    const timestamp = new Date().toISOString();
+    console.log(`[WS-Client] ${timestamp} Chat component mounted with connectionId: ${connectionId}`);
+    return () => {
+      console.log(`[WS-Client] ${timestamp} Chat component unmounting`);
+    };
+  }, [connectionId]);
+
   if (!connectionId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-100">
@@ -53,10 +102,21 @@ const Chat = () => {
 
   // Don't attempt WebSocket connection if no valid connection found
   if (!loading && !connection) {
+    const timestamp = new Date().toISOString();
+    console.log(`[WS-Client] ${timestamp} Connection not found: ${connectionId}`);
+    
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-100">
-        <div className="rounded-2xl bg-white px-6 py-8 text-center text-sm text-slate-600 shadow">
-          Connection not found. Please check your connection list.
+        <div className="rounded-2xl bg-white px-6 py-8 text-center text-sm text-slate-600 shadow max-w-md">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Connection Not Found</h3>
+          <p className="mb-4">Connection ID: {connectionId}</p>
+          <p className="mb-4">This connection doesn't exist or you don't have access to it.</p>
+          <button 
+            onClick={() => window.history.back()} 
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Go Back
+          </button>
         </div>
       </div>
     );
@@ -104,22 +164,32 @@ const Chat = () => {
     onRead: (data) => {
       updateMessageStatus(data.id, data.status || 'read');
     },
+    onConnectionError: (errorMessage) => {
+      setConnectionError(errorMessage);
+    },
   });
 
   const loadConnection = async () => {
     if (!connectionId) {
       return;
     }
+    const timestamp = new Date().toISOString();
+    console.log(`[WS-Client] ${timestamp} Loading connection: ${connectionId}`);
+    
     try {
       const data = await getConnections();
       const found = data.connections?.find((item) => item.id === connectionId);
+      
       if (!found) {
-        console.log('Connection not found in list:', connectionId);
-        console.log('Available connections:', data.connections?.map(c => c.id));
+        console.log(`[WS-Client] ${timestamp} Connection not found in list: ${connectionId}`);
+        console.log(`[WS-Client] ${timestamp} Available connections:`, data.connections?.map(c => c.id));
+      } else {
+        console.log(`[WS-Client] ${timestamp} Connection loaded successfully: ${found.full_name}`);
       }
+      
       setConnection(found || null);
     } catch (err) {
-      console.error('Load connection error:', err);
+      console.error(`[WS-Client] ${timestamp} Load connection error:`, err);
       setError(err.message || 'Unable to load connection.');
     }
   };
@@ -335,7 +405,9 @@ const Chat = () => {
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-rose-50 via-pink-50 to-peach-100 pb-24">
+    <ChatErrorBoundary>
+      <div className="flex min-h-screen flex-col bg-gradient-to-br from-rose-50 via-pink-50 to-peach-100 pb-24">
+        {/* Rest of component content */}
       <div className="border-b bg-white/90 px-6 py-4 shadow">
         <div className="flex items-center justify-between">
           <div>
@@ -372,9 +444,23 @@ const Chat = () => {
         </div>
       )}
 
+      {connectionError && (
+        <div className="mx-6 mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
+          WebSocket Error: {connectionError}
+        </div>
+      )}
+
       {connectionState === 'error' && (
         <div className="mx-6 mt-4 rounded-xl bg-yellow-100 px-4 py-3 text-sm text-yellow-700">
-          Unable to connect to chat. Please check your connection and try refreshing the page.
+          <div className="flex items-center justify-between">
+            <span>Unable to connect to chat. Please check your connection.</span>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="ml-2 px-3 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       )}
 
@@ -490,7 +576,8 @@ const Chat = () => {
           </motion.button>
         </div>
       </div>
-    </div>
+      </div>
+    </ChatErrorBoundary>
   );
 };
 

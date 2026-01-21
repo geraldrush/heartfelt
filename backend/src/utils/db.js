@@ -490,14 +490,33 @@ export async function getConnectionById(db, connectionId) {
 }
 
 export async function verifyUserInConnection(db, connectionId, userId) {
-  const row = await db
-    .prepare(
-      `SELECT 1 FROM connections
-       WHERE id = ? AND status = 'active' AND (user_id_1 = ? OR user_id_2 = ?)`
-    )
-    .bind(connectionId, userId, userId)
-    .first();
-  return Boolean(row);
+  const timestamp = new Date().toISOString();
+  console.log(`[DB] ${timestamp} Verifying user ${userId} for connection ${connectionId}`);
+  
+  const query = `SELECT 1 FROM connections
+       WHERE id = ? AND status = 'active' AND (user_id_1 = ? OR user_id_2 = ?)`;
+  
+  console.log(`[DB] ${timestamp} Executing query: ${query}`);
+  console.log(`[DB] ${timestamp} Query parameters: [${connectionId}, ${userId}, ${userId}]`);
+  
+  try {
+    const row = await db
+      .prepare(query)
+      .bind(connectionId, userId, userId)
+      .first();
+    
+    if (row) {
+      console.log(`[DB] ${timestamp} Connection verification successful: user ${userId} is in connection ${connectionId}`);
+      return true;
+    } else {
+      console.log(`[DB] ${timestamp} Connection verification failed: user ${userId} not found in connection ${connectionId} or connection inactive`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`[DB] ${timestamp} Database error in verifyUserInConnection:`, error);
+    console.error(`[DB] ${timestamp} Error details: ${error.message}`);
+    return false;
+  }
 }
 
 export async function getMessageIdsForUser(db, userId, messageIds) {
