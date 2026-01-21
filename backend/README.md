@@ -1,71 +1,88 @@
-# Heartfelt Backend Image Blurring
+# Heartfelt Backend
 
-## Overview
-This backend supports a client-side face blurring workflow. The browser detects faces and uploads blurred images, while the backend stores originals privately and blurred versions publicly in R2. Face detection metadata can be stored in D1 for future features.
+Cloudflare Workers backend with Durable Objects for real-time chat functionality.
 
-## Storage Layout
-- `private/images/{id}.{ext}`: original uploads (private)
-- `public/images/{id}.{ext}`: blurred uploads (public)
+## Environment Variables for Production
 
-## Image Processing Flow
-1. Client detects faces and blurs locally using TensorFlow.js BlazeFace.
-2. Client uploads blurred image via `POST /api/stories/upload-image`.
-3. Backend stores original and blurred copies in R2 and records story image links.
-4. Optional: `POST /api/images/process` runs Workers AI to return face coordinates.
+### Required Variables
 
-## Workers AI
-Workers AI is configured with:
+- **JWT_SECRET**: Secret key for JWT signing (must be set in Workers dashboard)
+  - Generate: `openssl rand -base64 32`
+  - Set via: `wrangler secret put JWT_SECRET`
+  - Never commit this value to version control
+
+- **CORS_ORIGIN**: Comma-separated list of allowed origins
+  - Example: `https://heartfelt.pages.dev,https://heartfelt-2ti.pages.dev`
+  - Set in `wrangler.toml` or Workers dashboard
+
+- **GOOGLE_CLIENT_ID**: Google OAuth client ID
+  - Obtain from Google Cloud Console
+  - Set in `wrangler.toml` or Workers dashboard
+
+### Local Development
+
+Create `.dev.vars` file in backend directory:
+
 ```
-[ai]
-binding = "AI"
+JWT_SECRET=your-local-jwt-secret-32-chars-min
+CORS_ORIGIN=http://localhost:5173
+GOOGLE_CLIENT_ID=your-google-client-id
 ```
-The `POST /api/images/process` endpoint uses `@cf/facebook/detr-resnet-50` to detect persons and returns face coordinates.
 
-## D1 Face Metadata
-Migration `0003_add_face_metadata.sql` adds:
-- `face_coordinates` (JSON string)
-- `faces_detected` (count)
+### Security Notes
+
+- JWT_SECRET must be at least 32 characters
+- Never commit JWT_SECRET to version control
+- Use different JWT_SECRET for production and development
+- CORS_ORIGIN should only include trusted domains
+
+## Production Deployment Checklist
+
+### 1. Environment Variables
+- [ ] Verify `JWT_SECRET` is set in Workers environment variables (not in wrangler.toml)
+- [ ] Verify `CORS_ORIGIN` includes all production frontend URLs
+- [ ] Verify `GOOGLE_CLIENT_ID` matches OAuth configuration
+
+### 2. Database Setup
+- [ ] Run `wrangler d1 execute heartfelt-db --remote --file=./migrations/0001_initial_schema.sql`
+- [ ] Verify database tables are created correctly
+
+### 3. Deployment
+- [ ] Run `wrangler deploy` to deploy backend with Durable Objects
+- [ ] Verify deployment shows no errors
+- [ ] Check Workers dashboard for successful deployment
+
+### 4. Testing
+- [ ] Test WebSocket connection from production frontend
+- [ ] Verify Worker logs show successful origin validation
+- [ ] Test token refresh endpoint with production tokens
+- [ ] Verify CSRF protection is working (test with invalid origin)
+- [ ] Test Google OAuth flow end-to-end
+
+### 5. Monitoring
+- [ ] Check Workers analytics for error rates
+- [ ] Monitor Durable Objects usage and performance
+- [ ] Set up alerts for high error rates or failures
 
 ## Troubleshooting
-- If images are missing, confirm R2 binding `R2_BUCKET` and bucket name.
-- If AI processing fails, verify Workers AI is enabled and the binding exists.
-- Ensure the D1 database has run all migrations (0001, 0002, 0003).
 
-## Real-Time Chat (Durable Objects)
+### CORS Errors
+- Check `CORS_ORIGIN` environment variable
+- Verify frontend URL matches exactly (including protocol)
+- Check browser developer tools for specific CORS error
 
-### Architecture
-- Each connection uses a Durable Object room (`ChatRoom`) keyed by `connection_id`.
-- WebSocket clients connect via `/api/chat/connect/:connectionId?token=JWT`.
-- Messages are persisted in D1 (`messages` table).
+### Authentication Errors
+- Verify `JWT_SECRET` is set correctly
+- Check token expiration (30 days default)
+- Verify Google OAuth client ID matches
 
-### Message Types
-- `chat_message`: `{ type, content }`
-- `typing_indicator`: `{ type, is_typing }`
-- `delivery_confirmation`: `{ type, id }`
-- `read_receipt`: `{ type, id }`
-- `presence`: `{ type, user_id, is_online }`
-- `ping` / `pong`: keepalive
+### WebSocket Connection Failures
+- Use `/api/chat/connection-status/:connectionId` endpoint for diagnostics
+- Check origin validation in Worker logs
+- Verify user has permission for the connection
+- Test with different browsers/networks
 
-### Endpoints
-- `GET /api/chat/connect/:connectionId` (WebSocket upgrade)
-- `GET /api/chat/messages/:connectionId` (history)
-- `GET /api/chat/unread-counts` (badge counts)
-- `POST /api/chat/messages/mark-delivered` (batch delivery)
-
-### Configuration
-Add to `wrangler.toml`:
-```
-[[durable_objects.bindings]]
-name = "CHAT_ROOM"
-class_name = "ChatRoom"
-script_name = "heartfelt-api"
-
-[[migrations]]
-tag = "v1"
-new_classes = ["ChatRoom"]
-```
-
-### Troubleshooting
-- Ensure the user is part of the connection (`connections` table) or WebSocket will reject.
-- Check CORS/WS URLs for `ws://` (local) vs `wss://` (production).
-- If messages are not delivered, verify Durable Object bindings are deployed.
+### Database Issues
+- Verify D1 database is properly configured
+- Check migration files have been applied
+- Use `wrangler d1 execute` to run manual queries for debugging

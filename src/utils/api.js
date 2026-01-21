@@ -57,6 +57,7 @@ async function request(method, path, data) {
     const error = new Error(message);
     error.status = response.status;
     error.details = payload?.details;
+    error.code = payload?.code;
     throw error;
   }
 
@@ -86,7 +87,38 @@ export const emailSignup = (data) => apiClient.post('/api/auth/email-signup', da
 export const emailLogin = (data) => apiClient.post('/api/auth/email-login', data);
 export const googleAuth = (credential) =>
   apiClient.post('/api/auth/google', { credential });
-export const refreshToken = () => apiClient.post('/api/auth/refresh');
+export const refreshToken = async () => {
+  let retryCount = 0;
+  const maxRetries = 2;
+  
+  while (retryCount <= maxRetries) {
+    try {
+      const result = await apiClient.post('/api/auth/refresh');
+      console.log('[API] Token refresh successful');
+      return result;
+    } catch (error) {
+      console.log(`[API] Token refresh attempt ${retryCount + 1} failed:`, error.message);
+      
+      if (error.code === 'TOKEN_EXPIRED') {
+        console.log('[API] Token expired, clearing localStorage and redirecting to login');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        throw error;
+      }
+      
+      if (retryCount < maxRetries && (error.status >= 500 || error.message.includes('network'))) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        console.log(`[API] Retrying token refresh in ${delay}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        retryCount++;
+        continue;
+      }
+      
+      throw error;
+    }
+  }
+};
 export const getCurrentUser = () => apiClient.get('/api/auth/me');
 
 export const uploadStoryImage = (formData) => {

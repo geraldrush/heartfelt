@@ -15,6 +15,7 @@ import {
   emailSignupSchema,
   googleAuthSchema,
 } from '../utils/validation.js';
+import { getAllowedOrigins, isOriginAllowed, isRefererAllowed } from '../utils/cors.js';
 
 const auth = new Hono();
 
@@ -39,17 +40,13 @@ auth.post('/email-signup', async (c) => {
   const origin = c.req.header('Origin');
   const referer = c.req.header('Referer');
   
-  const raw = c.env.CORS_ORIGIN || '';
-  const allowed = raw.split(',').map(value => value.trim()).filter(Boolean);
-  const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
-  const list = allowed.length > 0 ? allowed : defaultOrigins;
+  const isValidOrigin = origin ? isOriginAllowed(origin, c.env) : false;
+  const isValidReferer = referer ? isRefererAllowed(referer, c.env) : false;
   
-  if (origin && !list.includes(origin)) {
-    return c.json({ error: 'Forbidden origin' }, 403);
-  }
-  
-  if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
-    return c.json({ error: 'Invalid referer' }, 403);
+  if (!isValidOrigin && !isValidReferer) {
+    const allowedOrigins = getAllowedOrigins(c.env);
+    console.log(`[Auth] Invalid origin/referer: origin=${origin}, referer=${referer}, allowed: ${allowedOrigins.join(', ')}`);
+    return c.json({ error: 'Invalid origin or referer' }, 403);
   }
 
   const body = await c.req.json().catch(() => null);
@@ -119,6 +116,19 @@ auth.post('/email-signup', async (c) => {
 });
 
 auth.post('/email-login', async (c) => {
+  // CSRF protection for state-changing auth operations
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+  
+  const isValidOrigin = origin ? isOriginAllowed(origin, c.env) : false;
+  const isValidReferer = referer ? isRefererAllowed(referer, c.env) : false;
+  
+  if (!isValidOrigin && !isValidReferer) {
+    const allowedOrigins = getAllowedOrigins(c.env);
+    console.log(`[Auth] Invalid origin/referer: origin=${origin}, referer=${referer}, allowed: ${allowedOrigins.join(', ')}`);
+    return c.json({ error: 'Invalid origin or referer' }, 403);
+  }
+
   const body = await c.req.json().catch(() => null);
   const parsed = emailLoginSchema.safeParse(body);
 
@@ -150,17 +160,13 @@ auth.post('/google', async (c) => {
   const origin = c.req.header('Origin');
   const referer = c.req.header('Referer');
   
-  const raw = c.env.CORS_ORIGIN || '';
-  const allowed = raw.split(',').map(value => value.trim()).filter(Boolean);
-  const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
-  const list = allowed.length > 0 ? allowed : defaultOrigins;
+  const isValidOrigin = origin ? isOriginAllowed(origin, c.env) : false;
+  const isValidReferer = referer ? isRefererAllowed(referer, c.env) : false;
   
-  if (origin && !list.includes(origin)) {
-    return c.json({ error: 'Forbidden origin' }, 403);
-  }
-  
-  if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
-    return c.json({ error: 'Invalid referer' }, 403);
+  if (!isValidOrigin && !isValidReferer) {
+    const allowedOrigins = getAllowedOrigins(c.env);
+    console.log(`[Auth] Invalid origin/referer: origin=${origin}, referer=${referer}, allowed: ${allowedOrigins.join(', ')}`);
+    return c.json({ error: 'Invalid origin or referer' }, 403);
   }
 
   const body = await c.req.json().catch(() => null);

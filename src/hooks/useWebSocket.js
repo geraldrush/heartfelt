@@ -1,10 +1,40 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { isTokenExpiringSoon, isTokenExpired } from '../utils/auth.js';
+import { refreshToken } from '../utils/api.js';
 
 const buildWebSocketUrl = (connectionId, token) => {
-  const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://heartfelt-api.gerryrushway.workers.dev' : 'http://localhost:8787');
-  const url = new URL(apiUrl);
-  const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${url.host}/api/chat/connect/${connectionId}?token=${token}`;
+  // Validate connectionId format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(connectionId)) {
+    console.log('[WS-Client] URL validation: connectionId invalid');
+    return null;
+  }
+  
+  // Validate token presence
+  if (!token || token.trim() === '') {
+    console.log('[WS-Client] URL validation: token missing');
+    return null;
+  }
+  
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://heartfelt-api.gerryrushway.workers.dev' : 'http://localhost:8787');
+    const url = new URL(apiUrl);
+    
+    // Validate protocol
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      console.log('[WS-Client] URL validation: invalid protocol');
+      return null;
+    }
+    
+    const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    console.log('[WS-Client] URL validation: all checks passed');
+    // Always use latest token from localStorage
+    const latestToken = localStorage.getItem('token') || token;
+    return `${protocol}//${url.host}/api/chat/connect/${connectionId}?token=${latestToken}`;
+  } catch (error) {
+    console.log('[WS-Client] URL validation: API URL invalid', error.message);
+    return null;
+  }
 };
 
 // Connection diagnostics helper
@@ -38,7 +68,32 @@ export const useWebSocket = ({
   const socketRef = useRef(null);
   const retryRef = useRef(0);
   const reconnectTimer = useRef(null);
+  const heartbeatInterval = useRef(null);
+  const lastPongTime = useRef(Date.now());
+  const connectionAttempts = useRef(0);
+  const connectionStartTime = useRef(null);
+  const networkListeners = useRef({ online: null, offline: null });
+  const isManualCloseRef = useRef(false);
   const [connectionState, setConnectionState] = useState('disconnected');
+
+  const errorClassifier = useCallback((closeCode) => {
+    if (closeCode >= 4001 && closeCode <= 4003) {
+      return { type: 'auth', message: 'Authentication failed. Please log in again.', userAction: 'login' };
+    }
+    if (closeCode >= 4010 && closeCode <= 4020) {
+      return { type: 'permission', message: "You don't have permission to access this chat.", userAction: 'goBack' };
+    }
+    if (closeCode === 1006) {
+      return { type: 'network', message: 'Network connection lost. Retrying...', userAction: 'retry' };
+    }
+    if ([1011, 1012, 1013].includes(closeCode)) {
+      return { type: 'server', message: 'Server error. Please try again later.', userAction: 'retry' };
+    }
+    if ([1000, 1001].includes(closeCode)) {
+      return { type: 'normal', message: 'Connection closed.', userAction: 'none' };
+    }
+    return { type: 'unknown', message: 'Connection error occurred.', userAction: 'retry' };
+  }, []);
 
   const sendPayload = useCallback((payload) => {
     const socket = socketRef.current;
@@ -47,16 +102,52 @@ export const useWebSocket = ({
     }
   }, []);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!connectionId) {
       console.log(`[WS-Client] ${new Date().toISOString()} Connection attempt failed: no connectionId provided`);
       setConnectionState('error');
+      onConnectionError?.({ type: 'validation', message: 'No connection ID provided', userAction: 'goBack', code: 0 });
       return;
     }
-    const token = localStorage.getItem('token');
+    
+    let token = localStorage.getItem('token');
     if (!token) {
       console.log(`[WS-Client] ${new Date().toISOString()} Connection attempt failed: no token in localStorage`);
       setConnectionState('error');
+      onConnectionError?.({ type: 'auth', message: 'Authentication required. Please log in again.', userAction: 'login', code: 0 });
+      return;
+    }
+
+    // Check if token is expired or expiring soon
+    if (isTokenExpired(token)) {
+      console.log('[WS-Client] Token expired, attempting refresh');
+      try {
+        const refreshResult = await refreshToken();
+        token = refreshResult.token;
+        localStorage.setItem('token', token);
+        console.log('[WS-Client] Token refresh before WebSocket: success');
+      } catch (error) {
+        console.log('[WS-Client] Token refresh before WebSocket: failed', error.message);
+        setConnectionState('error');
+        onConnectionError?.({ type: 'auth', message: 'Session expired. Please log in again.', userAction: 'login', code: 0 });
+        return;
+      }
+    } else if (isTokenExpiringSoon(token, 5)) {
+      console.log('[WS-Client] Token expiring soon, attempting refresh');
+      try {
+        const refreshResult = await refreshToken();
+        token = refreshResult.token;
+        localStorage.setItem('token', token);
+        console.log('[WS-Client] Token refresh before WebSocket: success');
+      } catch (error) {
+        console.log('[WS-Client] Token refresh before WebSocket: failed, proceeding with existing token');
+      }
+    }
+
+    const wsUrl = buildWebSocketUrl(connectionId, token);
+    if (!wsUrl) {
+      setConnectionState('error');
+      onConnectionError?.({ type: 'validation', message: 'Invalid connection parameters', userAction: 'retry', code: 0 });
       return;
     }
 
@@ -64,29 +155,49 @@ export const useWebSocket = ({
     if (retryRef.current >= 5) {
       console.error(`[WS-Client] ${new Date().toISOString()} Max retries exceeded for connectionId: ${connectionId}`);
       setConnectionState('error');
+      onConnectionError?.({ type: 'retry', message: 'Max connection retries exceeded', userAction: 'retry', code: 0 });
       return;
     }
 
     const maskedToken = token.length > 8 ? `${token.slice(0, 4)}...${token.slice(-4)}` : '****';
-    const wsUrl = buildWebSocketUrl(connectionId, token);
     const maskedUrl = wsUrl.replace(/token=[^&]+/, `token=${maskedToken}`);
     
+    connectionAttempts.current++;
+    connectionStartTime.current = Date.now();
+    console.log(`[WS-Client] ${new Date().toISOString()} Connection attempt: ${connectionAttempts.current}`);
     console.log(`[WS-Client] ${new Date().toISOString()} Attempting connection to: ${connectionId}`);
     console.log(`[WS-Client] ${new Date().toISOString()} WebSocket URL: ${maskedUrl}`);
     console.log(`[WS-Client] ${new Date().toISOString()} Token present: ${!!token}, Retry attempt: ${retryRef.current}`);
     
     const ws = new WebSocket(wsUrl);
     socketRef.current = ws;
+    isManualCloseRef.current = false;
     const oldState = connectionState;
     setConnectionState('connecting');
     console.log(`[WS-Client] ${new Date().toISOString()} State transition: ${oldState} -> connecting`);
 
     ws.onopen = () => {
-      console.log(`[WS-Client] ${new Date().toISOString()} Connected successfully`);
+      const connectionTime = Date.now() - connectionStartTime.current;
+      console.log(`[WS-Client] ${new Date().toISOString()} Connected successfully in ${connectionTime}ms`);
       retryRef.current = 0;
+      lastPongTime.current = Date.now();
       const oldState = connectionState;
       setConnectionState('connected');
       console.log(`[WS-Client] ${new Date().toISOString()} State transition: ${oldState} -> connected`);
+      
+      // Start heartbeat
+      heartbeatInterval.current = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          console.log('[WS-Client] Heartbeat: ping sent');
+          ws.send(JSON.stringify({ type: 'ping' }));
+          
+          // Check for stale connection
+          if (Date.now() - lastPongTime.current > 60000) {
+            console.log('[WS-Client] Heartbeat: connection stale, closing');
+            ws.close();
+          }
+        }
+      }, 30000);
     };
 
     ws.onmessage = (event) => {
@@ -104,7 +215,7 @@ export const useWebSocket = ({
         }
         
         // Whitelist allowed message types
-        const allowedTypes = ['chat_message', 'typing_indicator', 'presence', 'delivery_confirmation', 'read_receipt', 'ping', 'error'];
+        const allowedTypes = ['chat_message', 'typing_indicator', 'presence', 'delivery_confirmation', 'read_receipt', 'ping', 'pong', 'error'];
         if (!allowedTypes.includes(data.type)) {
           return;
         }
@@ -127,6 +238,12 @@ export const useWebSocket = ({
             break;
           case 'ping':
             sendPayload({ type: 'pong' });
+            console.log('[WS-Client] Heartbeat: pong received');
+            lastPongTime.current = Date.now();
+            break;
+          case 'pong':
+            console.log('[WS-Client] Heartbeat: pong received');
+            lastPongTime.current = Date.now();
             break;
           default:
             break;
@@ -140,35 +257,46 @@ export const useWebSocket = ({
       const timestamp = new Date().toISOString();
       console.log(`[WS-Client] ${timestamp} Connection closed: code=${event.code}, reason=${event.reason || 'none'}, clean=${event.wasClean}`);
       
+      // Clear heartbeat
+      if (heartbeatInterval.current) {
+        clearInterval(heartbeatInterval.current);
+        heartbeatInterval.current = null;
+      }
+      
+      // Skip retry logic for manual closes or intentional closes
+      if (isManualCloseRef.current || [1000, 1001].includes(event.code)) {
+        console.log(`[WS-Client] ${timestamp} Manual or intentional close, not retrying`);
+        setConnectionState('disconnected');
+        return;
+      }
+      
       const oldState = connectionState;
       setConnectionState('disconnected');
       console.log(`[WS-Client] ${timestamp} State transition: ${oldState} -> disconnected`);
       
-      // Set connection error with specific reason
-      let errorMessage = '';
-      if (event.code >= 1000 && event.code <= 1003) {
-        console.log(`[WS-Client] ${timestamp} Normal/going away/protocol error - not retrying`);
-        errorMessage = 'Connection closed normally';
-      } else if (event.code >= 4000 && event.code < 5000) {
-        console.warn(`[WS-Client] ${timestamp} Application-level error (likely auth/permission) - not retrying`);
-        errorMessage = 'Authentication or permission error';
+      // Clear any existing reconnect timer
+      if (reconnectTimer.current) {
+        clearTimeout(reconnectTimer.current);
+        reconnectTimer.current = null;
+      }
+      
+      // Classify error and determine retry behavior
+      const errorInfo = errorClassifier(event.code);
+      console.log(`[WS-Client] ${timestamp} Error classified as: ${errorInfo.type}`);
+      
+      // Don't retry for auth/permission errors
+      if (event.code >= 4000 && event.code < 5000) {
+        console.log(`[WS-Client] ${timestamp} Not retrying due to client error code: ${event.code}`);
         setConnectionState('error');
-        onConnectionError?.(errorMessage);
-        return;
-      } else if (event.code !== 1006) {
-        console.log(`[WS-Client] ${timestamp} Network/server issue (code ${event.code}) - not retrying`);
-        errorMessage = `Network error (code ${event.code})`;
-        setConnectionState('error');
-        onConnectionError?.(errorMessage);
+        onConnectionError?.({ ...errorInfo, code: event.code });
         return;
       }
       
       // Stop retrying after max attempts
       if (retryRef.current >= 5) {
         console.error(`[WS-Client] ${timestamp} Max retries reached, stopping`);
-        errorMessage = 'Max connection retries exceeded';
         setConnectionState('error');
-        onConnectionError?.(errorMessage);
+        onConnectionError?.({ type: 'retry', message: 'Max connection retries exceeded', userAction: 'retry', code: 0 });
         return;
       }
       
@@ -189,27 +317,106 @@ export const useWebSocket = ({
         logConnectionDiagnostics(connectionId, localStorage.getItem('token'));
       }
       
-      const errorMessage = 'WebSocket connection failed';
       setConnectionState('error');
-      onConnectionError?.(errorMessage);
+      onConnectionError?.({ type: 'network', message: 'WebSocket connection failed', userAction: 'retry', code: 0 });
       ws.close();
     };
-  }, [connectionId, onDelivered, onMessage, onPresence, onRead, onTyping, sendPayload, onConnectionError]);
+  }, [connectionId, onDelivered, onMessage, onPresence, onRead, onTyping, sendPayload, onConnectionError, errorClassifier]);
+
+  const reconnect = useCallback(() => {
+    console.log('[WS-Client] Manual reconnect triggered');
+    
+    // Close existing connection
+    if (socketRef.current) {
+      isManualCloseRef.current = true;
+      socketRef.current.close(1000, 'Manual reconnect');
+    }
+    
+    // Reset retry counter
+    retryRef.current = 0;
+    
+    // Clear any pending reconnect timers
+    if (reconnectTimer.current) {
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = null;
+    }
+    
+    // Attempt new connection
+    connect();
+  }, [connect]);
+
+  // Network change detection
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('[WS-Client] Network: online');
+      if (connectionState === 'disconnected' || connectionState === 'error') {
+        connect();
+      }
+    };
+    
+    const handleOffline = () => {
+      console.log('[WS-Client] Network: offline');
+      setConnectionState('disconnected');
+    };
+    
+    networkListeners.current.online = handleOnline;
+    networkListeners.current.offline = handleOffline;
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [connectionState, connect]);
 
   useEffect(() => {
     // Only connect if we have a valid connectionId
     if (connectionId) {
+      // Close old connection if connectionId changed
+      if (socketRef.current) {
+        console.log('[WS-Client] State: closing old connection for new connectionId');
+        isManualCloseRef.current = true;
+        socketRef.current.close(1000, 'Connection ID changed');
+      }
       connect();
     } else {
       setConnectionState('error');
     }
     return () => {
+      console.log('[WS-Client] Cleanup: clearing timers and closing connection');
+      
+      // Clear all timers
       if (reconnectTimer.current) {
         clearTimeout(reconnectTimer.current);
+        reconnectTimer.current = null;
       }
-      socketRef.current?.close();
+      
+      if (heartbeatInterval.current) {
+        clearInterval(heartbeatInterval.current);
+        heartbeatInterval.current = null;
+      }
+      
+      // Remove network listeners
+      if (networkListeners.current.online) {
+        window.removeEventListener('online', networkListeners.current.online);
+      }
+      if (networkListeners.current.offline) {
+        window.removeEventListener('offline', networkListeners.current.offline);
+      }
+      
+      // Close WebSocket
+      if (socketRef.current) {
+        isManualCloseRef.current = true;
+        socketRef.current.close(1000, 'Component unmounting');
+      }
+      
+      // Reset state
+      retryRef.current = 0;
+      setConnectionState('disconnected');
     };
-  }, [connect]);
+  }, [connect, connectionId]);
 
   const sendMessage = useCallback(
     (content, clientId) =>
@@ -230,6 +437,7 @@ export const useWebSocket = ({
   );
 
   const disconnect = useCallback(() => {
+    isManualCloseRef.current = true;
     socketRef.current?.close();
   }, []);
 
@@ -240,5 +448,6 @@ export const useWebSocket = ({
     sendDeliveryConfirmation,
     connectionState,
     disconnect,
+    reconnect,
   };
 };

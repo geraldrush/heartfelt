@@ -64,13 +64,14 @@ const Chat = () => {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const [error, setError] = useState('');
-  const [connectionError, setConnectionError] = useState('');
+  const [connectionError, setConnectionError] = useState(null);
   const [isOtherUserOnline, setIsOtherUserOnline] = useState(false);
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const [showTokenRequest, setShowTokenRequest] = useState(false);
   const [requestAmount, setRequestAmount] = useState('');
   const [requestReason, setRequestReason] = useState('');
   const [tokenRequests, setTokenRequests] = useState([]);
+  const [tokenWarning, setTokenWarning] = useState(false);
 
   const listRef = useRef(null);
   const topSentinelRef = useRef(null);
@@ -134,6 +135,7 @@ const Chat = () => {
     sendReadReceipt,
     sendDeliveryConfirmation,
     connectionState,
+    reconnect,
   } = useWebSocket({
     connectionId: connection ? connectionId : null, // Only connect if valid connection exists
     onMessage: (data) => {
@@ -164,8 +166,8 @@ const Chat = () => {
     onRead: (data) => {
       updateMessageStatus(data.id, data.status || 'read');
     },
-    onConnectionError: (errorMessage) => {
-      setConnectionError(errorMessage);
+    onConnectionError: (errorInfo) => {
+      setConnectionError(errorInfo);
     },
   });
 
@@ -244,6 +246,29 @@ const Chat = () => {
     loadMessages({ reset: true });
     loadTokenRequests();
   }, [connectionId]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (connectionState === 'connected') {
+        // Attempt graceful disconnect
+        try {
+          navigator.sendBeacon && navigator.sendBeacon('/api/disconnect', JSON.stringify({ connectionId }));
+        } catch (e) {
+          // Ignore beacon errors
+        }
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      if (typingTimeout.current) {
+        clearTimeout(typingTimeout.current);
+      }
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [connectionId, connectionState]);
 
   useEffect(() => {
     if (!hasMore || loadingMore || !listRef.current) {
@@ -420,10 +445,18 @@ const Chat = () => {
                 connectionState === 'connecting' ? 'text-yellow-600' : 
                 connectionState === 'error' ? 'text-red-600' : 'text-gray-600'
               }`}>
-                {connectionState === 'connected' ? 'Connected' :
-                 connectionState === 'connecting' ? 'Connecting...' :
-                 connectionState === 'error' ? 'Connection Error' : 'Disconnected'}
+                {connectionState === 'connected' ? '● Connected' :
+                 connectionState === 'connecting' ? '● Connecting...' :
+                 connectionState === 'error' ? '● Connection Error' : '● Disconnected'}
               </span>
+              {connectionState === 'error' && (
+                <button 
+                  onClick={reconnect}
+                  className="ml-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  Reconnect
+                </button>
+              )}
             </p>
           </div>
           <motion.button
@@ -444,18 +477,55 @@ const Chat = () => {
         </div>
       )}
 
-      {connectionError && (
+      {connectionError && typeof connectionError === 'object' && (
         <div className="mx-6 mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
-          WebSocket Error: {connectionError}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold">
+                {connectionError.type === 'auth' ? 'Authentication Error' :
+                 connectionError.type === 'permission' ? 'Access Denied' :
+                 connectionError.type === 'network' ? 'Network Issue' :
+                 connectionError.type === 'server' ? 'Server Error' :
+                 'Connection Error'}
+              </p>
+              <p>{connectionError.message}</p>
+            </div>
+            <div className="flex gap-2">
+              {connectionError.userAction === 'login' && (
+                <button 
+                  onClick={() => window.location.href = '/login'}
+                  className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                >
+                  Log In Again
+                </button>
+              )}
+              {connectionError.userAction === 'goBack' && (
+                <button 
+                  onClick={() => window.history.back()}
+                  className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                >
+                  Go Back
+                </button>
+              )}
+              {connectionError.userAction === 'retry' && (
+                <button 
+                  onClick={reconnect}
+                  className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
-      {connectionState === 'error' && (
+      {connectionState === 'error' && !connectionError && (
         <div className="mx-6 mt-4 rounded-xl bg-yellow-100 px-4 py-3 text-sm text-yellow-700">
           <div className="flex items-center justify-between">
             <span>Unable to connect to chat. Please check your connection.</span>
             <button 
-              onClick={() => window.location.reload()} 
+              onClick={reconnect}
               className="ml-2 px-3 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700"
             >
               Retry

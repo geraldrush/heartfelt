@@ -4,6 +4,7 @@ import {
   updateMessageStatus,
   verifyUserInConnection,
 } from '../utils/db.js';
+import { getAllowedOrigins, isOriginAllowed, isRefererAllowed } from '../utils/cors.js';
 
 // Server-side diagnostics helper
 const logRequestDiagnostics = (request, connectionId, timestamp) => {
@@ -48,13 +49,16 @@ export class ChatRoom {
       console.log(`[WS-Server] ${timestamp} JWT verification successful for user: ${payload.sub}`);
       return payload.sub;
     } catch (error) {
+      const timestamp = new Date().toISOString();
       console.error(`[WS-Server] ${timestamp} JWT verification failed:`, error.message);
       if (error.code === 'ERR_JWT_EXPIRED') {
-        throw new Error('Token expired');
+        throw new Error('TOKEN_EXPIRED');
       } else if (error.code === 'ERR_JWS_INVALID') {
-        throw new Error('Invalid token signature');
+        throw new Error('INVALID_SIGNATURE');
+      } else if (error.code === 'ERR_JWT_MALFORMED') {
+        throw new Error('MALFORMED_TOKEN');
       } else {
-        throw new Error('Invalid token');
+        throw new Error('INVALID_TOKEN');
       }
     }
   }
@@ -66,15 +70,11 @@ export class ChatRoom {
 
     // Origin validation with comprehensive logging
     const origin = request.headers.get('Origin');
-    const allowedOrigins = this.env.CORS_ORIGIN?.split(',').map(o => o.trim()) || [
-      'http://localhost:5173', 
-      'https://heartfelt.pages.dev',
-      'https://heartfelt-2ti.pages.dev'
-    ];
+    const allowedOrigins = getAllowedOrigins(this.env);
     
     console.log(`[WS-Server] ${timestamp} Origin check: ${origin} against allowed: [${allowedOrigins.join(', ')}]`);
     
-    if (origin && !allowedOrigins.includes(origin)) {
+    if (origin && !isOriginAllowed(origin, this.env)) {
       console.log(`[WS-Server] ${timestamp} Origin REJECTED: ${origin}`);
       logRequestDiagnostics(request, connectionId, timestamp);
       return new Response('Forbidden origin', { status: 403 });
@@ -89,9 +89,32 @@ export class ChatRoom {
       userId = await this.authenticate(request);
       console.log(`[WS-Server] ${timestamp} Authentication successful for user: ${userId}`);
     } catch (error) {
+      const timestamp = new Date().toISOString();
       console.error(`[WS-Server] ${timestamp} Authentication failed: ${error.message}`);
       logRequestDiagnostics(request, connectionId, timestamp);
-      return new Response('Unauthorized', { status: 401 });
+      
+      if (error.message === 'TOKEN_EXPIRED') {
+        return new Response(JSON.stringify({ error: 'Token expired', code: 'TOKEN_EXPIRED' }), { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      if (error.message === 'INVALID_SIGNATURE') {
+        return new Response(JSON.stringify({ error: 'Invalid token signature', code: 'INVALID_SIGNATURE' }), { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      if (error.message === 'MALFORMED_TOKEN') {
+        return new Response(JSON.stringify({ error: 'Malformed token', code: 'MALFORMED_TOKEN' }), { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      return new Response(JSON.stringify({ error: 'Invalid token', code: 'INVALID_TOKEN' }), { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     // Database verification with logging
@@ -105,6 +128,15 @@ export class ChatRoom {
     }
     
     console.log(`[WS-Server] ${timestamp} User ${userId} verified for connection ${connectionId}`);
+
+    // CSRF protection - validate referer header
+    const referer = request.headers.get('Referer');
+    console.log(`[WS-Server] ${timestamp} Referer check: ${referer}`);
+    
+    if (referer && !isRefererAllowed(referer, this.env)) {
+      console.log(`[WS-Server] ${timestamp} Invalid referer: ${referer}`);
+      return new Response('Invalid referer', { status: 403 });
+    }
 
     // WebSocket upgrade check
     const upgradeHeader = request.headers.get('Upgrade');
@@ -174,15 +206,6 @@ export class ChatRoom {
     server.addEventListener('error', () => {
       this.cleanupConnection(userId);
     });
-
-    // CSRF protection - validate referer header (temporarily disabled for debugging)
-    const referer = request.headers.get('Referer');
-    console.log('WebSocket Referer:', referer);
-    
-    // if (referer && !allowedOrigins.some(origin => referer.startsWith(origin))) {
-    //   console.log('Invalid referer:', referer, 'Allowed origins:', allowedOrigins);
-    //   return new Response('Invalid referer', { status: 403 });
-    // }
 
     return new Response(null, { 
       status: 101, 

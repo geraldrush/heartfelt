@@ -7,27 +7,25 @@ import tokenRoutes from './routes/tokens.js';
 import chatRoutes from './routes/chat.js';
 import imagesRoutes from './routes/images.js';
 import paymentRoutes from './routes/payments.js';
+import { getAllowedOrigins, isOriginAllowed, isRefererAllowed } from './utils/cors.js';
 
 const app = new Hono();
-
-const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
 
 app.use(
   '/*',
   cors({
     origin: (origin, c) => {
-      const raw = c.env.CORS_ORIGIN || '';
-      const allowed = raw
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean);
-      const list = allowed.length > 0 ? allowed : defaultOrigins;
-
+      const allowedOrigins = getAllowedOrigins(c.env);
       if (!origin) {
-        return list;
+        console.log('[CORS] No origin header, allowing request');
+        return allowedOrigins;
       }
-
-      return list.includes(origin) ? origin : null;
+      if (isOriginAllowed(origin, c.env)) {
+        console.log(`[CORS] Origin allowed: ${origin}`);
+        return origin;
+      }
+      console.log(`[CORS] Origin rejected: ${origin}, allowed: ${allowedOrigins.join(', ')}`);
+      return null;
     },
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
@@ -39,22 +37,25 @@ app.use(
 app.use('/*', async (c, next) => {
   const method = c.req.method;
   if (['POST', 'PUT', 'DELETE'].includes(method)) {
+    const path = c.req.path;
+    
+    // Skip CSRF for server-to-server endpoints
+    const exemptPaths = ['/api/payments/notify', '/api/payments/refund'];
+    if (exemptPaths.some(exemptPath => path.startsWith(exemptPath))) {
+      await next();
+      return;
+    }
+    
     const origin = c.req.header('Origin');
     const referer = c.req.header('Referer');
     
-    const raw = c.env.CORS_ORIGIN || '';
-    const allowed = raw
-      .split(',')
-      .map((value) => value.trim())
-      .filter(Boolean);
-    const list = allowed.length > 0 ? allowed : defaultOrigins;
+    const isValidOrigin = origin ? isOriginAllowed(origin, c.env) : false;
+    const isValidReferer = referer ? isRefererAllowed(referer, c.env) : false;
     
-    if (origin && !list.includes(origin)) {
-      return c.json({ error: 'Forbidden origin' }, 403);
-    }
-    
-    if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
-      return c.json({ error: 'Invalid referer' }, 403);
+    if (!isValidOrigin && !isValidReferer) {
+      const allowedOrigins = getAllowedOrigins(c.env);
+      console.log(`[CSRF] Invalid origin/referer: origin=${origin}, referer=${referer}, allowed: ${allowedOrigins.join(', ')}`);
+      return c.json({ error: 'Invalid origin or referer' }, 403);
     }
   }
   await next();
