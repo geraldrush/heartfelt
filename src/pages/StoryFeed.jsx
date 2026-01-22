@@ -16,6 +16,9 @@ import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ImageGalleryViewer from '../components/ImageGalleryViewer.jsx';
 import Toast from '../components/Toast.jsx';
+import FilterDrawer from '../components/FilterDrawer.jsx';
+import FilterForm from '../components/FilterForm.jsx';
+import ActiveFilters from '../components/ActiveFilters.jsx';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.js';
 import Button from '../components/ui/Button.jsx';
 import { triggerHaptic } from '../utils/haptics.js';
@@ -56,19 +59,15 @@ const StoryFeed = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const [ageMin, setAgeMin] = useState('');
-  const [ageMax, setAgeMax] = useState('');
-  const [gender, setGender] = useState('');
-  const [religion, setReligion] = useState('');
-  const [race, setRace] = useState('');
-  const [education, setEducation] = useState('');
-  const [nationality, setNationality] = useState('');
-  const [hasKids, setHasKids] = useState('');
-  const [numKids, setNumKids] = useState('');
-  const [smoker, setSmoker] = useState('');
-  const [drinksAlcohol, setDrinksAlcohol] = useState('');
-  const [maxDistance, setMaxDistance] = useState(100);
-  const [filtersDraft, setFiltersDraft] = useState({});
+  const [filters, setFilters] = useState({
+    age_min: '',
+    age_max: '',
+    gender: '',
+    nationality: '',
+    race: '',
+    religion: '',
+    max_distance_km: 100,
+  });
   const [filtersApplied, setFiltersApplied] = useState({});
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
@@ -98,20 +97,20 @@ const StoryFeed = () => {
         
         // Only auto-populate if user hasn't manually set filters
         if (!preferencesLoaded && preferences) {
+          const newFilters = { ...filters };
           if (preferences.seeking_gender && preferences.seeking_gender !== 'any') {
-            setGender(preferences.seeking_gender);
+            newFilters.gender = preferences.seeking_gender;
           }
           if (preferences.seeking_age_min) {
-            setAgeMin(String(preferences.seeking_age_min));
+            newFilters.age_min = String(preferences.seeking_age_min);
           }
           if (preferences.seeking_age_max) {
-            setAgeMax(String(preferences.seeking_age_max));
+            newFilters.age_max = String(preferences.seeking_age_max);
           }
           if (preferences.seeking_races && preferences.seeking_races.length > 0) {
-            // For now, set the first race preference
-            // Future enhancement: support multiple race filters
-            setRace(preferences.seeking_races[0]);
+            newFilters.race = preferences.seeking_races[0];
           }
+          setFilters(newFilters);
           setPreferencesLoaded(true);
         }
       } catch (err) {
@@ -145,42 +144,11 @@ const StoryFeed = () => {
   }, [stories]);
 
   useEffect(() => {
-    const nextDraft = {
-      age_min: ageMin,
-      age_max: ageMax,
-      gender,
-      nationality,
-      race,
-      religion,
-      education,
-      has_kids: hasKids,
-      num_kids: hasKids === 'true' ? numKids : '',
-      smoker,
-      drinks_alcohol: drinksAlcohol,
-      max_distance_km: maxDistance,
-    };
-    setFiltersDraft(nextDraft);
-  }, [
-    ageMin,
-    ageMax,
-    gender,
-    religion,
-    race,
-    education,
-    nationality,
-    hasKids,
-    numKids,
-    smoker,
-    drinksAlcohol,
-    maxDistance,
-  ]);
-
-  useEffect(() => {
     const handler = setTimeout(() => {
-      setFiltersApplied(filtersDraft);
+      setFiltersApplied(filters);
     }, 500);
     return () => clearTimeout(handler);
-  }, [filtersDraft]);
+  }, [filters]);
 
   const fetchStories = useCallback(
     async ({ reset = false } = {}) => {
@@ -249,20 +217,32 @@ const StoryFeed = () => {
     };
   }, [hasMore, loadingMore, loading]);
 
-  const clearFilters = () => {
-    setAgeMin('');
-    setAgeMax('');
-    setGender('');
-    setNationality('');
-    setRace('');
-    setReligion('');
-    setEducation('');
-    setHasKids('');
-    setNumKids('');
-    setSmoker('');
-    setDrinksAlcohol('');
-    setMaxDistance(100);
-  };
+  const clearFilters = useCallback(() => {
+    setFilters({
+      age_min: '',
+      age_max: '',
+      gender: '',
+      nationality: '',
+      race: '',
+      religion: '',
+      max_distance_km: 100,
+    });
+  }, []);
+
+  const removeFilter = useCallback((key) => {
+    triggerHaptic('light');
+    setFilters(prev => ({ ...prev, [key]: key === 'max_distance_km' ? 100 : '' }));
+  }, []);
+
+  const handleApplyFilters = useCallback(() => {
+    setFiltersApplied(filters);
+    setShowFilters(false);
+  }, [filters]);
+
+  const handleClearAllFilters = useCallback(() => {
+    clearFilters();
+    setShowFilters(false);
+  }, [clearFilters]);
 
   const showToast = (message, type = 'error') => {
     setToast({ message, type });
@@ -572,18 +552,20 @@ const StoryFeed = () => {
           </div>
 
           {/* Mobile Filter Icon Button */}
-          <button
+          <motion.button
             type="button"
             onClick={() => setShowFilters((prev) => !prev)}
             className="fixed top-[calc(1rem+env(safe-area-inset-top,0px))] left-4 z-40 md:hidden glass-card rounded-full w-12 h-12 flex items-center justify-center"
+            animate={activeFilterCount > 0 ? { scale: [1, 1.05, 1] } : {}}
+            transition={{ repeat: Infinity, duration: 2 }}
           >
-            <FaFilter className="text-purple-600" />
+            <FaFilter className={activeFilterCount > 0 ? "text-purple-600" : "text-gray-600"} />
             {activeFilterCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
-          </button>
+          </motion.button>
 
           {/* Filter Controls */}
           <motion.div 
@@ -609,138 +591,28 @@ const StoryFeed = () => {
             )}
           </motion.div>
 
-          {/* Filters Panel */}
-          {showFilters && (
-            <motion.div 
-              initial={{ opacity: 0, y: '100%' }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: '100%' }}
-              className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto z-50 glass-card rounded-t-3xl md:rounded-3xl p-6 mb-0 md:mb-8 max-h-[70vh] md:max-h-none overflow-y-auto pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-8"
-            >
-              <div className="flex justify-between items-center mb-6 md:hidden">
-                <h3 className="text-lg font-semibold text-gray-800">Filters</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(false)}
-                  className="glass-card rounded-full w-8 h-8 flex items-center justify-center"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Age Range</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      min="18"
-                      placeholder="Min"
-                      value={ageMin}
-                      onChange={(e) => setAgeMin(e.target.value)}
-                      className="premium-input flex-1"
-                    />
-                    <input
-                      type="number"
-                      min="18"
-                      placeholder="Max"
-                      value={ageMax}
-                      onChange={(e) => setAgeMax(e.target.value)}
-                      className="premium-input flex-1"
-                    />
-                  </div>
-                </div>
+          {/* Active Filters */}
+          <ActiveFilters
+            filters={filtersApplied}
+            onRemoveFilter={removeFilter}
+            onClearAll={clearFilters}
+            count={activeFilterCount}
+          />
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
-                  <select
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="premium-input w-full"
-                  >
-                    <option value="">Any</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="non-binary">Non-binary</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Nationality</label>
-                  <select
-                    value={nationality}
-                    onChange={(e) => setNationality(e.target.value)}
-                    className="premium-input w-full"
-                  >
-                    <option value="">Any</option>
-                    <option value="South Africa">South Africa</option>
-                    <option value="Zimbabwe">Zimbabwe</option>
-                    <option value="Namibia">Namibia</option>
-                    <option value="Botswana">Botswana</option>
-                    <option value="Mozambique">Mozambique</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Race</label>
-                  <select
-                    value={race}
-                    onChange={(e) => setRace(e.target.value)}
-                    className="premium-input w-full"
-                  >
-                    <option value="">Any</option>
-                    {(referenceData?.races || []).map((option) => (
-                      <option key={option.id} value={option.name}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Religion</label>
-                  <select
-                    value={religion}
-                    onChange={(e) => setReligion(e.target.value)}
-                    className="premium-input w-full"
-                  >
-                    <option value="">Any</option>
-                    {(referenceData?.religions || []).map((option) => (
-                      <option key={option.id} value={option.name}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Distance</label>
-                  <div className="space-y-2">
-                    <input
-                      type="range"
-                      min="10"
-                      max="500"
-                      step="10"
-                      value={maxDistance}
-                      onChange={(e) => setMaxDistance(Number(e.target.value))}
-                      className="w-full accent-purple-500"
-                    />
-                    <p className="text-sm text-gray-600 text-center">{maxDistance} km</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                <Button onClick={() => setFiltersApplied(filtersDraft)} className="flex-1">
-                  Apply Filters
-                </Button>
-                <Button variant="secondary" onClick={clearFilters} className="flex-1">
-                  Clear All
-                </Button>
-              </div>
-            </motion.div>
-          )}
+          {/* Filter Drawer */}
+          <FilterDrawer
+            isOpen={showFilters}
+            onClose={() => setShowFilters(false)}
+            title="Filters"
+            onApply={handleApplyFilters}
+            onClear={handleClearAllFilters}
+          >
+            <FilterForm
+              filters={filters}
+              onChange={setFilters}
+              referenceData={referenceData}
+            />
+          </FilterDrawer>
 
           {/* Error Message */}
           {error && (

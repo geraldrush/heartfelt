@@ -28,6 +28,35 @@
   .text-xl { font-size: 1.1rem; }
   .text-2xl { font-size: 1.3rem; }
   .text-3xl { font-size: 1.6rem; }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f43f5e, #ec4899);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(244, 63, 94, 0.3);
+  }
+  
+  .slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f43f5e, #ec4899);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(244, 63, 94, 0.3);
+  }
 }
 
 :root {
