@@ -124,10 +124,10 @@ export const useWebSocket = ({
         }
         
         pollCount++;
-        // After 10 successful polls, reduce frequency
-        if (pollCount === 10) {
+        // After 5 successful polls, reduce frequency to save battery
+        if (pollCount === 5) {
           clearInterval(pollingInterval.current);
-          pollingInterval.current = setInterval(poll, 5000);
+          pollingInterval.current = setInterval(poll, 4000);
         }
       } catch (error) {
         console.error('[WS-Client] Polling error:', error);
@@ -139,10 +139,10 @@ export const useWebSocket = ({
       }
     };
     
-    // Start with more frequent polling for mobile
+    // Start with frequent polling for mobile (1.5s), less frequent for desktop
     const userAgent = navigator.userAgent;
     const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(userAgent);
-    const initialInterval = isMobile ? 2000 : 3000;
+    const initialInterval = isMobile ? 1500 : 2500;
     
     pollingInterval.current = setInterval(poll, initialInterval);
   }, [connectionId, onMessage, onConnectionError]);
@@ -230,7 +230,7 @@ export const useWebSocket = ({
     }
 
     // Don't retry if we've exceeded max retries
-    if (retryRef.current >= 5) {
+    if (retryRef.current >= 3) { // Reduced from 5 to 3
       console.error(`[WS-Client] ${new Date().toISOString()} Max retries exceeded for connectionId: ${connectionId}`);
       setConnectionState('error');
       onConnectionError?.({ type: 'retry', message: 'Max connection retries exceeded', userAction: 'retry', code: 0 });
@@ -403,9 +403,16 @@ export const useWebSocket = ({
       }
       
       // Stop retrying after max attempts
-      if (retryRef.current >= 5) {
+      if (retryRef.current >= 3) { // Reduced from 5 to 3 for mobile
         console.error(`[WS-Client] ${timestamp} Max retries reached, stopping`);
         setConnectionState('error');
+        
+        // For mobile browsers, start polling immediately after 3 failed attempts
+        if (isMobile || isSafari) {
+          console.log(`[WS-Client] ${timestamp} Mobile browser detected, starting polling fallback`);
+          startPolling();
+          return;
+        }
         
         // For mobile browsers with persistent 1006 errors, start polling immediately
         if (event.code === 1006 && (isMobile || isSafari)) {
@@ -423,10 +430,10 @@ export const useWebSocket = ({
         return;
       }
       
-      // Longer backoff for mobile browsers: 2s, 4s, 8s, 16s, 32s
-      const baseTimeout = (isMobile || isSafari) ? 2000 : 1000;
-      const timeout = Math.min(32000, baseTimeout * Math.pow(2, retryRef.current));
-      console.log(`[WS-Client] ${timestamp} Retry attempt ${retryRef.current + 1}/5 in ${timeout}ms`);
+      // Longer backoff for mobile browsers: 3s, 6s, 12s
+      const baseTimeout = (isMobile || isSafari) ? 3000 : 1000;
+      const timeout = Math.min(12000, baseTimeout * Math.pow(2, retryRef.current));
+      console.log(`[WS-Client] ${timestamp} Retry attempt ${retryRef.current + 1}/3 in ${timeout}ms`);
       retryRef.current += 1;
       reconnectTimer.current = setTimeout(connect, timeout);
     };
