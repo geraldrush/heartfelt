@@ -145,17 +145,7 @@ export const useWebSocket = ({
     const initialInterval = isMobile ? 2000 : 3000;
     
     pollingInterval.current = setInterval(poll, initialInterval);
-    
-    // Try WebSocket again after 30 seconds of polling
-    setTimeout(() => {
-      if (pollingInterval.current) {
-        console.log('[WS-Client] Attempting WebSocket reconnection after polling period');
-        stopPolling();
-        retryRef.current = 0; // Reset retry counter
-        connect();
-      }
-    }, 30000);
-  }, [connectionId, onMessage, connect]);
+  }, [connectionId, onMessage, onConnectionError]);
   
   const stopPolling = useCallback(() => {
     if (pollingInterval.current) {
@@ -296,7 +286,7 @@ export const useWebSocket = ({
       console.log(`[WS-Client] ${new Date().toISOString()} State transition: ${oldState} -> connected`);
       
       // Start heartbeat with longer intervals for mobile
-      const heartbeatInterval = (isMobile || isSafari) ? 45000 : 30000;
+      const heartbeatIntervalMs = (isMobile || isSafari) ? 45000 : 30000;
       heartbeatInterval.current = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           console.log('[WS-Client] Heartbeat: ping sent');
@@ -309,7 +299,7 @@ export const useWebSocket = ({
             ws.close();
           }
         }
-      }, heartbeatInterval);
+      }, heartbeatIntervalMs);
     };
 
     ws.onmessage = (event) => {
@@ -457,7 +447,7 @@ export const useWebSocket = ({
       onConnectionError?.({ type: 'network', message: 'WebSocket connection failed', userAction: 'retry', code: 0 });
       ws.close();
     };
-  }, [connectionId, onDelivered, onMessage, onPresence, onRead, onTyping, sendPayload, onConnectionError, errorClassifier]);
+  }, [connectionId, onDelivered, onMessage, onPresence, onRead, onTyping, sendPayload, onConnectionError, errorClassifier, startPolling]);
 
   const reconnect = useCallback(() => {
     console.log('[WS-Client] Manual reconnect triggered');
