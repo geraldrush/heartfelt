@@ -74,6 +74,7 @@ export const useWebSocket = ({
   const connectionStartTime = useRef(null);
   const networkListeners = useRef({ online: null, offline: null });
   const isManualCloseRef = useRef(false);
+  const lastConnectionAttempt = useRef(0);
   const [connectionState, setConnectionState] = useState('disconnected');
   const [isPolling, setIsPolling] = useState(false);
   const pollingInterval = useRef(null);
@@ -181,6 +182,20 @@ export const useWebSocket = ({
   }, []);
 
   const connect = useCallback(async () => {
+    // Prevent multiple simultaneous connection attempts
+    if (connectionState === 'connecting') {
+      console.log(`[WS-Client] ${new Date().toISOString()} Connection already in progress, skipping`);
+      return;
+    }
+    
+    // Debounce connection attempts (minimum 1 second between attempts)
+    const now = Date.now();
+    if (now - lastConnectionAttempt.current < 1000) {
+      console.log(`[WS-Client] ${new Date().toISOString()} Connection attempt too soon, debouncing`);
+      return;
+    }
+    lastConnectionAttempt.current = now;
+    
     if (!connectionId) {
       console.log(`[WS-Client] ${new Date().toISOString()} Connection attempt failed: no connectionId provided`);
       setConnectionState('error');
@@ -373,9 +388,9 @@ export const useWebSocket = ({
         heartbeatInterval.current = null;
       }
       
-      // Skip retry logic ONLY for manual closes or normal/going away closes
-      if (isManualCloseRef.current || [1000, 1001].includes(event.code)) {
-        console.log(`[WS-Client] ${timestamp} Manual or normal close, not retrying`);
+      // Skip retry logic ONLY for manual closes or normal closes (NOT 1006)
+      if (isManualCloseRef.current || event.code === 1000) {
+        console.log(`[WS-Client] ${timestamp} Manual or normal close (${event.code}), not retrying`);
         setConnectionState('disconnected');
         return;
       }
