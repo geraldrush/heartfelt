@@ -104,7 +104,7 @@ export const useWebSocket = ({
   const startPolling = useCallback(async () => {
     if (pollingInterval.current || !connectionId) return;
     
-    console.log('[WS-Client] Starting polling fallback');
+    console.log('[WS-Client] Starting polling fallback due to WebSocket failures');
     setIsPolling(true);
     setConnectionState('polling');
     
@@ -124,17 +124,38 @@ export const useWebSocket = ({
         }
         
         pollCount++;
+        // After 10 successful polls, reduce frequency
         if (pollCount === 10) {
           clearInterval(pollingInterval.current);
           pollingInterval.current = setInterval(poll, 5000);
         }
       } catch (error) {
         console.error('[WS-Client] Polling error:', error);
+        // If polling fails, try WebSocket again
+        if (error.status === 401) {
+          stopPolling();
+          onConnectionError?.({ type: 'auth', message: 'Session expired. Please log in again.', userAction: 'login', code: 0 });
+        }
       }
     };
     
-    pollingInterval.current = setInterval(poll, 3000);
-  }, [connectionId, onMessage]);
+    // Start with more frequent polling for mobile
+    const userAgent = navigator.userAgent;
+    const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(userAgent);
+    const initialInterval = isMobile ? 2000 : 3000;
+    
+    pollingInterval.current = setInterval(poll, initialInterval);
+    
+    // Try WebSocket again after 30 seconds of polling
+    setTimeout(() => {
+      if (pollingInterval.current) {
+        console.log('[WS-Client] Attempting WebSocket reconnection after polling period');
+        stopPolling();
+        retryRef.current = 0; // Reset retry counter
+        connect();
+      }
+    }, 30000);
+  }, [connectionId, onMessage, connect]);
   
   const stopPolling = useCallback(() => {
     if (pollingInterval.current) {
@@ -236,6 +257,18 @@ export const useWebSocket = ({
     console.log(`[WS-Client] ${new Date().toISOString()} WebSocket URL: ${maskedUrl}`);
     console.log(`[WS-Client] ${new Date().toISOString()} Token present: ${!!token}, Retry attempt: ${retryRef.current}`);
     
+    // iOS Safari specific optimizations
+    const userAgent = navigator.userAgent;
+    const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(userAgent);
+    const isSafari = /Safari/i.test(userAgent) && !/Chrome/i.test(userAgent);
+    
+    if (isMobile || isSafari) {
+      console.log(`[WS-Client] ${new Date().toISOString()} Mobile/Safari detected, applying optimizations`);
+      
+      // Add small delay for mobile browsers
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
     const ws = new WebSocket(wsUrl);
     socketRef.current = ws;
     isManualCloseRef.current = false;
@@ -243,7 +276,17 @@ export const useWebSocket = ({
     setConnectionState('connecting');
     console.log(`[WS-Client] ${new Date().toISOString()} State transition: ${oldState} -> connecting`);
 
+    // Set shorter timeout for mobile browsers
+    const connectionTimeout = (isMobile || isSafari) ? 10000 : 15000;
+    const timeoutId = setTimeout(() => {
+      if (ws.readyState === WebSocket.CONNECTING) {
+        console.log(`[WS-Client] ${new Date().toISOString()} Connection timeout after ${connectionTimeout}ms`);
+        ws.close();
+      }
+    }, connectionTimeout);
+
     ws.onopen = () => {
+      clearTimeout(timeoutId);
       const connectionTime = Date.now() - connectionStartTime.current;
       console.log(`[WS-Client] ${new Date().toISOString()} ✅ WebSocket OPENED successfully in ${connectionTime}ms`);
       retryRef.current = 0;
@@ -252,19 +295,21 @@ export const useWebSocket = ({
       setConnectionState('connected');
       console.log(`[WS-Client] ${new Date().toISOString()} State transition: ${oldState} -> connected`);
       
-      // Start heartbeat
+      // Start heartbeat with longer intervals for mobile
+      const heartbeatInterval = (isMobile || isSafari) ? 45000 : 30000;
       heartbeatInterval.current = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           console.log('[WS-Client] Heartbeat: ping sent');
           ws.send(JSON.stringify({ type: 'ping' }));
           
-          // Check for stale connection
-          if (Date.now() - lastPongTime.current > 60000) {
+          // Check for stale connection with longer timeout for mobile
+          const staleTimeout = (isMobile || isSafari) ? 90000 : 60000;
+          if (Date.now() - lastPongTime.current > staleTimeout) {
             console.log('[WS-Client] Heartbeat: connection stale, closing');
             ws.close();
           }
         }
-      }, 30000);
+      }, heartbeatInterval);
     };
 
     ws.onmessage = (event) => {
@@ -328,6 +373,7 @@ export const useWebSocket = ({
     };
 
     ws.onclose = (event) => {
+      clearTimeout(timeoutId);
       const timestamp = new Date().toISOString();
       console.log(`[WS-Client] ${timestamp} ❌ WebSocket CLOSED: code=${event.code}, reason=${event.reason || 'none'}, clean=${event.wasClean}`);
       
@@ -337,9 +383,9 @@ export const useWebSocket = ({
         heartbeatInterval.current = null;
       }
       
-      // Skip retry logic for manual closes or intentional closes
+      // Skip retry logic ONLY for manual closes or normal/going away closes
       if (isManualCloseRef.current || [1000, 1001].includes(event.code)) {
-        console.log(`[WS-Client] ${timestamp} Manual or intentional close, not retrying`);
+        console.log(`[WS-Client] ${timestamp} Manual or normal close, not retrying`);
         setConnectionState('disconnected');
         return;
       }
@@ -358,7 +404,7 @@ export const useWebSocket = ({
       const errorInfo = errorClassifier(event.code);
       console.log(`[WS-Client] ${timestamp} Error classified as: ${errorInfo.type}`);
       
-      // Don't retry for auth/permission errors
+      // Don't retry for auth/permission errors (4000-4999 range)
       if (event.code >= 4000 && event.code < 5000) {
         console.log(`[WS-Client] ${timestamp} Not retrying due to client error code: ${event.code}`);
         setConnectionState('error');
@@ -371,6 +417,13 @@ export const useWebSocket = ({
         console.error(`[WS-Client] ${timestamp} Max retries reached, stopping`);
         setConnectionState('error');
         
+        // For mobile browsers with persistent 1006 errors, start polling immediately
+        if (event.code === 1006 && (isMobile || isSafari)) {
+          console.log(`[WS-Client] ${timestamp} Mobile browser with 1006 error, starting polling fallback`);
+          startPolling();
+          return;
+        }
+        
         // Start polling fallback for network/unknown errors
         if (errorInfo.type === 'network' || errorInfo.type === 'unknown') {
           startPolling();
@@ -380,14 +433,16 @@ export const useWebSocket = ({
         return;
       }
       
-      // Exponential backoff: 1s, 2s, 4s, 8s, 16s
-      const timeout = Math.min(16000, 1000 * Math.pow(2, retryRef.current));
+      // Longer backoff for mobile browsers: 2s, 4s, 8s, 16s, 32s
+      const baseTimeout = (isMobile || isSafari) ? 2000 : 1000;
+      const timeout = Math.min(32000, baseTimeout * Math.pow(2, retryRef.current));
       console.log(`[WS-Client] ${timestamp} Retry attempt ${retryRef.current + 1}/5 in ${timeout}ms`);
       retryRef.current += 1;
       reconnectTimer.current = setTimeout(connect, timeout);
     };
 
     ws.onerror = (errorEvent) => {
+      clearTimeout(timeoutId);
       const timestamp = new Date().toISOString();
       console.error(`[WS-Client] ${timestamp} ⚠️ WebSocket ERROR for connectionId: ${connectionId}`);
       console.error(`[WS-Client] ${timestamp} Error details: connectionState=${connectionState}, retryCount=${retryRef.current}`);

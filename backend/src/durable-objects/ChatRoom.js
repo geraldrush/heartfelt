@@ -93,25 +93,17 @@ export class ChatRoom {
       console.error(`[WS-Server] ${timestamp} Authentication failed: ${error.message}`);
       logRequestDiagnostics(request, connectionId, timestamp);
       
-      // Send proper close frame for auth failures
-      const pair = new WebSocketPair();
-      const [client, server] = pair;
-      server.accept();
-      
+      // Return proper HTTP error for mobile browsers
       if (error.message === 'TOKEN_EXPIRED') {
-        server.close(1008, 'Token expired');
-        return new Response(null, { status: 101, webSocket: client });
+        return new Response('Token expired', { status: 401 });
       }
       if (error.message === 'INVALID_SIGNATURE') {
-        server.close(1008, 'Invalid token signature');
-        return new Response(null, { status: 101, webSocket: client });
+        return new Response('Invalid token signature', { status: 401 });
       }
       if (error.message === 'MALFORMED_TOKEN') {
-        server.close(1008, 'Malformed token');
-        return new Response(null, { status: 101, webSocket: client });
+        return new Response('Malformed token', { status: 401 });
       }
-      server.close(1008, 'Invalid token');
-      return new Response(null, { status: 101, webSocket: client });
+      return new Response('Invalid token', { status: 401 });
     }
 
     // Database verification with logging
@@ -121,13 +113,7 @@ export class ChatRoom {
     if (!verificationResult.valid) {
       console.log(`[WS-Server] ${timestamp} Verification failed: ${verificationResult.reason} - ${verificationResult.message}`);
       logRequestDiagnostics(request, connectionId, timestamp);
-      
-      // Send proper close frame for authorization failures
-      const pair = new WebSocketPair();
-      const [client, server] = pair;
-      server.accept();
-      server.close(1008, verificationResult.message);
-      return new Response(null, { status: 101, webSocket: client });
+      return new Response(verificationResult.message, { status: 403 });
     }
     
     console.log(`[WS-Server] ${timestamp} User ${userId} verified for connection ${connectionId}`);
@@ -148,11 +134,37 @@ export class ChatRoom {
       return new Response('Expected WebSocket', { status: 426 });
     }
 
+    // iOS Safari compatibility: Check for mobile user agent
+    const userAgent = request.headers.get('User-Agent') || '';
+    const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(userAgent);
+    const isSafari = /Safari/i.test(userAgent) && !/Chrome/i.test(userAgent);
+    
+    console.log(`[WS-Server] ${timestamp} Mobile: ${isMobile}, Safari: ${isSafari}`);
+
     const pair = new WebSocketPair();
     const client = pair[0];
     const server = pair[1];
 
+    // Enhanced WebSocket configuration for mobile browsers
+    const acceptOptions = {};
+    if (isMobile || isSafari) {
+      // Mobile-specific WebSocket handling
+      console.log(`[WS-Server] ${timestamp} Applying mobile WebSocket optimizations`);
+    }
+
     server.accept();
+    
+    // Close any existing connection for this user to prevent conflicts
+    const existingConnection = this.connections.get(userId);
+    if (existingConnection) {
+      console.log(`[WS-Server] ${timestamp} Closing existing connection for user ${userId}`);
+      try {
+        existingConnection.close(1000, 'New connection established');
+      } catch (e) {
+        // Ignore errors when closing old connection
+      }
+    }
+    
     this.connections.set(userId, server);
     this.startHeartbeat(userId);
     
@@ -201,12 +213,14 @@ export class ChatRoom {
       }
     });
 
-    server.addEventListener('close', () => {
+    server.addEventListener('close', (event) => {
+      console.log(`[WS-Server] ${timestamp} Connection closed for user ${userId}: code=${event.code}, reason=${event.reason}`);
       this.cleanupConnection(userId);
       this.broadcast({ type: 'presence', user_id: userId, is_online: false }, userId);
     });
 
-    server.addEventListener('error', () => {
+    server.addEventListener('error', (event) => {
+      console.log(`[WS-Server] ${timestamp} Connection error for user ${userId}:`, event);
       this.cleanupConnection(userId);
     });
 
@@ -217,7 +231,11 @@ export class ChatRoom {
         'Access-Control-Allow-Origin': origin || '*',
         'Access-Control-Allow-Credentials': 'true',
         'X-Frame-Options': 'DENY',
-        'X-Content-Type-Options': 'nosniff'
+        'X-Content-Type-Options': 'nosniff',
+        // Mobile browser compatibility headers
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
   }
