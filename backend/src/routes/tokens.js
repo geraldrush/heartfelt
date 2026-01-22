@@ -7,6 +7,7 @@ import {
   generateId,
 } from '../utils/db.js';
 import { tokenHistorySchema, tokenTransferSchema } from '../utils/validation.js';
+import { createNotification } from './notifications.js';
 
 const tokens = new Hono();
 
@@ -125,6 +126,19 @@ tokens.post('/transfer', authMiddleware, async (c) => {
 
   if (!transferResult) {
     return c.json({ error: 'Insufficient balance.' }, 402);
+  }
+
+  // Send notification to recipient
+  try {
+    await createNotification(db, {
+      user_id: parsed.data.recipient_id,
+      type: 'token_request',
+      title: 'Tokens Received',
+      message: `You received ${amount} tokens${parsed.data.message ? `: ${parsed.data.message}` : ''}`,
+      data: { sender_id: senderId, amount }
+    });
+  } catch (error) {
+    console.error('Failed to create notification:', error);
   }
 
   return c.json({

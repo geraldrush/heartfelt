@@ -7,6 +7,7 @@ import tokenRoutes from './routes/tokens.js';
 import chatRoutes from './routes/chat.js';
 import imagesRoutes from './routes/images.js';
 import paymentRoutes from './routes/payments.js';
+import notificationRoutes from './routes/notifications.js';
 import { getAllowedOrigins, isOriginAllowed, isRefererAllowed } from './utils/cors.js';
 
 const app = new Hono();
@@ -95,6 +96,7 @@ app.route('/api/connections', connectionRoutes);
 app.route('/api/tokens', tokenRoutes);
 app.route('/api/chat', chatRoutes);
 app.route('/api/payments', paymentRoutes);
+app.route('/api/notifications', notificationRoutes);
 
 export default app;
 

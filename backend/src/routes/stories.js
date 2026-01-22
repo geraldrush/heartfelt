@@ -452,4 +452,68 @@ stories.get('/:storyId/blurred', async (c) => {
   return c.body(stored.body, 200, headers);
 });
 
+stories.post('/report', authMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const { story_id, reason, description } = body || {};
+  
+  if (!story_id || !reason) {
+    return c.json({ error: 'Story ID and reason are required.' }, 400);
+  }
+  
+  const validReasons = ['inappropriate', 'spam', 'fake', 'harassment', 'other'];
+  if (!validReasons.includes(reason)) {
+    return c.json({ error: 'Invalid reason.' }, 400);
+  }
+  
+  const db = getDb(c);
+  const userId = c.get('userId');
+  const reportId = generateId();
+  
+  try {
+    await db
+      .prepare('INSERT INTO story_reports (id, story_id, reporter_id, reason, description) VALUES (?, ?, ?, ?, ?)')
+      .bind(reportId, story_id, userId, reason, description || null)
+      .run();
+    
+    return c.json({ message: 'Report submitted successfully.' });
+  } catch (error) {
+    if (error.message.includes('UNIQUE constraint failed')) {
+      return c.json({ error: 'You have already reported this story.' }, 409);
+    }
+    throw error;
+  }
+});
+
+stories.post('/block', authMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const { user_id } = body || {};
+  
+  if (!user_id) {
+    return c.json({ error: 'User ID is required.' }, 400);
+  }
+  
+  const db = getDb(c);
+  const userId = c.get('userId');
+  
+  if (user_id === userId) {
+    return c.json({ error: 'Cannot block yourself.' }, 400);
+  }
+  
+  const blockId = generateId();
+  
+  try {
+    await db
+      .prepare('INSERT INTO blocked_users (id, blocker_id, blocked_id) VALUES (?, ?, ?)')
+      .bind(blockId, userId, user_id)
+      .run();
+    
+    return c.json({ message: 'User blocked successfully.' });
+  } catch (error) {
+    if (error.message.includes('UNIQUE constraint failed')) {
+      return c.json({ error: 'User is already blocked.' }, 409);
+    }
+    throw error;
+  }
+});
+
 export default stories;

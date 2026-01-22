@@ -31,6 +31,7 @@ export class ChatRoom {
     this.env = env;
     this.connections = new Map();
     this.heartbeats = new Map();
+    this.messageIds = new Set(); // Track message IDs to prevent duplicates
   }
 
   async authenticate(request) {
@@ -263,6 +264,12 @@ export class ChatRoom {
           return;
         }
         
+        // Check for duplicate message using client_id
+        if (payload.client_id && this.messageIds.has(payload.client_id)) {
+          console.log(`[WS-Server] Duplicate message detected: ${payload.client_id}`);
+          return; // Silently ignore duplicate
+        }
+        
         // Sanitize message content to prevent XSS
         const sanitizedContent = sanitizeMessage(payload.content);
         if (!sanitizedContent.trim()) {
@@ -272,6 +279,17 @@ export class ChatRoom {
         
         const messageId = crypto.randomUUID();
         const createdAt = new Date().toISOString();
+        
+        // Track message to prevent duplicates
+        if (payload.client_id) {
+          this.messageIds.add(payload.client_id);
+          // Clean up old message IDs (keep last 1000)
+          if (this.messageIds.size > 1000) {
+            const oldIds = Array.from(this.messageIds).slice(0, 100);
+            oldIds.forEach(id => this.messageIds.delete(id));
+          }
+        }
+        
         await createMessage(this.env.DB, {
           id: messageId,
           connection_id: connectionId,
