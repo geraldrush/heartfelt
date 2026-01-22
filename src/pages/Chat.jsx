@@ -28,17 +28,17 @@ const ConnectionStatusBanner = ({ connectionState, isPolling, connectionQuality,
     }
   }, [connectionState]);
   
-  // Don't show banner for connected state or when dismissed
-  if (dismissed || connectionState === 'connected') return null;
+  // Don't show banner for connected state, idle disconnections, or when dismissed
+  if (dismissed || connectionState === 'connected' || connectionState === 'idle_disconnected') return null;
   
   const getStatusConfig = () => {
     switch (connectionState) {
       case 'connecting':
         return {
-          bg: 'bg-amber-500',
+          bg: 'bg-gray-400',
           icon: '⟳',
-          text: `Connecting... ${retryCount ? `(${retryCount}/3)` : ''}`,
-          animate: 'animate-pulse'
+          text: 'Connecting...',
+          animate: ''
         };
       case 'polling':
         return {
@@ -541,6 +541,23 @@ const Chat = () => {
     [tokenRequests, user?.id]
   );
 
+  // Helper functions for connection status display
+  const getConnectionColor = () => {
+    if (connectionState === 'connected' && isOtherUserOnline) return 'bg-green-500';
+    if (connectionState === 'connecting' || connectionState === 'idle_disconnected') return 'bg-amber-400';
+    if (connectionState === 'error' || connectionState === 'disconnected') return 'bg-red-500';
+    if (connectionState === 'polling') return 'bg-orange-500';
+    return 'bg-gray-400';
+  };
+
+  const getConnectionText = () => {
+    if (connectionState === 'connecting' || connectionState === 'idle_disconnected') return 'Reconnecting...';
+    if (connectionState === 'connected') return isOtherUserOnline ? 'Online' : 'Offline';
+    if (connectionState === 'error' || connectionState === 'disconnected') return 'Disconnected';
+    if (connectionState === 'polling') return 'Limited connectivity';
+    return isOtherUserOnline ? 'Online' : 'Offline';
+  };
+
   const emptyIcon = (
     <svg
       viewBox="0 0 64 64"
@@ -580,11 +597,9 @@ const Chat = () => {
               <div className="flex flex-col gap-0.5">
                 <h2 className="text-lg font-bold text-gray-900">{otherUserName}</h2>
                 <div className="flex items-center gap-1">
-                  <div className={`w-2 h-2 rounded-full ${
-                    isOtherUserOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-                  }`}></div>
+                  <div className={`w-2 h-2 rounded-full ${getConnectionColor()}`}></div>
                   <p className="text-xs text-gray-500">
-                    {isOtherUserOnline ? 'Online' : 'Offline'}
+                    {getConnectionText()}
                   </p>
                 </div>
               </div>
@@ -599,14 +614,17 @@ const Chat = () => {
           </div>
         </div>
 
-        <ConnectionStatusBanner 
-          connectionState={connectionState}
-          isPolling={isPolling}
-          connectionQuality={connectionQuality}
-          averageLatency={averageLatency}
-          retryCount={0}
-          onReconnect={reconnect}
-        />
+        {/* Connection Status Banner - Only for problematic states, idle_disconnected is filtered out */}
+        {(connectionState === 'error' || connectionState === 'polling' || connectionState === 'disconnected') && (
+          <ConnectionStatusBanner 
+            connectionState={connectionState}
+            isPolling={isPolling}
+            connectionQuality={connectionQuality}
+            averageLatency={averageLatency}
+            retryCount={0}
+            onReconnect={reconnect}
+          />
+        )}
 
         {error && (
           <div className="mx-4 mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 border border-red-200">
