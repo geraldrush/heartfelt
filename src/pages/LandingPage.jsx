@@ -69,7 +69,7 @@ const LandingPage = () => {
   const displayName = user?.full_name || 'there';
 
   return (
-    <div className="app-shell">
+    <div className="app-shell pb-[calc(100px+env(safe-area-inset-bottom,0px))] md:pb-0">
       <main className="app-content flex flex-col items-center justify-center gap-6 py-10 text-center text-slate-900">
         <h1 className="display-font text-4xl font-bold leading-tight md:text-5xl">
           Welcome back, {displayName}.

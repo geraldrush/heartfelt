@@ -79,7 +79,7 @@ const Connections = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 pb-20">
+    <div className="min-h-screen bg-gray-50 p-4 pb-[calc(100px+env(safe-area-inset-bottom,0px))] md:pb-8">
       <div className="mx-auto max-w-2xl">
         <div className="flex items-center justify-between mb-4">
           <div>
