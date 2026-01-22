@@ -29,7 +29,7 @@ const buildWebSocketUrl = (connectionId, token) => {
     const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     console.log('[WS-Client] URL validation: all checks passed');
     // Always use latest token from localStorage
-    const latestToken = localStorage.getItem('token') || token;
+    const latestToken = localStorage.getItem('auth_token') || token;
     return `${protocol}//${url.host}/api/chat/connect/${connectionId}?token=${latestToken}`;
   } catch (error) {
     console.log('[WS-Client] URL validation: API URL invalid', error.message);
@@ -177,7 +177,7 @@ export const useWebSocket = ({
       return;
     }
     
-    let token = localStorage.getItem('token');
+    let token = localStorage.getItem('auth_token');
     if (!token) {
       console.log(`[WS-Client] ${new Date().toISOString()} Connection attempt failed: no token in localStorage`);
       setConnectionState('error');
@@ -191,7 +191,7 @@ export const useWebSocket = ({
       try {
         const refreshResult = await refreshToken();
         token = refreshResult.token;
-        localStorage.setItem('token', token);
+        localStorage.setItem('auth_token', token);
         console.log('[WS-Client] Token refresh before WebSocket: success');
       } catch (error) {
         console.log('[WS-Client] Token refresh before WebSocket: failed', error.message);
@@ -204,7 +204,7 @@ export const useWebSocket = ({
       try {
         const refreshResult = await refreshToken();
         token = refreshResult.token;
-        localStorage.setItem('token', token);
+        localStorage.setItem('auth_token', token);
         console.log('[WS-Client] Token refresh before WebSocket: success');
       } catch (error) {
         console.log('[WS-Client] Token refresh before WebSocket: failed, proceeding with existing token');
@@ -395,7 +395,7 @@ export const useWebSocket = ({
       
       // Log full diagnostics on first error
       if (retryRef.current === 0) {
-        logConnectionDiagnostics(connectionId, localStorage.getItem('token'));
+        logConnectionDiagnostics(connectionId, localStorage.getItem('auth_token'));
       }
       
       setConnectionState('error');
