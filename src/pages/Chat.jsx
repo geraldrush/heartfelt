@@ -232,10 +232,18 @@ const Chat = () => {
     onMessage: (data) => {
       // Check if message already exists to prevent duplicates
       setMessages((prev) => {
-        const exists = prev.some(msg => msg.id === data.id);
+        // Check for duplicates by ID, content, and timestamp
+        const exists = prev.some(msg => 
+          msg.id === data.id || 
+          (msg.content === data.content && 
+           msg.sender_id === data.sender_id && 
+           Math.abs(new Date(msg.created_at) - new Date(data.created_at)) < 1000)
+        );
         if (exists) {
+          console.log('[WS-Client] Duplicate message detected, ignoring:', data.id);
           return prev; // Don't add duplicate
         }
+        console.log('[WS-Client] Adding new message from WebSocket:', data.id);
         return [...prev, data]; // Add new message at end
       });
       sendDeliveryConfirmation(data.id);
