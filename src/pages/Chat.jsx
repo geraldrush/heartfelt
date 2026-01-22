@@ -543,9 +543,9 @@ const Chat = () => {
   return (
     <ChatErrorBoundary>
       <div className="flex min-h-screen flex-col bg-gray-50">
-        {/* Fixed Header */}
-        <div className="sticky top-0 z-10 border-b bg-white/95 backdrop-blur-sm px-4 py-3 shadow-sm">
-          <div className="flex items-center justify-between">
+        {/* Fixed Header - Always Visible */}
+        <div className="sticky top-0 z-20 border-b bg-white shadow-sm">
+          <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => window.history.back()}
@@ -730,8 +730,8 @@ const Chat = () => {
         </div>
 
         {/* Fixed Input Area */}
-        <div className="sticky bottom-0 border-t bg-white/95 backdrop-blur-sm px-4 py-3">
-          <div className="flex gap-2">
+        <div className="sticky bottom-0 z-20 border-t bg-white shadow-sm">
+          <div className="flex gap-2 px-4 py-3">
             <input
               value={inputText}
               onChange={(event) => handleTyping(event.target.value)}

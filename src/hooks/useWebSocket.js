@@ -75,7 +75,8 @@ export const useWebSocket = ({
   const reconnectTimer = useRef(null);
   const heartbeatInterval = useRef(null);
   const lastPongTime = useRef(Date.now());
-  const connectionAttempts = useRef(0);
+  const lastActivityTime = useRef(Date.now());
+  const visibilityChangeHandler = useRef(null);
   const connectionStartTime = useRef(null);
   const networkListeners = useRef({ online: null, offline: null });
   const isManualCloseRef = useRef(false);
@@ -299,21 +300,39 @@ export const useWebSocket = ({
       setConnectionState('connected');
       console.log(`[WS-Client] ${new Date().toISOString()} State transition: ${oldState} -> connected`);
       
-      // Start heartbeat with longer intervals for mobile
-      const heartbeatIntervalMs = (isMobile || isSafari) ? 45000 : 30000;
-      heartbeatInterval.current = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-          console.log('[WS-Client] Heartbeat: ping sent');
-          ws.send(JSON.stringify({ type: 'ping' }));
-          
-          // Check for stale connection with longer timeout for mobile
-          const staleTimeout = (isMobile || isSafari) ? 90000 : 60000;
-          if (Date.now() - lastPongTime.current > staleTimeout) {
-            console.log('[WS-Client] Heartbeat: connection stale, closing');
-            ws.close();
-          }
+      // Start heartbeat with adaptive intervals
+      const startHeartbeat = () => {
+        if (heartbeatInterval.current) {
+          clearInterval(heartbeatInterval.current);
         }
-      }, heartbeatIntervalMs);
+        
+        const sendHeartbeat = () => {
+          if (ws.readyState === WebSocket.OPEN) {
+            const now = Date.now();
+            const timeSinceLastActivity = now - lastActivityTime.current;
+            const timeSinceLastPong = now - lastPongTime.current;
+            
+            // Only send ping if we haven't had recent activity
+            if (timeSinceLastActivity > 20000) {
+              console.log('[WS-Client] Heartbeat: ping sent (idle)');
+              ws.send(JSON.stringify({ type: 'ping' }));
+            }
+            
+            // Check for stale connection with longer timeout
+            const staleTimeout = 120000; // 2 minutes
+            if (timeSinceLastPong > staleTimeout) {
+              console.log('[WS-Client] Heartbeat: connection stale, closing');
+              ws.close();
+            }
+          }
+        };
+        
+        // Use longer intervals to reduce battery drain
+        const heartbeatIntervalMs = 30000; // 30 seconds
+        heartbeatInterval.current = setInterval(sendHeartbeat, heartbeatIntervalMs);
+      };
+      
+      startHeartbeat();
     };
 
     ws.onmessage = (event) => {
@@ -338,15 +357,19 @@ export const useWebSocket = ({
         
         switch (data.type) {
           case 'chat_message':
+            lastActivityTime.current = Date.now();
             onMessage?.(data);
             break;
           case 'typing_indicator':
+            lastActivityTime.current = Date.now();
             onTyping?.(data);
             break;
           case 'presence':
+            lastActivityTime.current = Date.now();
             onPresence?.(data);
             break;
           case 'delivery_confirmation':
+            lastActivityTime.current = Date.now();
             onDelivered?.(data);
             // Calculate latency for quality monitoring
             if (data.client_id && messageSentTimes.current.has(data.client_id)) {
@@ -357,11 +380,12 @@ export const useWebSocket = ({
             }
             break;
           case 'read_receipt':
+            lastActivityTime.current = Date.now();
             onRead?.(data);
             break;
           case 'ping':
             sendPayload({ type: 'pong' });
-            console.log('[WS-Client] Heartbeat: pong received');
+            console.log('[WS-Client] Heartbeat: ping received, pong sent');
             lastPongTime.current = Date.now();
             break;
           case 'pong':
@@ -505,6 +529,31 @@ export const useWebSocket = ({
     connect();
   }, [connect, stopPolling]);
 
+  // Page visibility handling for idle screens
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        console.log('[WS-Client] Page hidden, reducing activity');
+      } else {
+        console.log('[WS-Client] Page visible, resuming activity');
+        lastActivityTime.current = Date.now();
+        
+        // Reconnect if disconnected while hidden
+        if (connectionState === 'disconnected' || connectionState === 'error') {
+          console.log('[WS-Client] Reconnecting after page became visible');
+          reconnect();
+        }
+      }
+    };
+    
+    visibilityChangeHandler.current = handleVisibilityChange;
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [connectionState, reconnect]);
+
   // Network change detection
   useEffect(() => {
     const handleOnline = () => {
@@ -583,6 +632,7 @@ export const useWebSocket = ({
 
   const sendMessage = useCallback(
     (content, clientId) => {
+      lastActivityTime.current = Date.now();
       // Track send time for latency calculation
       if (clientId) {
         messageSentTimes.current.set(clientId, Date.now());
@@ -592,15 +642,24 @@ export const useWebSocket = ({
     [sendPayload]
   );
   const sendTypingIndicator = useCallback(
-    (isTyping) => sendPayload({ type: 'typing_indicator', is_typing: isTyping }),
+    (isTyping) => {
+      lastActivityTime.current = Date.now();
+      return sendPayload({ type: 'typing_indicator', is_typing: isTyping });
+    },
     [sendPayload]
   );
   const sendReadReceipt = useCallback(
-    (messageId) => sendPayload({ type: 'read_receipt', id: messageId }),
+    (messageId) => {
+      lastActivityTime.current = Date.now();
+      return sendPayload({ type: 'read_receipt', id: messageId });
+    },
     [sendPayload]
   );
   const sendDeliveryConfirmation = useCallback(
-    (messageId) => sendPayload({ type: 'delivery_confirmation', id: messageId }),
+    (messageId) => {
+      lastActivityTime.current = Date.now();
+      return sendPayload({ type: 'delivery_confirmation', id: messageId });
+    },
     [sendPayload]
   );
 
