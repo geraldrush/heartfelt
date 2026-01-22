@@ -3,6 +3,13 @@ compatibility_date = "2024-01-01"
 main = "src/index.js"
 compatibility_flags = ["nodejs_compat"]
 
+# Optional: KV namespace for rate limiting (recommended for production)
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT_KV"
+# id = "your_kv_namespace_id"
+# preview_id = "your_preview_kv_namespace_id"
+# Note: The app will use in-memory fallback if KV is not configured
+
 [dev]
 port = 8787
 

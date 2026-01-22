@@ -32,6 +32,33 @@ export class ChatRoom {
     this.connections = new Map();
     this.heartbeats = new Map();
     this.messageIds = new Set(); // Track message IDs to prevent duplicates
+    this.messageRateLimits = new Map(); // Track message counts per user
+  }
+
+  checkMessageRateLimit(userId) {
+    const now = Date.now();
+    const windowMs = 60 * 1000; // 1 minute
+    const maxMessages = 60;
+    
+    let userData = this.messageRateLimits.get(userId);
+    if (!userData) {
+      userData = { timestamps: [], lastCleanup: now };
+      this.messageRateLimits.set(userId, userData);
+    }
+    
+    // Clean old timestamps
+    const cutoff = now - windowMs;
+    userData.timestamps = userData.timestamps.filter(ts => ts > cutoff);
+    
+    if (userData.timestamps.length >= maxMessages) {
+      const oldestTimestamp = userData.timestamps[0];
+      const retryAfter = Math.ceil((oldestTimestamp + windowMs - now) / 1000);
+      return { allowed: false, retryAfter };
+    }
+    
+    userData.timestamps.push(now);
+    userData.lastCleanup = now;
+    return { allowed: true, retryAfter: 0 };
   }
 
   async authenticate(request) {
@@ -264,6 +291,17 @@ export class ChatRoom {
           return;
         }
         
+        // Check rate limit
+        const rateLimitResult = this.checkMessageRateLimit(senderId);
+        if (!rateLimitResult.allowed) {
+          this.sendToUser(senderId, { 
+            type: 'error', 
+            message: 'Too many messages. Please slow down.', 
+            retryAfter: rateLimitResult.retryAfter 
+          });
+          return;
+        }
+        
         // Check for duplicate message using client_id
         if (payload.client_id && this.messageIds.has(payload.client_id)) {
           console.log(`[WS-Server] Duplicate message detected: ${payload.client_id}`);
@@ -389,5 +427,12 @@ export class ChatRoom {
   cleanupConnection(userId) {
     this.connections.delete(userId);
     this.stopHeartbeat(userId);
+    
+    // Cleanup rate limit data for disconnected user
+    const now = Date.now();
+    const userData = this.messageRateLimits.get(userId);
+    if (userData && now - userData.lastCleanup > 2 * 60 * 1000) {
+      this.messageRateLimits.delete(userId);
+    }
   }
 }

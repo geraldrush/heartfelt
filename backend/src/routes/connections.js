@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
+import { connectionRequestRateLimit } from '../middleware/rateLimit.js';
 import {
   checkExistingConnection,
   expireOldRequests,
@@ -19,7 +20,7 @@ import {
 
 const connections = new Hono();
 
-connections.post('/request', authMiddleware, async (c) => {
+connections.post('/request', authMiddleware, connectionRequestRateLimit, async (c) => {
   const body = await c.req.json().catch(() => null);
   const parsed = connectionRequestSchema.safeParse(body);
 

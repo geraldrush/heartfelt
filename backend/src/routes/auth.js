@@ -38,7 +38,7 @@ function userResponse(user) {
   };
 }
 
-auth.post('/email-signup', async (c) => {
+auth.post('/email-signup', authRateLimit, async (c) => {
   // CSRF protection for state-changing auth operations
   const origin = c.req.header('Origin');
   const referer = c.req.header('Referer');
@@ -169,7 +169,7 @@ auth.post('/email-login', authRateLimit, async (c) => {
   return c.json({ token, user: userResponse(user) });
 });
 
-auth.post('/google', async (c) => {
+auth.post('/google', authRateLimit, async (c) => {
   // CSRF protection for state-changing auth operations
   const origin = c.req.header('Origin');
   const referer = c.req.header('Referer');

@@ -1,75 +1,112 @@
-// Rate limiting middleware using Cloudflare Workers KV
-export const rateLimit = (options = {}) => {
-  const {
-    windowMs = 15 * 60 * 1000, // 15 minutes
-    max = 100, // limit each IP to 100 requests per windowMs
-    keyGenerator = (c) => c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown',
-    skipSuccessfulRequests = false,
-    skipFailedRequests = false,
-  } = options;
+const inMemoryStore = new Map();
+let lastCleanup = Date.now();
 
-  return async (c, next) => {
-    const key = `rate_limit:${keyGenerator(c)}`;
-    const now = Date.now();
-    const windowStart = now - windowMs;
-
-    try {
-      // Get current request count from KV (if available) or use in-memory fallback
-      let requestCount = 0;
-      let lastReset = now;
-
-      if (c.env.RATE_LIMIT_KV) {
-        const stored = await c.env.RATE_LIMIT_KV.get(key, 'json');
-        if (stored && stored.lastReset > windowStart) {
-          requestCount = stored.count;
-          lastReset = stored.lastReset;
-        }
-      }
-
-      // Check if limit exceeded
-      if (requestCount >= max) {
-        return c.json({
-          error: 'Too many requests',
-          retryAfter: Math.ceil((lastReset + windowMs - now) / 1000)
-        }, 429);
-      }
-
-      // Process request
-      await next();
-
-      // Only count if not skipping successful requests
-      if (!skipSuccessfulRequests || c.res.status >= 400) {
-        requestCount++;
-        
-        // Store updated count
-        if (c.env.RATE_LIMIT_KV) {
-          await c.env.RATE_LIMIT_KV.put(key, JSON.stringify({
-            count: requestCount,
-            lastReset: lastReset
-          }), { expirationTtl: Math.ceil(windowMs / 1000) });
-        }
-      }
-
-    } catch (error) {
-      console.error('Rate limiting error:', error);
-      // Continue without rate limiting if there's an error
-      await next();
+function cleanupExpiredEntries() {
+  const now = Date.now();
+  if (now - lastCleanup < 5 * 60 * 1000) return; // Cleanup every 5 minutes
+  
+  for (const [key, data] of inMemoryStore.entries()) {
+    if (now > data.resetTime) {
+      inMemoryStore.delete(key);
     }
+  }
+  lastCleanup = now;
+}
+
+function createRateLimiter({ windowMs, max, message }) {
+  return async (c, next) => {
+    const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
+    const key = `rate_limit:${ip}`;
+    const now = Date.now();
+    const resetTime = now + windowMs;
+    
+    let count = 0;
+    let currentResetTime = resetTime;
+    
+    try {
+      // Try KV first
+      if (c.env.RATE_LIMIT_KV) {
+        const stored = await c.env.RATE_LIMIT_KV.get(key);
+        if (stored) {
+          const data = JSON.parse(stored);
+          if (now < data.resetTime) {
+            count = data.count;
+            currentResetTime = data.resetTime;
+          }
+        }
+      } else {
+        // Use in-memory fallback
+        console.log('[RateLimit] Using in-memory storage (KV not available)');
+        cleanupExpiredEntries();
+        
+        const stored = inMemoryStore.get(key);
+        if (stored && now < stored.resetTime) {
+          count = stored.count;
+          currentResetTime = stored.resetTime;
+        }
+      }
+    } catch (error) {
+      console.error('[RateLimit] Storage error, using in-memory fallback:', error);
+      const stored = inMemoryStore.get(key);
+      if (stored && now < stored.resetTime) {
+        count = stored.count;
+        currentResetTime = stored.resetTime;
+      }
+    }
+    
+    const remaining = Math.max(0, max - count - 1);
+    
+    // Add rate limit headers
+    c.header('X-RateLimit-Limit', max.toString());
+    c.header('X-RateLimit-Remaining', remaining.toString());
+    c.header('X-RateLimit-Reset', Math.ceil(currentResetTime / 1000).toString());
+    
+    if (count >= max) {
+      const retryAfter = Math.ceil((currentResetTime - now) / 1000);
+      console.warn(`[RateLimit] Limit exceeded for key: ${key}, limit: ${max}, window: ${windowMs}ms`);
+      c.header('Retry-After', retryAfter.toString());
+      return c.json({ error: message || 'Too many requests', retryAfter }, 429);
+    }
+    
+    // Increment counter
+    const newCount = count + 1;
+    const data = { count: newCount, resetTime: currentResetTime };
+    
+    try {
+      if (c.env.RATE_LIMIT_KV) {
+        await c.env.RATE_LIMIT_KV.put(key, JSON.stringify(data), { expirationTtl: Math.ceil(windowMs / 1000) });
+      } else {
+        inMemoryStore.set(key, data);
+      }
+    } catch (error) {
+      console.error('[RateLimit] Failed to update storage:', error);
+      inMemoryStore.set(key, data);
+    }
+    
+    await next();
   };
-};
+}
 
-// Specific rate limiters for different endpoints
-export const authRateLimit = rateLimit({
+export const authRateLimit = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 login attempts per 15 minutes
+  max: 5,
+  message: 'Too many authentication attempts. Please try again later.'
 });
 
-export const apiRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes  
-  max: 100, // 100 requests per 15 minutes
-});
-
-export const chatRateLimit = rateLimit({
+export const apiRateLimit = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  max: 60, // 60 messages per minute
+  max: 100,
+  message: 'Too many API requests. Please try again later.'
+});
+
+export const chatRateLimit = createRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60,
+  message: 'Too many chat requests. Please slow down.'
+});
+
+export const connectionRequestRateLimit = createRateLimiter({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  message: 'Too many connection requests. Please try again later.'
 });

@@ -64,6 +64,60 @@ GOOGLE_CLIENT_ID=your-google-client-id
 - [ ] Monitor Durable Objects usage and performance
 - [ ] Set up alerts for high error rates or failures
 
+## Rate Limiting
+
+The backend implements comprehensive rate limiting to prevent abuse and ensure fair usage:
+
+### Endpoint Limits
+
+| Endpoint | Limit | Window | Middleware |
+|----------|-------|--------|-----------|
+| `/api/auth/email-login` | 5 requests | 15 minutes | `authRateLimit` |
+| `/api/auth/email-signup` | 5 requests | 15 minutes | `authRateLimit` |
+| `/api/auth/google` | 5 requests | 15 minutes | `authRateLimit` |
+| `/api/auth/forgot-password` | 5 requests | 15 minutes | `authRateLimit` |
+| `/api/auth/reset-password` | 5 requests | 15 minutes | `authRateLimit` |
+| `/api/connections/request` | 10 requests | 1 hour | `connectionRequestRateLimit` |
+| Chat messages (WebSocket) | 60 messages | 1 minute | Durable Object internal |
+
+### Error Response Format
+
+All rate-limited endpoints return consistent error responses:
+
+```json
+{
+  "error": "Too many requests",
+  "retryAfter": 300
+}
+```
+
+With HTTP headers:
+- `Status: 429 Too Many Requests`
+- `Retry-After: 300` (seconds)
+- `X-RateLimit-Limit: 5`
+- `X-RateLimit-Remaining: 0`
+- `X-RateLimit-Reset: 1234567890` (Unix timestamp)
+
+### KV Setup for Production
+
+For production environments, configure KV namespace for persistent rate limiting:
+
+```toml
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "your_kv_namespace_id"
+preview_id = "your_preview_kv_namespace_id"
+```
+
+The app will use in-memory fallback if KV is not configured.
+
+### Troubleshooting Rate Limits
+
+- **429 errors**: Check rate limit headers in response
+- **Unexpected blocks**: Verify system clock is accurate
+- **KV issues**: App falls back to in-memory storage automatically
+- **Testing**: Use different IP addresses or wait for window to reset
+
 ## Troubleshooting
 
 ### CORS Errors
