@@ -987,7 +987,7 @@ const CreateProfile = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">
-                Guided Profile Setup
+                AfroDate Profile Setup
               </p>
               <h1 className="mt-3 text-2xl font-semibold text-slate-900 md:text-3xl">
                 Step {isGoogleSignup ? step + 1 : step} of 6: {stepTitles[step - 1]}

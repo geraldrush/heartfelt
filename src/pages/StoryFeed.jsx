@@ -143,12 +143,8 @@ const StoryFeed = () => {
     setSelectedStory(null);
   }, [stories]);
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setFiltersApplied(filters);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [filters]);
+  // Only apply filters when user explicitly applies them, not on every change
+  // Remove the debounce effect that auto-applies filters
 
   const fetchStories = useCallback(
     async ({ reset = false } = {}) => {
@@ -240,9 +236,19 @@ const StoryFeed = () => {
   }, [filters]);
 
   const handleClearAllFilters = useCallback(() => {
-    clearFilters();
+    const clearedFilters = {
+      age_min: '',
+      age_max: '',
+      gender: '',
+      nationality: '',
+      race: '',
+      religion: '',
+      max_distance_km: 100,
+    };
+    setFilters(clearedFilters);
+    setFiltersApplied(clearedFilters);
     setShowFilters(false);
-  }, [clearFilters]);
+  }, []);
 
   const showToast = (message, type = 'error') => {
     setToast({ message, type });
@@ -591,181 +597,270 @@ const StoryFeed = () => {
             )}
           </motion.div>
 
-          {/* Active Filters */}
-          <ActiveFilters
-            filters={filtersApplied}
-            onRemoveFilter={removeFilter}
-            onClearAll={clearFilters}
-            count={activeFilterCount}
-          />
-
-          {/* Filter Drawer */}
-          <FilterDrawer
-            isOpen={showFilters}
-            onClose={() => setShowFilters(false)}
-            title="Filters"
-            onApply={handleApplyFilters}
-            onClear={handleClearAllFilters}
-          >
-            <FilterForm
-              filters={filters}
-              onChange={setFilters}
-              referenceData={referenceData}
-            />
-          </FilterDrawer>
-
-          {/* Error Message */}
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card rounded-2xl px-6 py-4 text-red-600 mb-8 max-w-2xl mx-auto"
-            >
-              {error}
-              {error.toLowerCase().includes('insufficient') && (
-                <span className="ml-2">
-                  <a href="/tokens" className="font-semibold text-purple-600 hover:text-purple-700">
-                    Buy tokens
-                  </a>
-                </span>
-              )}
-            </motion.div>
-          )}
-
-          {/* Stories Content */}
-          <div className="flex flex-col items-center h-[calc(100dvh-120px)] sm:h-[calc(100dvh-140px)] md:h-auto pt-16 md:pt-0 stories-container">
-            {loading ? (
-              <div className="flex items-center justify-center h-full w-full max-w-md">
-                <div className="grid gap-8">
-                  {Array.from({ length: 2 }).map((_, index) => (
-                    <StoryCardSkeleton key={`skeleton-${index}`} />
-                  ))}
-                </div>
-              </div>
-            ) : stories.length > 0 ? (
-              <div className="relative w-full max-w-md mx-auto h-full flex flex-col items-center justify-center">
-                <CardStack
-                  items={stories}
-                  onSwipeLeft={handleSwipeLeft}
-                  onSwipeRight={handleSwipeRight}
-                  onSwipeUp={(story) => setSelectedStory(story)}
-                  onCardClick={(story) => setSelectedStory(story)}
-                  renderCard={renderCard}
-                  disabled={showImageViewer}
+          {/* Desktop Two-Column Layout */}
+          <div className="hidden md:grid md:grid-cols-[320px_1fr] md:gap-8 md:items-start">
+            {/* Left Column - Filter Sidebar */}
+            <div className="sticky top-8">
+              <FilterDrawer
+                isOpen={showFilters}
+                onClose={() => setShowFilters(false)}
+                title="Filters"
+                onApply={handleApplyFilters}
+                onClear={handleClearAllFilters}
+              >
+                <FilterForm
+                  filters={filters}
+                  onChange={setFilters}
+                  referenceData={referenceData}
                 />
-                
-                {/* Action Buttons Below Card */}
-                {currentStory && (
-                  <div className="flex gap-4 mt-6">
-                    <button
+              </FilterDrawer>
+            </div>
+
+            {/* Right Column - Story Feed */}
+            <div>
+              {/* Active Filters */}
+              <ActiveFilters
+                filters={filtersApplied}
+                onRemoveFilter={removeFilter}
+                onClearAll={clearFilters}
+                count={activeFilterCount}
+              />
+
+              {/* Stories Content */}
+              <div className="flex flex-col items-center">
+                {loading ? (
+                  <div className="flex items-center justify-center h-full w-full max-w-md">
+                    <div className="grid gap-8">
+                      {Array.from({ length: 2 }).map((_, index) => (
+                        <StoryCardSkeleton key={`skeleton-${index}`} />
+                      ))}
+                    </div>
+                  </div>
+                ) : stories.length > 0 ? (
+                  <div className="relative w-full max-w-md mx-auto h-full flex flex-col items-center justify-center">
+                    <CardStack
+                      items={stories}
+                      onSwipeLeft={handleSwipeLeft}
+                      onSwipeRight={handleSwipeRight}
+                      onSwipeUp={(story) => setSelectedStory(story)}
+                      onCardClick={(story) => setSelectedStory(story)}
+                      renderCard={renderCard}
+                      disabled={showImageViewer}
+                    />
+                    
+                    {/* Action Buttons Below Card */}
+                    {currentStory && (
+                      <div className="flex gap-4 mt-6">
+                        <button
+                          type="button"
+                          onClick={() => handlePass(currentStory)}
+                          className="px-8 py-3 bg-red-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+                        >
+                          Skip
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConnectingStory(currentStory);
+                            setShowMessageModal(true);
+                          }}
+                          className="px-8 py-3 bg-green-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+                        >
+                          Connect
+                        </button>
+                      </div>
+                    )}
+                    
+                    <HeartAnimation trigger={heartTrigger} />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full w-full max-w-md">
+                    <EmptyState
+                      icon={emptyIcon}
+                      title="No Stories Found"
+                      description="Try adjusting your filters or check back later for new connections!"
+                      actionButton={
+                        <motion.button
+                          type="button"
+                          onClick={clearFilters}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="premium-button"
+                        >
+                          Clear Filters
+                        </motion.button>
+                      }
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Layout */}
+          <div className="md:hidden">
+            {/* Active Filters */}
+            <ActiveFilters
+              filters={filtersApplied}
+              onRemoveFilter={removeFilter}
+              onClearAll={clearFilters}
+              count={activeFilterCount}
+            />
+
+            {/* Mobile Filter Drawer */}
+            <FilterDrawer
+              isOpen={showFilters}
+              onClose={() => setShowFilters(false)}
+              title="Filters"
+              onApply={handleApplyFilters}
+              onClear={handleClearAllFilters}
+            >
+              <FilterForm
+                filters={filters}
+                onChange={setFilters}
+                referenceData={referenceData}
+              />
+            </FilterDrawer>
+
+            {/* Error Message */}
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card rounded-2xl px-6 py-4 text-red-600 mb-8 max-w-2xl mx-auto"
+              >
+                {error}
+                {error.toLowerCase().includes('insufficient') && (
+                  <span className="ml-2">
+                    <a href="/tokens" className="font-semibold text-purple-600 hover:text-purple-700">
+                      Buy tokens
+                    </a>
+                  </span>
+                )}
+              </motion.div>
+            )}
+
+            {/* Stories Content - Mobile Only */}
+            <div className="flex flex-col items-center h-[calc(100dvh-120px)] sm:h-[calc(100dvh-140px)] pt-16 stories-container">
+              {loading ? (
+                <div className="flex items-center justify-center h-full w-full max-w-md">
+                  <div className="grid gap-8">
+                    {Array.from({ length: 2 }).map((_, index) => (
+                      <StoryCardSkeleton key={`skeleton-${index}`} />
+                    ))}
+                  </div>
+                </div>
+              ) : stories.length > 0 ? (
+                <div className="relative w-full max-w-md mx-auto h-full flex flex-col items-center justify-center">
+                  <CardStack
+                    items={stories}
+                    onSwipeLeft={handleSwipeLeft}
+                    onSwipeRight={handleSwipeRight}
+                    onSwipeUp={(story) => setSelectedStory(story)}
+                    onCardClick={(story) => setSelectedStory(story)}
+                    renderCard={renderCard}
+                    disabled={showImageViewer}
+                  />
+                  
+                  {/* Action Buttons Below Card */}
+                  {currentStory && (
+                    <div className="flex gap-4 mt-6">
+                      <button
+                        type="button"
+                        onClick={() => handlePass(currentStory)}
+                        className="px-8 py-3 bg-red-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+                      >
+                        Skip
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConnectingStory(currentStory);
+                          setShowMessageModal(true);
+                        }}
+                        className="px-8 py-3 bg-green-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+                      >
+                        Connect
+                      </button>
+                    </div>
+                  )}
+                  
+                  <HeartAnimation trigger={heartTrigger} />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full w-full max-w-md">
+                  <EmptyState
+                    icon={emptyIcon}
+                    title="No Stories Found"
+                    description="Try adjusting your filters or check back later for new connections!"
+                    actionButton={
+                      <motion.button
+                        type="button"
+                        onClick={clearFilters}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="premium-button"
+                      >
+                        Clear Filters
+                      </motion.button>
+                    }
+                  />
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              {currentStory && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-8 hidden w-full max-w-md items-center justify-between gap-4 md:flex"
+                >
+                  <motion.button
+                    type="button"
+                    onClick={() => handlePass(currentStory)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex-1 glass-card rounded-2xl py-3 font-semibold text-gray-600 hover:text-gray-700 transition-colors"
+                  >
+                    Pass
+                  </motion.button>
+                  
+                  {currentStory.connection_status === 'pending_received' ? (
+                    <motion.button
                       type="button"
-                      onClick={() => handlePass(currentStory)}
-                      className="px-8 py-3 bg-red-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+                      onClick={() => handleAccept(currentStory)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-3 rounded-2xl shadow-lg"
                     >
-                      Skip
-                    </button>
-                    <button
+                      Accept (5 tokens)
+                    </motion.button>
+                  ) : currentStory.connection_status === 'none' ? (
+                    <motion.button
                       type="button"
                       onClick={() => {
                         setConnectingStory(currentStory);
                         setShowMessageModal(true);
                       }}
-                      className="px-8 py-3 bg-green-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
-                    >
-                      Connect
-                    </button>
-                  </div>
-                )}
-                
-                <HeartAnimation trigger={heartTrigger} />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full w-full max-w-md">
-                <EmptyState
-                  icon={emptyIcon}
-                  title="No Stories Found"
-                  description="Try adjusting your filters or check back later for new connections!"
-                  actionButton={
-                    <motion.button
-                      type="button"
-                      onClick={clearFilters}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="premium-button"
+                      className="flex-1 premium-button"
                     >
-                      Clear Filters
+                      Connect (5 tokens)
                     </motion.button>
-                  }
-                />
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            {currentStory && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-8 hidden w-full max-w-md items-center justify-between gap-4 md:flex"
-              >
-                <motion.button
-                  type="button"
-                  onClick={() => handlePass(currentStory)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 glass-card rounded-2xl py-3 font-semibold text-gray-600 hover:text-gray-700 transition-colors"
-                >
-                  Pass
-                </motion.button>
-                
-                {currentStory.connection_status === 'pending_received' ? (
-                  <motion.button
-                    type="button"
-                    onClick={() => handleAccept(currentStory)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-3 rounded-2xl shadow-lg"
-                  >
-                    Accept (5 tokens)
-                  </motion.button>
-                ) : currentStory.connection_status === 'none' ? (
-                  <motion.button
-                    type="button"
-                    onClick={() => {
-                      setConnectingStory(currentStory);
-                      setShowMessageModal(true);
-                    }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex-1 premium-button"
-                  >
-                    Connect (5 tokens)
-                  </motion.button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    className="flex-1 glass-card rounded-2xl py-3 font-semibold text-gray-400"
-                  >
-                    {currentStory.connection_status === 'connected' ? 'Connected' : 'Request Sent'}
-                  </button>
-                )}
-              </motion.div>
-            )}
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex-1 glass-card rounded-2xl py-3 font-semibold text-gray-400"
+                    >
+                      {currentStory.connection_status === 'connected' ? 'Connected' : 'Request Sent'}
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </div>
           </div>
-
-          {loadingMore && (
-            <div className="hidden md:flex mt-8 justify-center">
-              <LoadingSpinner label="Loading more stories..." />
-            </div>
-          )}
-
-          {!hasMore && stories.length > 0 && (
-            <div className="hidden md:block mt-8 text-center text-gray-500">
-              You've seen all available stories. Check back later for more!
-            </div>
-          )}
-
-          <div ref={sentinelRef} className="hidden md:block h-8" />
         </div>
       </div>
 

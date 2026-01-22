@@ -26,10 +26,10 @@ bucket_name = "heartfelt-images"
 preview_bucket_name = "heartfelt-images"
 
 [vars]
-CORS_ORIGIN = "http://localhost:5173,https://heartfelt.pages.dev,https://heartfelt-2ti.pages.dev,https://gerryrushway.github.io"
+CORS_ORIGIN = "http://localhost:5173,https://heartfelt.pages.dev,https://heartfelt-2ti.pages.dev,https://gerryrushway.github.io,https://afrodate.co.za"
 SIGNUP_BONUS_TOKENS = "10"
 R2_PUBLIC_BASE_URL = "https://heartfelt-images.79faac3a1f7c3b8ab3be66153def7484.r2.cloudflarestorage.com"
-FRONTEND_URL = "http://localhost:5173,https://heartfelt.pages.dev,https://heartfelt-2ti.pages.dev,https://gerryrushway.github.io"
+FRONTEND_URL = "http://localhost:5173,https://heartfelt.pages.dev,https://heartfelt-2ti.pages.dev,https://gerryrushway.github.io,https://afrodate.co.za"
 PAYFAST_MERCHANT_ID = "CHANGE_ME"
 PAYFAST_MERCHANT_KEY = "CHANGE_ME"
 PAYFAST_PASSPHRASE = "CHANGE_ME"

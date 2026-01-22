@@ -54,7 +54,7 @@ const SignInPage = () => {
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
               <h1 className="text-4xl font-bold text-slate-900">
-                Heartfelt Connections
+                AfroDate
               </h1>
               <p className="mt-4 text-base text-slate-600">
                 Find love beyond faces, connect through stories, and grow a meaningful
@@ -157,7 +157,7 @@ const SignInPage = () => {
           </div>
         </div>
         <footer className="mt-10 text-xs text-slate-500">
-          © {new Date().getFullYear()} Heartfelt Connections. All rights reserved.
+          © {new Date().getFullYear()} AfroDate. All rights reserved.
         </footer>
       </div>
     </div>

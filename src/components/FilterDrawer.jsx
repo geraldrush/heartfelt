@@ -18,15 +18,16 @@ const FilterDrawer = ({ isOpen, onClose, children, title, onApply, onClear }) =>
   });
 
   useEffect(() => {
-    if (isOpen) {
-      triggerHaptic('light');
+    if (isOpen && window.innerWidth < 768) {
+      const previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+      triggerHaptic('light');
+      return () => {
+        document.body.style.overflow = previousOverflow;
+      };
+    } else if (isOpen) {
+      triggerHaptic('light');
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isOpen]);
 
   const handleApply = () => {
@@ -60,7 +61,7 @@ const FilterDrawer = ({ isOpen, onClose, children, title, onApply, onClear }) =>
 
           {/* Drawer Container */}
           <motion.div
-            className="fixed bottom-0 left-0 right-0 z-50 md:relative md:bottom-auto glass-card rounded-t-3xl md:rounded-3xl max-h-[85vh] md:max-h-none overflow-hidden pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4"
+            className="fixed bottom-0 left-0 right-0 z-50 md:relative md:bottom-auto glass-card rounded-t-3xl md:rounded-3xl max-h-[85vh] md:max-h-none overflow-hidden pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4 flex flex-col md:w-full md:sticky md:top-0"
             initial={{ y: '100%', opacity: 0 }}
             animate={{ 
               y: window.innerWidth < 768 ? dragY : 0,
@@ -97,14 +98,9 @@ const FilterDrawer = ({ isOpen, onClose, children, title, onApply, onClear }) =>
             </div>
 
             {/* Content */}
-            <motion.div
-              className="px-6 overflow-y-auto flex-1"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1, duration: 0.2 }}
-            >
+            <div className="flex-1 overflow-y-auto px-6">
               {children}
-            </motion.div>
+            </div>
 
             {/* Footer */}
             <div className="flex flex-col sm:flex-row gap-3 p-6 pt-4">
