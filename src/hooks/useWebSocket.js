@@ -579,7 +579,7 @@ export const useWebSocket = ({
       retryRef.current = 0;
       setConnectionState('disconnected');
     };
-  }, [connect, connectionId]);
+  }, [connectionId]); // Remove 'connect' from dependencies to prevent race condition
 
   const sendMessage = useCallback(
     (content, clientId) => {
