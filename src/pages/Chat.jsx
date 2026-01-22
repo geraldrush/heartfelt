@@ -243,7 +243,14 @@ const Chat = () => {
   } = useWebSocket({
     connectionId: connection ? connectionId : null, // Only connect if valid connection exists
     onMessage: (data) => {
-      setMessages((prev) => [...prev, data]);
+      // Check if message already exists to prevent duplicates
+      setMessages((prev) => {
+        const exists = prev.some(msg => msg.id === data.id);
+        if (exists) {
+          return prev; // Don't add duplicate
+        }
+        return [...prev, data]; // Add new message at end
+      });
       sendDeliveryConfirmation(data.id);
     },
     onTyping: (data) => {
@@ -315,17 +322,30 @@ const Chat = () => {
         limit: 50,
         offset: reset ? 0 : offset,
       });
-      const ordered = [...(data.messages || [])].reverse();
-      setMessages((prev) => (reset ? ordered : [...ordered, ...prev]));
-      setHasMore((data.messages || []).length === 50);
-      setOffset((prev) => prev + (data.messages || []).length);
-
+      
+      // Messages come from API in reverse chronological order (newest first)
+      // We need them in chronological order (oldest first) for chat display
+      const orderedMessages = [...(data.messages || [])].reverse();
+      
       if (reset) {
+        // Initial load - replace all messages
+        setMessages(orderedMessages);
+        setOffset(orderedMessages.length);
+        // Scroll to bottom after messages load
         setTimeout(() => {
-          listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-        }, 0);
+          if (listRef.current) {
+            listRef.current.scrollTop = listRef.current.scrollHeight;
+          }
+        }, 100);
+      } else {
+        // Load more (older messages) - prepend to existing messages
+        setMessages((prev) => [...orderedMessages, ...prev]);
+        setOffset((prev) => prev + orderedMessages.length);
       }
+      
+      setHasMore((data.messages || []).length === 50);
     } catch (err) {
+      console.error('Load messages error:', err);
       setError(err.message || 'Unable to load messages.');
     } finally {
       setLoading(false);
@@ -456,12 +476,20 @@ const Chat = () => {
       status: 'sending',
       created_at: new Date().toISOString(),
     };
+    
+    // Add message to UI immediately for better UX
     setMessages((prev) => [...prev, outgoing]);
+    
+    // Send message via WebSocket
     sendMessage(inputText.trim(), tempId);
     setInputText('');
+    
+    // Scroll to bottom
     setTimeout(() => {
-      listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
-    }, 0);
+      if (listRef.current) {
+        listRef.current.scrollTop = listRef.current.scrollHeight;
+      }
+    }, 50);
   };
 
   const handleTyping = (value) => {
