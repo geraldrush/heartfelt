@@ -1,22 +1,49 @@
-# React + Vite
+# Heartfelt
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React-based social platform with Cloudflare Workers backend.
 
-Currently, two official plugins are available:
+## Environment Configuration
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-# heartfelt
+### Frontend (Vite)
 
-## Environment setup
+1. Copy environment template:
+   ```bash
+   cp .env.example .env.local
+   ```
 
-Frontend (Vite):
-- Set `VITE_GOOGLE_CLIENT_ID` to your Google OAuth client ID.
+2. Configure required variables in `.env.local`:
+   - `VITE_API_URL`: Backend API URL (http://localhost:8787 for dev)
+   - `VITE_GOOGLE_CLIENT_ID`: Google OAuth client ID
 
-Backend (Cloudflare Workers):
-- Set `JWT_SECRET` to a random 32+ character string.
-- Set `CORS_ORIGIN` to a comma-separated list of allowed origins.
-- Set `GOOGLE_CLIENT_ID` to your Google OAuth client ID.
-- For local dev: update `backend/.dev.vars`.
-- For production: update `backend/wrangler.toml` and run `wrangler secret put JWT_SECRET`.
-# Build fix
+### Backend (Cloudflare Workers)
+
+1. Configure `backend/.dev.vars` for development:
+   ```
+   JWT_SECRET=your_32_character_secret_here
+   GOOGLE_CLIENT_ID=your_google_client_id
+   ```
+
+2. Configure production secrets:
+   ```bash
+   cd backend
+   wrangler secret put JWT_SECRET
+   wrangler secret put GOOGLE_CLIENT_ID
+   ```
+
+3. Update `backend/wrangler.toml` CORS_ORIGIN with your domain.
+
+## Development
+
+```bash
+# Frontend
+npm run dev
+
+# Backend
+npm run dev:backend
+```
+
+## Production Deployment
+
+1. Create `.env.production` with production API URL
+2. Deploy backend: `cd backend && wrangler deploy`
+3. Build frontend: `npm run build`

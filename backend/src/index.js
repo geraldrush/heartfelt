@@ -74,7 +74,19 @@ app.use('/*', async (c, next) => {
   await next();
 });
 
-app.get('/health', (c) => c.json({ status: 'ok' }));
+app.get('/health', (c) => {
+  const requiredVars = ['JWT_SECRET', 'GOOGLE_CLIENT_ID', 'CORS_ORIGIN'];
+  const missing = requiredVars.filter(key => !c.env[key]);
+  
+  return c.json({
+    status: missing.length === 0 ? 'ok' : 'warning',
+    timestamp: new Date().toISOString(),
+    environment: {
+      configured: requiredVars.length - missing.length,
+      missing: missing.length > 0 ? missing : undefined
+    }
+  });
+});
 
 app.route('/api/auth', authRoutes);
 app.route('/api/stories', storyRoutes);
