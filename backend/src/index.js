@@ -15,6 +15,11 @@ app.use(
   '/*',
   cors({
     origin: (origin, c) => {
+      // Skip CORS for WebSocket upgrade requests
+      if (c.req.header('Upgrade') === 'websocket') {
+        return origin || '*';
+      }
+      
       const allowedOrigins = getAllowedOrigins(c.env);
       if (!origin) {
         console.log('[CORS] No origin header, allowing request');

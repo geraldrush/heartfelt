@@ -245,7 +245,7 @@ export const useWebSocket = ({
 
     ws.onopen = () => {
       const connectionTime = Date.now() - connectionStartTime.current;
-      console.log(`[WS-Client] ${new Date().toISOString()} Connected successfully in ${connectionTime}ms`);
+      console.log(`[WS-Client] ${new Date().toISOString()} ✅ WebSocket OPENED successfully in ${connectionTime}ms`);
       retryRef.current = 0;
       lastPongTime.current = Date.now();
       const oldState = connectionState;
@@ -329,7 +329,7 @@ export const useWebSocket = ({
 
     ws.onclose = (event) => {
       const timestamp = new Date().toISOString();
-      console.log(`[WS-Client] ${timestamp} Connection closed: code=${event.code}, reason=${event.reason || 'none'}, clean=${event.wasClean}`);
+      console.log(`[WS-Client] ${timestamp} ❌ WebSocket CLOSED: code=${event.code}, reason=${event.reason || 'none'}, clean=${event.wasClean}`);
       
       // Clear heartbeat
       if (heartbeatInterval.current) {
@@ -380,7 +380,8 @@ export const useWebSocket = ({
         return;
       }
       
-      const timeout = Math.min(30000, 1000 * 2 ** retryRef.current);
+      // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+      const timeout = Math.min(16000, 1000 * Math.pow(2, retryRef.current));
       console.log(`[WS-Client] ${timestamp} Retry attempt ${retryRef.current + 1}/5 in ${timeout}ms`);
       retryRef.current += 1;
       reconnectTimer.current = setTimeout(connect, timeout);
@@ -388,7 +389,7 @@ export const useWebSocket = ({
 
     ws.onerror = (errorEvent) => {
       const timestamp = new Date().toISOString();
-      console.error(`[WS-Client] ${timestamp} Connection error for connectionId: ${connectionId}`);
+      console.error(`[WS-Client] ${timestamp} ⚠️ WebSocket ERROR for connectionId: ${connectionId}`);
       console.error(`[WS-Client] ${timestamp} Error details: connectionState=${connectionState}, retryCount=${retryRef.current}`);
       console.error(`[WS-Client] ${timestamp} Error event:`, errorEvent);
       

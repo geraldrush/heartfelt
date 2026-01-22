@@ -93,28 +93,25 @@ export class ChatRoom {
       console.error(`[WS-Server] ${timestamp} Authentication failed: ${error.message}`);
       logRequestDiagnostics(request, connectionId, timestamp);
       
+      // Send proper close frame for auth failures
+      const pair = new WebSocketPair();
+      const [client, server] = pair;
+      server.accept();
+      
       if (error.message === 'TOKEN_EXPIRED') {
-        return new Response(JSON.stringify({ error: 'Token expired', code: 'TOKEN_EXPIRED' }), { 
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        server.close(1008, 'Token expired');
+        return new Response(null, { status: 101, webSocket: client });
       }
       if (error.message === 'INVALID_SIGNATURE') {
-        return new Response(JSON.stringify({ error: 'Invalid token signature', code: 'INVALID_SIGNATURE' }), { 
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        server.close(1008, 'Invalid token signature');
+        return new Response(null, { status: 101, webSocket: client });
       }
       if (error.message === 'MALFORMED_TOKEN') {
-        return new Response(JSON.stringify({ error: 'Malformed token', code: 'MALFORMED_TOKEN' }), { 
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        server.close(1008, 'Malformed token');
+        return new Response(null, { status: 101, webSocket: client });
       }
-      return new Response(JSON.stringify({ error: 'Invalid token', code: 'INVALID_TOKEN' }), { 
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      server.close(1008, 'Invalid token');
+      return new Response(null, { status: 101, webSocket: client });
     }
 
     // Database verification with logging
@@ -124,13 +121,13 @@ export class ChatRoom {
     if (!verificationResult.valid) {
       console.log(`[WS-Server] ${timestamp} Verification failed: ${verificationResult.reason} - ${verificationResult.message}`);
       logRequestDiagnostics(request, connectionId, timestamp);
-      return new Response(JSON.stringify({ 
-        error: verificationResult.message,
-        code: verificationResult.reason 
-      }), { 
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      
+      // Send proper close frame for authorization failures
+      const pair = new WebSocketPair();
+      const [client, server] = pair;
+      server.accept();
+      server.close(1008, verificationResult.message);
+      return new Response(null, { status: 101, webSocket: client });
     }
     
     console.log(`[WS-Server] ${timestamp} User ${userId} verified for connection ${connectionId}`);
@@ -159,7 +156,7 @@ export class ChatRoom {
     this.connections.set(userId, server);
     this.startHeartbeat(userId);
     
-    console.log(`[WS-Server] ${timestamp} WebSocket connection established for user ${userId} on connection ${connectionId}`);
+    console.log(`[WS-Server] ${timestamp} ✅ WebSocket connection ACCEPTED for user ${userId} on connection ${connectionId}`);
     console.log(`[WS-Server] ${timestamp} Active connections in room: ${this.connections.size}`);
 
     for (const [otherUserId] of this.connections.entries()) {
