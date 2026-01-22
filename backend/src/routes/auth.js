@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
+import { authRateLimit } from '../middleware/rateLimit.js';
 import { generateToken } from '../utils/jwt.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
+import { sanitizeName } from '../utils/sanitize.js';
+import { generateVerificationToken, getVerificationExpiry, sendVerificationEmail, generateResetToken, getResetExpiry, sendPasswordResetEmail } from '../utils/email.js';
 import {
   createUser,
   generateId,
@@ -67,18 +70,27 @@ auth.post('/email-signup', async (c) => {
 
   const signupBonusTokens = getSignupBonusTokens(c);
   const password_hash = await hashPassword(parsed.data.password);
+  const verificationToken = generateVerificationToken();
+  const verificationExpiry = getVerificationExpiry();
+  
   const { id } = await createUser(db, {
     email: parsed.data.email,
     password_hash,
-    full_name: parsed.data.full_name,
+    full_name: sanitizeName(parsed.data.full_name),
     age: parsed.data.age,
     gender: parsed.data.gender,
-    nationality: parsed.data.nationality,
-    location_city: parsed.data.location_city,
-    location_province: parsed.data.location_province,
+    nationality: sanitizeName(parsed.data.nationality),
+    location_city: sanitizeName(parsed.data.location_city),
+    location_province: sanitizeName(parsed.data.location_province),
     token_balance: signupBonusTokens,
     profile_complete: 0,
+    email_verified: 0,
+    email_verification_token: verificationToken,
+    email_verification_expires: verificationExpiry,
   });
+
+  // Send verification email
+  await sendVerificationEmail(parsed.data.email, verificationToken, c.env);
 
   await db
     .prepare(
@@ -111,11 +123,13 @@ auth.post('/email-signup', async (c) => {
       full_name: parsed.data.full_name,
       token_balance: signupBonusTokens,
       profile_complete: false,
+      email_verified: false,
     },
+    message: 'Account created. Please check your email to verify your account.',
   });
 });
 
-auth.post('/email-login', async (c) => {
+auth.post('/email-login', authRateLimit, async (c) => {
   // CSRF protection for state-changing auth operations
   const origin = c.req.header('Origin');
   const referer = c.req.header('Referer');
@@ -303,6 +317,175 @@ auth.get('/me', authMiddleware, async (c) => {
   const { password_hash, ...safeUser } = user;
 
   return c.json({ user: safeUser });
+});
+
+// Email verification endpoint
+auth.post('/verify-email', async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const token = body?.token;
+  
+  if (!token) {
+    return c.json({ error: 'Verification token is required.' }, 400);
+  }
+  
+  const db = getDb(c);
+  const user = await db
+    .prepare('SELECT * FROM users WHERE email_verification_token = ? AND email_verification_expires > datetime("now")')
+    .bind(token)
+    .first();
+    
+  if (!user) {
+    return c.json({ error: 'Invalid or expired verification token.' }, 400);
+  }
+  
+  // Mark email as verified
+  await db
+    .prepare('UPDATE users SET email_verified = 1, email_verification_token = NULL, email_verification_expires = NULL WHERE id = ?')
+    .bind(user.id)
+    .run();
+    
+  return c.json({ message: 'Email verified successfully.' });
+});
+
+// Password reset request
+auth.post('/forgot-password', authRateLimit, async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const email = body?.email;
+  
+  if (!email) {
+    return c.json({ error: 'Email is required.' }, 400);
+  }
+  
+  const db = getDb(c);
+  const user = await getUserByEmail(db, email);
+  
+  // Always return success to prevent email enumeration
+  if (!user) {
+    return c.json({ message: 'If an account with that email exists, a reset link has been sent.' });
+  }
+  
+  const resetToken = generateResetToken();
+  const resetExpiry = getResetExpiry();
+  
+  await db
+    .prepare('UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?')
+    .bind(resetToken, resetExpiry, user.id)
+    .run();
+    
+  await sendPasswordResetEmail(email, resetToken, c.env);
+  
+  return c.json({ message: 'If an account with that email exists, a reset link has been sent.' });
+});
+
+// Password reset
+auth.post('/reset-password', authRateLimit, async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const { token, password } = body || {};
+  
+  if (!token || !password) {
+    return c.json({ error: 'Token and new password are required.' }, 400);
+  }
+  
+  if (password.length < 8) {
+    return c.json({ error: 'Password must be at least 8 characters.' }, 400);
+  }
+  
+  const db = getDb(c);
+  const user = await db
+    .prepare('SELECT * FROM users WHERE password_reset_token = ? AND password_reset_expires > datetime("now")')
+    .bind(token)
+    .first();
+    
+  if (!user) {
+    return c.json({ error: 'Invalid or expired reset token.' }, 400);
+  }
+  
+  const password_hash = await hashPassword(password);
+  
+  await db
+    .prepare('UPDATE users SET password_hash = ?, password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?')
+    .bind(password_hash, user.id)
+    .run();
+    
+  return c.json({ message: 'Password reset successfully.' });
+});
+
+// Account deletion endpoint for GDPR compliance
+auth.delete('/delete-account', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+  
+  // Verify user exists
+  const user = await getUserById(db, userId);
+  if (!user) {
+    return c.json({ error: 'User not found.' }, 404);
+  }
+  
+  try {
+    // Delete user data in correct order (respecting foreign keys)
+    await db.prepare('DELETE FROM story_images WHERE story_id IN (SELECT id FROM stories WHERE user_id = ?)').bind(userId).run();
+    await db.prepare('DELETE FROM stories WHERE user_id = ?').bind(userId).run();
+    await db.prepare('DELETE FROM messages WHERE sender_id = ?').bind(userId).run();
+    await db.prepare('DELETE FROM connection_requests WHERE sender_id = ? OR receiver_id = ?').bind(userId, userId).run();
+    await db.prepare('DELETE FROM connections WHERE user_id_1 = ? OR user_id_2 = ?').bind(userId, userId).run();
+    await db.prepare('DELETE FROM token_transactions WHERE user_id = ?').bind(userId).run();
+    await db.prepare('DELETE FROM token_requests WHERE requester_id = ? OR recipient_id = ?').bind(userId, userId).run();
+    await db.prepare('DELETE FROM users WHERE id = ?').bind(userId).run();
+    
+    return c.json({ message: 'Account deleted successfully.' });
+  } catch (error) {
+    console.error('Account deletion error:', error);
+    return c.json({ error: 'Failed to delete account. Please try again.' }, 500);
+  }
+});
+
+// Data export endpoint for GDPR compliance
+auth.get('/export-data', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+  
+  // Get user data
+  const user = await getUserById(db, userId);
+  if (!user) {
+    return c.json({ error: 'User not found.' }, 404);
+  }
+  
+  // Get user's stories
+  const stories = await db
+    .prepare('SELECT * FROM stories WHERE user_id = ?')
+    .bind(userId)
+    .all();
+    
+  // Get user's messages
+  const messages = await db
+    .prepare('SELECT * FROM messages WHERE sender_id = ?')
+    .bind(userId)
+    .all();
+    
+  // Get user's connections
+  const connections = await db
+    .prepare('SELECT * FROM connections WHERE user_id_1 = ? OR user_id_2 = ?')
+    .bind(userId, userId)
+    .all();
+    
+  // Get token transactions
+  const transactions = await db
+    .prepare('SELECT * FROM token_transactions WHERE user_id = ?')
+    .bind(userId)
+    .all();
+  
+  const { password_hash, email_verification_token, password_reset_token, ...safeUser } = user;
+  
+  const exportData = {
+    user: safeUser,
+    stories: stories.results || [],
+    messages: messages.results || [],
+    connections: connections.results || [],
+    transactions: transactions.results || [],
+    exportedAt: new Date().toISOString()
+  };
+  
+  return c.json(exportData);
 });
 
 export default auth;

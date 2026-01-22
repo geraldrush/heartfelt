@@ -5,6 +5,7 @@ import {
   verifyUserInConnection,
 } from '../utils/db.js';
 import { getAllowedOrigins, isOriginAllowed, isRefererAllowed } from '../utils/cors.js';
+import { sanitizeMessage } from '../utils/sanitize.js';
 
 // Server-side diagnostics helper
 const logRequestDiagnostics = (request, connectionId, timestamp) => {
@@ -261,13 +262,21 @@ export class ChatRoom {
           this.sendToUser(senderId, { type: 'error', message: 'Message is empty.' });
           return;
         }
+        
+        // Sanitize message content to prevent XSS
+        const sanitizedContent = sanitizeMessage(payload.content);
+        if (!sanitizedContent.trim()) {
+          this.sendToUser(senderId, { type: 'error', message: 'Message content is invalid.' });
+          return;
+        }
+        
         const messageId = crypto.randomUUID();
         const createdAt = new Date().toISOString();
         await createMessage(this.env.DB, {
           id: messageId,
           connection_id: connectionId,
           sender_id: senderId,
-          content: payload.content,
+          content: sanitizedContent,
           status: 'sent',
           created_at: createdAt,
         });
@@ -277,7 +286,7 @@ export class ChatRoom {
           id: messageId,
           connection_id: connectionId,
           sender_id: senderId,
-          content: payload.content,
+          content: sanitizedContent,
           status: 'sent',
           created_at: createdAt,
         };

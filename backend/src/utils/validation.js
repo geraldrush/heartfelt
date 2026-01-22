@@ -61,7 +61,7 @@ export const tokenTransferSchema = z.object({
 });
 
 export const tokenHistorySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(50).default(20), // Reduced max from 100 to 50
   offset: z.coerce.number().int().min(0).default(0),
 });
 
