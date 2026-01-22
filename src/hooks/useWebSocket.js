@@ -90,6 +90,8 @@ export const useWebSocket = ({
   const latencyHistory = useRef([]);
   const messageSentTimes = useRef(new Map());
 
+  const IDLE_THRESHOLD = 120000; // 2 minutes
+
   const errorClassifier = useCallback((closeCode) => {
     if (closeCode >= 4001 && closeCode <= 4003) {
       return { type: 'auth', message: 'Authentication failed. Please log in again.', userAction: 'login' };
@@ -406,6 +408,16 @@ export const useWebSocket = ({
       const timestamp = new Date().toISOString();
       console.log(`[WS-Client] ${timestamp} ❌ WebSocket CLOSED: code=${event.code}, reason=${event.reason || 'none'}, clean=${event.wasClean}`);
       
+      // Check for idle disconnection before processing errors
+      const timeSinceActivity = Date.now() - lastActivityTime.current;
+      const isIdleDisconnection = event.code === 1006 && timeSinceActivity > IDLE_THRESHOLD;
+      console.log('[WS-Client] Idle disconnect check:', isIdleDisconnection, 'ms since activity:', timeSinceActivity);
+      if (isIdleDisconnection) {
+        console.log('[WS-Client] Idle disconnection detected - suppressing error/retry');
+        setConnectionState('idle_disconnected');
+        return;  // Skip errorClassifier, retries, onConnectionError
+      }
+      
       // Clear heartbeat
       if (heartbeatInterval.current) {
         clearInterval(heartbeatInterval.current);
@@ -540,9 +552,14 @@ export const useWebSocket = ({
         lastActivityTime.current = Date.now();
         
         // Reconnect if disconnected while hidden
-        if (connectionState === 'disconnected' || connectionState === 'error') {
-          console.log('[WS-Client] Reconnecting after page became visible');
-          reconnect();
+        if (connectionState === 'disconnected' || connectionState === 'error' || connectionState === 'idle_disconnected') {
+          if (connectionState === 'idle_disconnected') {
+            console.log('[WS-Client] Silent reconnect from idle');
+            connect();
+          } else {
+            console.log('[WS-Client] Reconnecting after page became visible');
+            reconnect();
+          }
         }
       }
     };
@@ -559,8 +576,12 @@ export const useWebSocket = ({
   useEffect(() => {
     const handleOnline = () => {
       console.log('[WS-Client] Network: online');
-      if (connectionState === 'disconnected' || connectionState === 'error') {
-        connect();
+      if (connectionState === 'disconnected' || connectionState === 'error' || connectionState === 'idle_disconnected') {
+        if (connectionState === 'idle_disconnected') {
+          connect();
+        } else {
+          connect();
+        }
       }
     };
     
