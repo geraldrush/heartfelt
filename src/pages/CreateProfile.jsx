@@ -10,11 +10,12 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { detectAndBlurFaces } from "../utils/faceBlur.js";
 
 const stepTitles = [
-  "Personal Details",
-  "Lifestyle & Family",
-  "Location",
-  "Your Story",
-  "Looking For",
+  "What are you looking for?",
+  "Share your story",
+  "Show your best self",
+  "Tell us about yourself",
+  "More about you",
+  "Let's create your account",
 ];
 
 const MAX_IMAGES = 5;
@@ -25,6 +26,10 @@ const CreateProfile = () => {
   const navigate = useNavigate();
   const { updateUser, user } = useAuth();
   const [step, setStep] = useState(1);
+  const [isGoogleSignup, setIsGoogleSignup] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
   const [nationality, setNationality] = useState("");
@@ -108,72 +113,6 @@ const CreateProfile = () => {
 
   const validateStep1 = () => {
     const nextErrors = {};
-    if (!age || Number(age) < 18) {
-      nextErrors.age = "Please enter a valid age (18+).";
-    }
-    if (!gender) {
-      nextErrors.gender = "Please select a gender.";
-    }
-    if (!nationality) {
-      nextErrors.nationality = "Please select a nationality.";
-    }
-    if (!religion) {
-      nextErrors.religion = "Please select a religion.";
-    }
-    if (!race) {
-      nextErrors.race = "Please select a race.";
-    }
-    if (!education) {
-      nextErrors.education = "Please select an education level.";
-    }
-    return nextErrors;
-  };
-
-  const validateStep2 = () => {
-    const nextErrors = {};
-    if (typeof hasKids !== "boolean") {
-      nextErrors.has_kids = "Please tell us if you have kids.";
-    }
-    const kidsCount = Number(numKids || 0);
-    if (![0, 1, 2, 3].includes(kidsCount)) {
-      nextErrors.num_kids = "Please select a valid number of kids.";
-    }
-    if (hasKids && kidsCount === 0) {
-      nextErrors.num_kids = "Please select the number of kids.";
-    }
-    if (typeof smoker !== "boolean") {
-      nextErrors.smoker = "Please select an option.";
-    }
-    if (typeof drinksAlcohol !== "boolean") {
-      nextErrors.drinks_alcohol = "Please select an option.";
-    }
-    return nextErrors;
-  };
-
-  const validateStep3 = () => {
-    const nextErrors = {};
-    if (!locationCity || !locationProvince) {
-      nextErrors.location_city = "Please select your city.";
-    }
-    return nextErrors;
-  };
-
-  const validateStep4 = () => {
-    const nextErrors = {};
-    if (storyText.trim().length < 50) {
-      nextErrors.story_text = "Story must be at least 50 characters.";
-    }
-    if (images.length < 1) {
-      nextErrors.images = "Upload at least one photo.";
-    }
-    if (images.length > MAX_IMAGES) {
-      nextErrors.images = "You can upload up to 5 photos.";
-    }
-    return nextErrors;
-  };
-
-  const validateStep5 = () => {
-    const nextErrors = {};
     if (!seekingGender) {
       nextErrors.seeking_gender = "Please select who you're looking for.";
     }
@@ -194,12 +133,93 @@ const CreateProfile = () => {
     return nextErrors;
   };
 
+  const validateStep2 = () => {
+    const nextErrors = {};
+    if (storyText.trim().length < 50) {
+      nextErrors.story_text = "Story must be at least 50 characters.";
+    }
+    return nextErrors;
+  };
+
+  const validateStep3 = () => {
+    const nextErrors = {};
+    if (images.length < 1) {
+      nextErrors.images = "Upload at least one photo.";
+    }
+    if (images.length > MAX_IMAGES) {
+      nextErrors.images = "You can upload up to 5 photos.";
+    }
+    return nextErrors;
+  };
+
+  const validateStep4 = () => {
+    const nextErrors = {};
+    if (!age || Number(age) < 18) {
+      nextErrors.age = "Please enter a valid age (18+).";
+    }
+    if (!gender) {
+      nextErrors.gender = "Please select a gender.";
+    }
+    if (!locationCity || !locationProvince) {
+      nextErrors.location_city = "Please select your city.";
+    }
+    return nextErrors;
+  };
+
+  const validateStep5 = () => {
+    const nextErrors = {};
+    if (!nationality) {
+      nextErrors.nationality = "Please select a nationality.";
+    }
+    if (!religion) {
+      nextErrors.religion = "Please select a religion.";
+    }
+    if (!race) {
+      nextErrors.race = "Please select a race.";
+    }
+    if (!education) {
+      nextErrors.education = "Please select an education level.";
+    }
+    if (typeof hasKids !== "boolean") {
+      nextErrors.has_kids = "Please tell us if you have kids.";
+    }
+    const kidsCount = Number(numKids || 0);
+    if (![0, 1, 2, 3].includes(kidsCount)) {
+      nextErrors.num_kids = "Please select a valid number of kids.";
+    }
+    if (hasKids && kidsCount === 0) {
+      nextErrors.num_kids = "Please select the number of kids.";
+    }
+    if (typeof smoker !== "boolean") {
+      nextErrors.smoker = "Please select an option.";
+    }
+    if (typeof drinksAlcohol !== "boolean") {
+      nextErrors.drinks_alcohol = "Please select an option.";
+    }
+    return nextErrors;
+  };
+
+  const validateStep6 = () => {
+    const nextErrors = {};
+    if (!email) {
+      nextErrors.email = "Please enter your email.";
+    }
+    if (!password || password.length < 6) {
+      nextErrors.password = "Password must be at least 6 characters.";
+    }
+    if (password !== confirmPassword) {
+      nextErrors.confirmPassword = "Passwords do not match.";
+    }
+    return nextErrors;
+  };
+
   const validateCurrentStep = () => {
     if (step === 1) return validateStep1();
     if (step === 2) return validateStep2();
     if (step === 3) return validateStep3();
     if (step === 4) return validateStep4();
-    return validateStep5();
+    if (step === 5) return validateStep5();
+    return validateStep6();
   };
 
   const handleNext = () => {
@@ -209,7 +229,7 @@ const CreateProfile = () => {
       return;
     }
     setErrors({});
-    setStep((prev) => Math.min(prev + 1, 5));
+    setStep((prev) => Math.min(prev + 1, isGoogleSignup ? 5 : 6));
   };
 
   const handleBack = () => {
@@ -346,17 +366,17 @@ const CreateProfile = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const nextErrors = validateStep4();
+    const nextErrors = validateCurrentStep();
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
     }
-    if (isImageProcessing) {
-      setFormError("Please wait for face detection to finish.");
-      return;
-    }
-    if (hasBlurFailures) {
-      setFormError("Please retry failed images before submitting.");
+    if (step === 3 && (isImageProcessing || hasBlurFailures)) {
+      if (isImageProcessing) {
+        setFormError("Please wait for face detection to finish.");
+      } else {
+        setFormError("Please retry failed images before submitting.");
+      }
       return;
     }
 
@@ -467,8 +487,202 @@ const CreateProfile = () => {
 
     if (step === 1) {
       return (
+        <div className="space-y-6">
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              I'm looking for
+            </label>
+            <select
+              value={seekingGender}
+              onChange={(e) => setSeekingGender(e.target.value)}
+              className={inputClass("seeking_gender")}
+            >
+              <option value="">Select gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="non-binary">Non-binary</option>
+              <option value="other">Other</option>
+              <option value="any">Any</option>
+            </select>
+            {errors.seeking_gender && (
+              <p className="mt-2 text-xs text-red-600">{errors.seeking_gender}</p>
+            )}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Age range (minimum)
+              </label>
+              <input
+                type="number"
+                min="18"
+                value={seekingAgeMin}
+                onChange={(e) => setSeekingAgeMin(e.target.value)}
+                className={inputClass("seeking_age_min")}
+                placeholder="18"
+              />
+              {errors.seeking_age_min && (
+                <p className="mt-2 text-xs text-red-600">{errors.seeking_age_min}</p>
+              )}
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Age range (maximum)
+              </label>
+              <input
+                type="number"
+                min="18"
+                value={seekingAgeMax}
+                onChange={(e) => setSeekingAgeMax(e.target.value)}
+                className={inputClass("seeking_age_max")}
+                placeholder="65"
+              />
+              {errors.seeking_age_max && (
+                <p className="mt-2 text-xs text-red-600">{errors.seeking_age_max}</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              Race preferences (select all that apply)
+            </label>
+            <div className="mt-3 space-y-2">
+              {(referenceData?.races || []).map((raceOption) => (
+                <label
+                  key={raceOption.id}
+                  className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={seekingRaces.includes(raceOption.name)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSeekingRaces([...seekingRaces, raceOption.name]);
+                      } else {
+                        setSeekingRaces(seekingRaces.filter(r => r !== raceOption.name));
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm text-slate-700">{raceOption.name}</span>
+                </label>
+              ))}
+            </div>
+            {errors.seeking_races && (
+              <p className="mt-2 text-xs text-red-600">{errors.seeking_races}</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (step === 2) {
+      return (
+        <div className="space-y-6">
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              Your story
+            </label>
+            <textarea
+              value={storyText}
+              onChange={(event) => setStoryText(event.target.value)}
+              rows="6"
+              className={`${inputClass("story_text")} resize-none`}
+              placeholder="Share your story, values, and what you are hoping to find..."
+            />
+            {errors.story_text && (
+              <p className="mt-2 text-xs text-red-600">{errors.story_text}</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (step === 3) {
+      return (
+        <div className="space-y-6">
+          <div>
+            <label className="text-sm font-medium text-slate-700">Photos</label>
+            <div className="mt-2 rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileChange}
+                className="block w-full text-sm text-slate-500 file:mr-4 file:rounded-xl file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
+              />
+              <p className="mt-3 text-xs text-slate-400">
+                Upload up to 5 photos. JPG, PNG, or WEBP, max 5MB each.
+              </p>
+            </div>
+            {errors.images && (
+              <p className="mt-2 text-xs text-red-600">{errors.images}</p>
+            )}
+          </div>
+          {images.length > 0 && (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              {images.map((image, index) => (
+                <div
+                  key={image.id}
+                  className="group relative overflow-hidden rounded-2xl"
+                >
+                  <img
+                    src={image.preview}
+                    alt={`Upload ${index + 1}`}
+                    className="h-36 w-full rounded-2xl object-cover"
+                  />
+                  {image.status === "processing" && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                    </div>
+                  )}
+                  <div
+                    className={`absolute left-2 bottom-2 rounded-full px-2 py-1 text-[10px] font-semibold ${
+                      image.status === "blurred"
+                        ? "bg-emerald-500/90 text-white"
+                        : image.status === "no-faces"
+                          ? "bg-amber-500/90 text-white"
+                          : image.status === "error"
+                            ? "bg-red-500/90 text-white"
+                            : "bg-slate-900/70 text-white"
+                    }`}
+                  >
+                    {image.status === "processing" && "Processing..."}
+                    {image.status === "blurred" && "Faces blurred ✓"}
+                    {image.status === "no-faces" && "No faces detected"}
+                    {image.status === "error" && "Blur failed"}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100"
+                  >
+                    Remove
+                  </button>
+                  {image.status === "error" && (
+                    <button
+                      type="button"
+                      onClick={() => retryBlur(image.id)}
+                      className="absolute right-2 bottom-2 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 shadow"
+                    >
+                      Retry
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (step === 4) {
+      return (
         <div className="grid gap-4 md:grid-cols-2">
           <div>
+            <label className="text-sm font-medium text-slate-700">Age</label>
             <input
               type="number"
               min="18"
@@ -498,6 +712,31 @@ const CreateProfile = () => {
               <p className="mt-2 text-xs text-red-600">{errors.gender}</p>
             )}
           </div>
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium text-slate-700">City</label>
+            <select
+              value={selectedCityValue}
+              onChange={(event) => handleCityChange(event.target.value)}
+              className={inputClass("location_city")}
+            >
+              <option value="">Select city</option>
+              {(referenceData?.cities || []).map((city) => (
+                <option key={city.id} value={`${city.name}|||${city.province}`}>
+                  {city.name}, {city.province}
+                </option>
+              ))}
+            </select>
+            {errors.location_city && (
+              <p className="mt-2 text-xs text-red-600">{errors.location_city}</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (step === 5) {
+      return (
+        <div className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className="text-sm font-medium text-slate-700">
               Nationality
@@ -577,13 +816,6 @@ const CreateProfile = () => {
               <p className="mt-2 text-xs text-red-600">{errors.education}</p>
             )}
           </div>
-        </div>
-      );
-    }
-
-    if (step === 2) {
-      return (
-        <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="text-sm font-medium text-slate-700">
               Do you have kids?
@@ -677,210 +909,47 @@ const CreateProfile = () => {
       );
     }
 
-    if (step === 3) {
-      return (
-        <div>
-          <label className="text-sm font-medium text-slate-700">City</label>
-          <select
-            value={selectedCityValue}
-            onChange={(event) => handleCityChange(event.target.value)}
-            className={inputClass("location_city")}
-          >
-            <option value="">Select city</option>
-            {(referenceData?.cities || []).map((city) => (
-              <option key={city.id} value={`${city.name}|||${city.province}`}>
-                {city.name}, {city.province}
-              </option>
-            ))}
-          </select>
-          {errors.location_city && (
-            <p className="mt-2 text-xs text-red-600">{errors.location_city}</p>
-          )}
-        </div>
-      );
-    }
-
-    if (step === 5) {
-      return (
-        <div className="space-y-6">
-          <div>
-            <label className="text-sm font-medium text-slate-700">
-              I'm looking for
-            </label>
-            <select
-              value={seekingGender}
-              onChange={(e) => setSeekingGender(e.target.value)}
-              className={inputClass("seeking_gender")}
-            >
-              <option value="">Select gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="non-binary">Non-binary</option>
-              <option value="other">Other</option>
-              <option value="any">Any</option>
-            </select>
-            {errors.seeking_gender && (
-              <p className="mt-2 text-xs text-red-600">{errors.seeking_gender}</p>
-            )}
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="text-sm font-medium text-slate-700">
-                Age range (minimum)
-              </label>
-              <input
-                type="number"
-                min="18"
-                value={seekingAgeMin}
-                onChange={(e) => setSeekingAgeMin(e.target.value)}
-                className={inputClass("seeking_age_min")}
-                placeholder="18"
-              />
-              {errors.seeking_age_min && (
-                <p className="mt-2 text-xs text-red-600">{errors.seeking_age_min}</p>
-              )}
-            </div>
-            <div>
-              <label className="text-sm font-medium text-slate-700">
-                Age range (maximum)
-              </label>
-              <input
-                type="number"
-                min="18"
-                value={seekingAgeMax}
-                onChange={(e) => setSeekingAgeMax(e.target.value)}
-                className={inputClass("seeking_age_max")}
-                placeholder="65"
-              />
-              {errors.seeking_age_max && (
-                <p className="mt-2 text-xs text-red-600">{errors.seeking_age_max}</p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-700">
-              Race preferences (select all that apply)
-            </label>
-            <div className="mt-3 space-y-2">
-              {(referenceData?.races || []).map((raceOption) => (
-                <label
-                  key={raceOption.id}
-                  className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
-                >
-                  <input
-                    type="checkbox"
-                    checked={seekingRaces.includes(raceOption.name)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSeekingRaces([...seekingRaces, raceOption.name]);
-                      } else {
-                        setSeekingRaces(seekingRaces.filter(r => r !== raceOption.name));
-                      }
-                    }}
-                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <span className="text-sm text-slate-700">{raceOption.name}</span>
-                </label>
-              ))}
-            </div>
-            {errors.seeking_races && (
-              <p className="mt-2 text-xs text-red-600">{errors.seeking_races}</p>
-            )}
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="space-y-6">
         <div>
-          <label className="text-sm font-medium text-slate-700">
-            Your story
-          </label>
-          <textarea
-            value={storyText}
-            onChange={(event) => setStoryText(event.target.value)}
-            rows="6"
-            className={`${inputClass("story_text")} resize-none`}
-            placeholder="Share your story, values, and what you are hoping to find..."
+          <label className="text-sm font-medium text-slate-700">Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputClass("email")}
+            placeholder="your@email.com"
           />
-          {errors.story_text && (
-            <p className="mt-2 text-xs text-red-600">{errors.story_text}</p>
+          {errors.email && (
+            <p className="mt-2 text-xs text-red-600">{errors.email}</p>
           )}
         </div>
         <div>
-          <label className="text-sm font-medium text-slate-700">Photos</label>
-          <div className="mt-2 rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileChange}
-              className="block w-full text-sm text-slate-500 file:mr-4 file:rounded-xl file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
-            />
-            <p className="mt-3 text-xs text-slate-400">
-              Upload up to 5 photos. JPG, PNG, or WEBP, max 5MB each.
-            </p>
-          </div>
-          {errors.images && (
-            <p className="mt-2 text-xs text-red-600">{errors.images}</p>
+          <label className="text-sm font-medium text-slate-700">Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={inputClass("password")}
+            placeholder="At least 6 characters"
+          />
+          {errors.password && (
+            <p className="mt-2 text-xs text-red-600">{errors.password}</p>
           )}
         </div>
-        {images.length > 0 && (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-            {images.map((image, index) => (
-              <div
-                key={image.id}
-                className="group relative overflow-hidden rounded-2xl"
-              >
-                <img
-                  src={image.preview}
-                  alt={`Upload ${index + 1}`}
-                  className="h-36 w-full rounded-2xl object-cover"
-                />
-                {image.status === "processing" && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-white/70">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
-                  </div>
-                )}
-                <div
-                  className={`absolute left-2 bottom-2 rounded-full px-2 py-1 text-[10px] font-semibold ${
-                    image.status === "blurred"
-                      ? "bg-emerald-500/90 text-white"
-                      : image.status === "no-faces"
-                        ? "bg-amber-500/90 text-white"
-                        : image.status === "error"
-                          ? "bg-red-500/90 text-white"
-                          : "bg-slate-900/70 text-white"
-                  }`}
-                >
-                  {image.status === "processing" && "Processing..."}
-                  {image.status === "blurred" && "Faces blurred ✓"}
-                  {image.status === "no-faces" && "No faces detected"}
-                  {image.status === "error" && "Blur failed"}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeImage(index)}
-                  className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100"
-                >
-                  Remove
-                </button>
-                {image.status === "error" && (
-                  <button
-                    type="button"
-                    onClick={() => retryBlur(image.id)}
-                    className="absolute right-2 bottom-2 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 shadow"
-                  >
-                    Retry
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <div>
+          <label className="text-sm font-medium text-slate-700">Confirm Password</label>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className={inputClass("confirmPassword")}
+            placeholder="Confirm your password"
+          />
+          {errors.confirmPassword && (
+            <p className="mt-2 text-xs text-red-600">{errors.confirmPassword}</p>
+          )}
+        </div>
       </div>
     );
   };
@@ -900,7 +969,7 @@ const CreateProfile = () => {
                 Guided Profile Setup
               </p>
               <h1 className="mt-3 text-2xl font-semibold text-slate-900 md:text-3xl">
-                Step {step} of 5: {stepTitles[step - 1]}
+                Step {isGoogleSignup ? step + 1 : step} of 6: {stepTitles[step - 1]}
               </h1>
             </div>
             <div className="flex gap-2">
@@ -951,7 +1020,7 @@ const CreateProfile = () => {
                 <div />
               )}
 
-              {step < 5 ? (
+              {step < (isGoogleSignup ? 5 : 6) ? (
                 <button
                   type="button"
                   onClick={handleNext}

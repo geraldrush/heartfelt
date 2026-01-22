@@ -307,9 +307,7 @@ auth.get('/me', authMiddleware, async (c) => {
     return c.json({ error: 'User not found.' }, 404);
   }
 
-  const { password_hash, ...safeUser } = user;
-
-  return c.json({ user: safeUser });
+  return c.json({ user: userResponse(user) });
 });
 
 export default auth;

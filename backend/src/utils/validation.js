@@ -66,7 +66,15 @@ export const updateProfileSchema = z.object({
   seeking_age_min: z.number().int().min(18).max(100).optional(),
   seeking_age_max: z.number().int().min(18).max(100).optional(),
   seeking_races: z.array(z.string()).max(10).optional(),
-});
+}).refine(
+  (data) => {
+    if (data.seeking_age_min && data.seeking_age_max) {
+      return data.seeking_age_min <= data.seeking_age_max;
+    }
+    return true;
+  },
+  { message: 'Minimum age must be less than or equal to maximum age.' }
+);
 
 export const createStorySchema = z.object({
   story_text: z.string().min(50, { message: 'Story must be at least 50 characters.' }),
