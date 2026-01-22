@@ -93,6 +93,36 @@ const ConnectionStatusBanner = ({ connectionState, isPolling, connectionQuality,
   );
 };
 
+// Connection Quality Indicator Component
+const ConnectionQualityIndicator = ({ connectionState, connectionQuality }) => {
+  const getIndicatorConfig = () => {
+    if (connectionState === 'connected') {
+      return { color: 'bg-green-500', pulse: false, title: 'Connected' };
+    }
+    if (connectionState === 'connecting' || connectionState === 'idle_disconnected') {
+      return { color: 'bg-yellow-400', pulse: true, title: 'Reconnecting' };
+    }
+    if (connectionState === 'error' || connectionState === 'disconnected') {
+      return { color: 'bg-red-500', pulse: false, title: 'Disconnected' };
+    }
+    if (connectionState === 'polling') {
+      return { color: 'bg-orange-500', pulse: true, title: 'Limited connectivity' };
+    }
+    return { color: 'bg-gray-400', pulse: false, title: 'Unknown' };
+  };
+
+  const config = getIndicatorConfig();
+  
+  return (
+    <div className="relative" title={config.title}>
+      <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+      {config.pulse && (
+        <div className={`absolute inset-0 w-2.5 h-2.5 rounded-full ${config.color} animate-ping opacity-75`}></div>
+      )}
+    </div>
+  );
+};
+
 // Error Boundary Component
 class ChatErrorBoundary extends React.Component {
   constructor(props) {
@@ -551,7 +581,7 @@ const Chat = () => {
   };
 
   const getConnectionText = () => {
-    if (connectionState === 'connecting' || connectionState === 'idle_disconnected') return 'Reconnecting...';
+    if (connectionState === 'connecting') return 'Reconnecting...';
     if (connectionState === 'connected') return isOtherUserOnline ? 'Online' : 'Offline';
     if (connectionState === 'error' || connectionState === 'disconnected') return 'Disconnected';
     if (connectionState === 'polling') return 'Limited connectivity';
@@ -595,13 +625,17 @@ const Chat = () => {
               </div>
               
               <div className="flex flex-col gap-0.5">
-                <h2 className="text-lg font-bold text-gray-900">{otherUserName}</h2>
-                <div className="flex items-center gap-1">
-                  <div className={`w-2 h-2 rounded-full ${getConnectionColor()}`}></div>
-                  <p className="text-xs text-gray-500">
-                    {getConnectionText()}
-                  </p>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-gray-900">{otherUserName}</h2>
+                  <ConnectionQualityIndicator 
+                    connectionState={connectionState}
+                    connectionQuality={connectionQuality}
+                  />
                 </div>
+                <p className="text-xs text-gray-500">
+                  {connectionState === 'connected' && isOtherUserOnline ? 'Online' : 
+                   connectionState === 'connected' && !isOtherUserOnline ? 'Offline' : ''}
+                </p>
               </div>
             </div>
             <button

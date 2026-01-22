@@ -89,8 +89,17 @@ export const useWebSocket = ({
   const [connectionQuality, setConnectionQuality] = useState('unknown');
   const latencyHistory = useRef([]);
   const messageSentTimes = useRef(new Map());
+  const silentReconnectRef = useRef(false);
 
   const IDLE_THRESHOLD = 120000; // 2 minutes
+
+  // Connection states:
+  // - 'disconnected': Initial state or manually disconnected
+  // - 'connecting': Attempting to establish connection
+  // - 'connected': Active WebSocket connection
+  // - 'error': Connection failed with user-facing error
+  // - 'polling': Fallback to HTTP polling
+  // - 'idle_disconnected': Background disconnect due to inactivity (silent)
 
   const errorClassifier = useCallback((closeCode) => {
     if (closeCode >= 4001 && closeCode <= 4003) {
@@ -188,7 +197,9 @@ export const useWebSocket = ({
     }
   }, []);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (silentReconnect = false) => {
+    // Store silent reconnect flag for error handlers
+    silentReconnectRef.current = silentReconnect;
     // Prevent multiple simultaneous connection attempts
     if (connectionState === 'connecting') {
       console.log(`[WS-Client] ${new Date().toISOString()} Connection already in progress, skipping`);
@@ -206,7 +217,9 @@ export const useWebSocket = ({
     if (!connectionId) {
       console.log(`[WS-Client] ${new Date().toISOString()} Connection attempt failed: no connectionId provided`);
       setConnectionState('error');
-      onConnectionError?.({ type: 'validation', message: 'No connection ID provided', userAction: 'goBack', code: 0 });
+      if (!silentReconnectRef.current) {
+        onConnectionError?.({ type: 'validation', message: 'No connection ID provided', userAction: 'goBack', code: 0 });
+      }
       return;
     }
     
@@ -214,7 +227,9 @@ export const useWebSocket = ({
     if (!token) {
       console.log(`[WS-Client] ${new Date().toISOString()} Connection attempt failed: no token in localStorage`);
       setConnectionState('error');
-      onConnectionError?.({ type: 'auth', message: 'Authentication required. Please log in again.', userAction: 'login', code: 0 });
+      if (!silentReconnectRef.current) {
+        onConnectionError?.({ type: 'auth', message: 'Authentication required. Please log in again.', userAction: 'login', code: 0 });
+      }
       return;
     }
 
@@ -229,7 +244,9 @@ export const useWebSocket = ({
       } catch (error) {
         console.log('[WS-Client] Token refresh before WebSocket: failed', error.message);
         setConnectionState('error');
-        onConnectionError?.({ type: 'auth', message: 'Session expired. Please log in again.', userAction: 'login', code: 0 });
+        if (!silentReconnectRef.current) {
+          onConnectionError?.({ type: 'auth', message: 'Session expired. Please log in again.', userAction: 'login', code: 0 });
+        }
         return;
       }
     } else if (isTokenExpiringSoon(token, 5)) {
@@ -247,7 +264,9 @@ export const useWebSocket = ({
     const wsUrl = buildWebSocketUrl(connectionId, token);
     if (!wsUrl) {
       setConnectionState('error');
-      onConnectionError?.({ type: 'validation', message: 'Invalid connection parameters', userAction: 'retry', code: 0 });
+      if (!silentReconnectRef.current) {
+        onConnectionError?.({ type: 'validation', message: 'Invalid connection parameters', userAction: 'retry', code: 0 });
+      }
       return;
     }
 
@@ -255,7 +274,9 @@ export const useWebSocket = ({
     if (retryRef.current >= 3) { // Reduced from 5 to 3
       console.error(`[WS-Client] ${new Date().toISOString()} Max retries exceeded for connectionId: ${connectionId}`);
       setConnectionState('error');
-      onConnectionError?.({ type: 'retry', message: 'Max connection retries exceeded', userAction: 'retry', code: 0 });
+      if (!silentReconnectRef.current) {
+        onConnectionError?.({ type: 'retry', message: 'Max connection retries exceeded', userAction: 'retry', code: 0 });
+      }
       return;
     }
 
@@ -459,7 +480,9 @@ export const useWebSocket = ({
       if (event.code >= 4000 && event.code < 5000) {
         console.log(`[WS-Client] ${timestamp} Not retrying due to client error code: ${event.code}`);
         setConnectionState('error');
-        onConnectionError?.({ ...errorInfo, code: event.code });
+        if (!silentReconnectRef.current) {
+          onConnectionError?.({ ...errorInfo, code: event.code });
+        }
         return;
       }
       
@@ -486,7 +509,9 @@ export const useWebSocket = ({
         if (errorInfo.type === 'network' || errorInfo.type === 'unknown') {
           startPolling();
         } else {
-          onConnectionError?.({ type: 'retry', message: 'Max connection retries exceeded', userAction: 'retry', code: 0 });
+          if (!silentReconnectRef.current) {
+            onConnectionError?.({ type: 'retry', message: 'Max connection retries exceeded', userAction: 'retry', code: 0 });
+          }
         }
         return;
       }
@@ -512,7 +537,9 @@ export const useWebSocket = ({
       }
       
       setConnectionState('error');
-      onConnectionError?.({ type: 'network', message: 'WebSocket connection failed', userAction: 'retry', code: 0 });
+      if (!silentReconnectRef.current) {
+        onConnectionError?.({ type: 'network', message: 'WebSocket connection failed', userAction: 'retry', code: 0 });
+      }
       ws.close();
     };
   }, [connectionId, onDelivered, onMessage, onPresence, onRead, onTyping, sendPayload, onConnectionError, errorClassifier, startPolling]);
@@ -555,7 +582,7 @@ export const useWebSocket = ({
         if (connectionState === 'disconnected' || connectionState === 'error' || connectionState === 'idle_disconnected') {
           if (connectionState === 'idle_disconnected') {
             console.log('[WS-Client] Silent reconnect from idle');
-            connect();
+            connect(true);
           } else {
             console.log('[WS-Client] Reconnecting after page became visible');
             reconnect();
@@ -578,7 +605,7 @@ export const useWebSocket = ({
       console.log('[WS-Client] Network: online');
       if (connectionState === 'disconnected' || connectionState === 'error' || connectionState === 'idle_disconnected') {
         if (connectionState === 'idle_disconnected') {
-          connect();
+          connect(true);
         } else {
           connect();
         }
