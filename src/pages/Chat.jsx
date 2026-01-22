@@ -28,49 +28,38 @@ const ConnectionStatusBanner = ({ connectionState, isPolling, connectionQuality,
     }
   }, [connectionState]);
   
-  if (dismissed && connectionState === 'connected') return null;
+  // Don't show banner for connected state or when dismissed
+  if (dismissed || connectionState === 'connected') return null;
   
   const getStatusConfig = () => {
     switch (connectionState) {
-      case 'connected':
-        return {
-          bg: 'bg-gradient-to-r from-green-500 to-green-600',
-          icon: '✓',
-          text: `● Connected ${averageLatency > 0 ? `(~${averageLatency}ms)` : ''}`,
-          textColor: 'text-white',
-          showDismiss: true
-        };
       case 'connecting':
         return {
-          bg: 'bg-gradient-to-r from-yellow-500 to-yellow-600',
+          bg: 'bg-amber-500',
           icon: '⟳',
-          text: `Connecting... ${retryCount ? `Attempt ${retryCount}/5` : ''}`,
-          textColor: 'text-white',
+          text: `Connecting... ${retryCount ? `(${retryCount}/3)` : ''}`,
           animate: 'animate-pulse'
         };
       case 'polling':
         return {
-          bg: 'bg-gradient-to-r from-orange-500 to-orange-600',
+          bg: 'bg-orange-500',
           icon: '↻',
-          text: 'Limited connectivity - using fallback mode',
-          textColor: 'text-white',
+          text: 'Limited connectivity',
           showRetry: true,
           animate: 'animate-spin'
         };
       case 'disconnected':
         return {
-          bg: 'bg-gradient-to-r from-gray-500 to-gray-600',
+          bg: 'bg-gray-500',
           icon: '○',
           text: 'Disconnected',
-          textColor: 'text-white',
           showRetry: true
         };
       case 'error':
         return {
-          bg: 'bg-gradient-to-r from-red-500 to-red-600',
+          bg: 'bg-red-500',
           icon: '⚠',
           text: 'Connection Error',
-          textColor: 'text-white',
           showRetry: true
         };
       default:
@@ -83,33 +72,23 @@ const ConnectionStatusBanner = ({ connectionState, isPolling, connectionQuality,
   
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20 }}
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className={`${config.bg} px-4 py-2 mx-6 mt-4 rounded-xl shadow-lg flex items-center justify-between`}
+      exit={{ opacity: 0, y: -10 }}
+      className={`${config.bg} px-3 py-1.5 mx-4 mt-2 rounded-lg shadow-sm flex items-center justify-between text-white`}
     >
       <div className="flex items-center gap-2">
-        <span className={`${config.animate || ''} text-lg`}>{config.icon}</span>
-        <span className={`${config.textColor} text-sm font-medium`}>{config.text}</span>
+        <span className={`${config.animate || ''} text-sm`}>{config.icon}</span>
+        <span className="text-xs font-medium">{config.text}</span>
       </div>
-      <div className="flex items-center gap-2">
-        {config.showRetry && (
-          <button
-            onClick={onReconnect}
-            className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition"
-          >
-            {isPolling ? 'Retry WebSocket' : 'Reconnect'}
-          </button>
-        )}
-        {config.showDismiss && (
-          <button
-            onClick={() => setDismissed(true)}
-            className="text-white/70 hover:text-white text-xs"
-          >
-            ✕
-          </button>
-        )}
-      </div>
+      {config.showRetry && (
+        <button
+          onClick={onReconnect}
+          className="px-2 py-0.5 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition"
+        >
+          Retry
+        </button>
+      )}
     </motion.div>
   );
 };
@@ -563,213 +542,213 @@ const Chat = () => {
 
   return (
     <ChatErrorBoundary>
-      <div className="flex min-h-screen flex-col bg-gradient-to-br from-rose-50 via-pink-50 to-peach-100 pb-24">
-        {/* Rest of component content */}
-      <div className="border-b bg-white/90 px-6 py-4 shadow">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-slate-500">Chatting with</p>
-            <h2 className="text-2xl font-semibold text-slate-900">{otherUserName}</h2>
-            <p className="text-xs text-slate-500">
-              {isOtherUserOnline ? 'Online' : 'Offline'}
-            </p>
-          </div>
-          <motion.button
-            type="button"
-            onClick={() => setShowTokenRequest((prev) => !prev)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-xs font-semibold text-white shadow transition hover:from-rose-500 hover:to-pink-500"
-          >
-            {showTokenRequest ? 'Close Token Request' : 'Request Tokens'}
-          </motion.button>
-        </div>
-      </div>
-
-      <ConnectionStatusBanner 
-        connectionState={connectionState}
-        isPolling={isPolling}
-        connectionQuality={connectionQuality}
-        averageLatency={averageLatency}
-        retryCount={0}
-        onReconnect={reconnect}
-      />
-
-      {error && (
-        <div className="mx-6 mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {connectionError && typeof connectionError === 'object' && (
-        <div className="mx-6 mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
+      <div className="flex min-h-screen flex-col bg-gray-50">
+        {/* Fixed Header */}
+        <div className="sticky top-0 z-10 border-b bg-white/95 backdrop-blur-sm px-4 py-3 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold">
-                {connectionError.type === 'auth' ? 'Authentication Error' :
-                 connectionError.type === 'permission' ? 'Access Denied' :
-                 connectionError.type === 'network' ? 'Network Issue' :
-                 connectionError.type === 'server' ? 'Server Error' :
-                 'Connection Error'}
-              </p>
-              <p>{connectionError.message}</p>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => window.history.back()}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">{otherUserName}</h2>
+                <p className="text-xs text-gray-500">
+                  {isOtherUserOnline ? '• Online' : 'Offline'}
+                </p>
+              </div>
             </div>
-            <div className="flex gap-2">
-              {connectionError.userAction === 'login' && (
-                <button 
-                  onClick={() => window.location.href = '/login'}
-                  className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-                >
-                  Log In Again
-                </button>
-              )}
-              {connectionError.userAction === 'goBack' && (
-                <button 
-                  onClick={() => window.history.back()}
-                  className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-                >
-                  Go Back
-                </button>
-              )}
-              {connectionError.userAction === 'retry' && (
-                <button 
-                  onClick={reconnect}
-                  className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-                >
-                  Retry
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {connectionState === 'error' && !connectionError && (
-        <div className="mx-6 mt-4 rounded-xl bg-yellow-100 px-4 py-3 text-sm text-yellow-700">
-          <div className="flex items-center justify-between">
-            <span>Unable to connect to chat. Please check your connection.</span>
-            <button 
-              onClick={reconnect}
-              className="ml-2 px-3 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700"
+            <button
+              type="button"
+              onClick={() => setShowTokenRequest((prev) => !prev)}
+              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition"
             >
-              Retry
+              {showTokenRequest ? 'Close' : 'Request'}
             </button>
           </div>
         </div>
-      )}
 
-      {showTokenRequest && (
-        <div className="mx-6 mt-4 rounded-xl bg-white p-4 shadow">
-          <p className="text-sm font-semibold text-slate-900">Request Tokens</p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <input
-              type="number"
-              min="1"
-              value={requestAmount}
-              onChange={(event) => setRequestAmount(event.target.value)}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none"
-              placeholder="Amount"
-            />
-            <input
-              type="text"
-              value={requestReason}
-              onChange={(event) => setRequestReason(event.target.value)}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none"
-              placeholder="Reason (optional)"
-            />
+        <ConnectionStatusBanner 
+          connectionState={connectionState}
+          isPolling={isPolling}
+          connectionQuality={connectionQuality}
+          averageLatency={averageLatency}
+          retryCount={0}
+          onReconnect={reconnect}
+        />
+
+        {error && (
+          <div className="mx-4 mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 border border-red-200">
+            {error}
           </div>
-          <motion.button
-            type="button"
-            onClick={handleRequestTokens}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="mt-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:from-rose-500 hover:to-pink-500"
-          >
-            Send Request
-          </motion.button>
+        )}
 
-          {sortedTokenRequests.length > 0 && (
-            <div className="mt-4 space-y-2 text-xs text-slate-500">
-              {sortedTokenRequests.map((req) => (
-                <p key={req.id}>Requested {req.amount} tokens · {req.status}</p>
-              ))}
+        {connectionError && typeof connectionError === 'object' && (
+          <div className="mx-4 mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 border border-red-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">
+                  {connectionError.type === 'auth' ? 'Authentication Error' :
+                   connectionError.type === 'permission' ? 'Access Denied' :
+                   connectionError.type === 'network' ? 'Network Issue' :
+                   connectionError.type === 'server' ? 'Server Error' :
+                   'Connection Error'}
+                </p>
+                <p className="text-xs">{connectionError.message}</p>
+              </div>
+              <div className="flex gap-1">
+                {connectionError.userAction === 'login' && (
+                  <button 
+                    onClick={() => window.location.href = '/login'}
+                    className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                  >
+                    Log In
+                  </button>
+                )}
+                {connectionError.userAction === 'goBack' && (
+                  <button 
+                    onClick={() => window.history.back()}
+                    className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                  >
+                    Go Back
+                  </button>
+                )}
+                {connectionError.userAction === 'retry' && (
+                  <button 
+                    onClick={reconnect}
+                    className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showTokenRequest && (
+          <div className="mx-4 mt-2 rounded-lg bg-white p-3 shadow-sm border">
+            <p className="text-sm font-medium text-gray-900 mb-2">Request Tokens</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input
+                type="number"
+                min="1"
+                value={requestAmount}
+                onChange={(event) => setRequestAmount(event.target.value)}
+                className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                placeholder="Amount"
+              />
+              <input
+                type="text"
+                value={requestReason}
+                onChange={(event) => setRequestReason(event.target.value)}
+                className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                placeholder="Reason (optional)"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleRequestTokens}
+              className="mt-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition"
+            >
+              Send Request
+            </button>
+
+            {sortedTokenRequests.length > 0 && (
+              <div className="mt-3 space-y-1 text-xs text-gray-500">
+                {sortedTokenRequests.map((req) => (
+                  <p key={req.id}>Requested {req.amount} tokens • {req.status}</p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Messages Area */}
+        <div
+          ref={listRef}
+          className="flex-1 overflow-y-auto px-4 py-3"
+        >
+          {loading && <LoadingSpinner label="Loading messages..." className="justify-start" />}
+
+          <div ref={topSentinelRef} className="h-2" />
+          {!loading && messages.length === 0 && (
+            <div className="mt-8 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 text-gray-400">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <h3 className="text-sm font-medium text-gray-900 mb-1">No Messages</h3>
+              <p className="text-xs text-gray-500">Send a message to start the conversation!</p>
             </div>
           )}
-        </div>
-      )}
-
-      <div
-        ref={listRef}
-        className="flex-1 overflow-y-auto px-6 py-4"
-      >
-        {loading && <LoadingSpinner label="Loading messages..." className="justify-start" />}
-
-        <div ref={topSentinelRef} className="h-4" />
-        {!loading && messages.length === 0 && (
-          <div className="mt-6">
-            <EmptyState
-              icon={emptyIcon}
-              title="No Messages"
-              description="Send a message to start the conversation!"
-            />
-          </div>
-        )}
-        <div className="space-y-3">
-          {messages.map((msg) => {
-            const isSender = msg.sender_id === user?.id;
-            return (
-              <div
-                key={msg.id}
-                className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}
-              >
+          
+          <div className="space-y-2">
+            {messages.map((msg) => {
+              const isSender = msg.sender_id === user?.id;
+              return (
                 <div
-                  ref={(node) => {
-                    if (!node) {
-                      messageRefs.current.delete(msg.id);
-                      return;
-                    }
-                    messageRefs.current.set(msg.id, node);
-                  }}
-                  data-message-id={msg.id}
-                  className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm shadow ${
-                    isSender ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white' : 'bg-white text-slate-700'
-                  }`}
+                  key={msg.id}
+                  className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}
                 >
-                  <p>{msg.content}</p>
-                  <div className="mt-1 flex items-center justify-end gap-2 text-xs text-white/70">
-                    <span>{new Date(msg.created_at).toLocaleTimeString()}</span>
-                    {isSender && <span>{statusIcon(msg.status)}</span>}
+                  <div
+                    ref={(node) => {
+                      if (!node) {
+                        messageRefs.current.delete(msg.id);
+                        return;
+                      }
+                      messageRefs.current.set(msg.id, node);
+                    }}
+                    data-message-id={msg.id}
+                    className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+                      isSender 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-white text-gray-800 border border-gray-200'
+                    }`}
+                  >
+                    <p className="leading-relaxed">{msg.content}</p>
+                    <div className={`mt-1 flex items-center justify-end gap-1 text-xs ${
+                      isSender ? 'text-blue-100' : 'text-gray-500'
+                    }`}>
+                      <span>{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                      {isSender && <span>{statusIcon(msg.status)}</span>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {isOtherUserTyping && (
+            <p className="mt-3 text-xs text-gray-500 px-1">{otherUserName} is typing...</p>
+          )}
         </div>
 
-        {isOtherUserTyping && (
-          <p className="mt-4 text-xs text-slate-500">{otherUserName} is typing...</p>
-        )}
-      </div>
-
-      <div className="border-t bg-white px-6 py-4">
-        <div className="flex gap-3">
-          <input
-            value={inputText}
-            onChange={(event) => handleTyping(event.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none"
-          />
-          <motion.button
-            type="button"
-            onClick={handleSend}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-3 text-sm font-semibold text-white shadow transition hover:from-rose-500 hover:to-pink-500"
-          >
-            Send
-          </motion.button>
+        {/* Fixed Input Area */}
+        <div className="sticky bottom-0 border-t bg-white/95 backdrop-blur-sm px-4 py-3">
+          <div className="flex gap-2">
+            <input
+              value={inputText}
+              onChange={(event) => handleTyping(event.target.value)}
+              placeholder="Type a message..."
+              className="flex-1 rounded-full border border-gray-200 px-4 py-2.5 text-sm focus:border-blue-400 focus:outline-none bg-gray-50"
+              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            />
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={!inputText.trim()}
+              className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white text-sm font-medium rounded-full transition"
+            >
+              Send
+            </button>
+          </div>
         </div>
-      </div>
       </div>
     </ChatErrorBoundary>
   );

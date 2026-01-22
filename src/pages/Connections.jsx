@@ -59,7 +59,6 @@ const Connections = () => {
       return;
     }
 
-    // Confirmation dialog
     const confirmed = window.confirm(`Send ${numericAmount} tokens${message ? ` with message: "${message}"` : ''}?`);
     if (!confirmed) return;
 
@@ -79,140 +78,116 @@ const Connections = () => {
     }
   };
 
-  const emptyIcon = (
-    <svg
-      viewBox="0 0 64 64"
-      className="h-12 w-12 text-rose-400"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20 22c-5 0-9 4-9 9 0 6 6 12 14 18l7 5 7-5c8-6 14-12 14-18 0-5-4-9-9-9-4 0-7 2-9 5-2-3-5-5-9-5z" />
-    </svg>
-  );
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-peach-100 p-6 pb-24">
-      <div className="mx-auto max-w-4xl">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-h-screen bg-gray-50 p-4 pb-20">
+      <div className="mx-auto max-w-2xl">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Your Connections</h1>
-            <p className="mt-1 text-sm text-slate-600">
+            <h1 className="text-xl font-semibold text-gray-900">Connections</h1>
+            <p className="text-xs text-gray-500">
               {connections.length} connection{connections.length === 1 ? '' : 's'}
             </p>
           </div>
-          <div className="rounded-xl bg-white/90 px-4 py-2 text-sm text-slate-600 shadow">
-            Balance: {balance ?? '...'} tokens
+          <div className="bg-white px-3 py-1.5 rounded-lg shadow-sm border text-xs text-gray-600">
+            {balance ?? '...'} tokens
           </div>
         </div>
 
         {loading && (
-          <div className="mt-6 rounded-2xl bg-white p-6 shadow">
+          <div className="bg-white rounded-lg p-4 shadow-sm border">
             <LoadingSpinner label="Loading connections..." />
           </div>
         )}
 
         {!loading && connections.length === 0 && (
-          <div className="mt-8">
-            <EmptyState
-              icon={emptyIcon}
-              title="No Connections Yet"
-              description="Start swiping to find your match!"
-              actionButton={(
-                <MotionLink
-                  to="/stories"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-5 py-2 text-sm font-semibold text-white shadow transition hover:from-rose-500 hover:to-pink-500"
-                >
-                  Explore Stories
-                </MotionLink>
-              )}
-            />
+          <div className="text-center py-12">
+            <div className="w-12 h-12 mx-auto mb-3 text-gray-400">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-1">No Connections Yet</h3>
+            <p className="text-xs text-gray-500 mb-4">Start swiping to find your match!</p>
+            <Link
+              to="/stories"
+              className="inline-block px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition"
+            >
+              Explore Stories
+            </Link>
           </div>
         )}
 
-        <div className="mt-6 space-y-4">
-          <div className="rounded-2xl bg-white p-6 shadow">
-            <h2 className="text-lg font-semibold text-slate-900">Chats</h2>
-            <p className="mt-1 text-xs text-slate-500">Recent conversations</p>
-            <div className="mt-4">
-              <ChatList />
-            </div>
+        <div className="space-y-3">
+          <div className="bg-white rounded-lg p-4 shadow-sm border">
+            <h2 className="text-sm font-medium text-gray-900 mb-1">Recent Chats</h2>
+            <p className="text-xs text-gray-500 mb-3">Your conversations</p>
+            <ChatList />
           </div>
+          
           {connections.map((connection) => (
-            <div key={connection.id} className="rounded-2xl bg-white p-6 shadow">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div key={connection.id} className="bg-white rounded-lg p-4 shadow-sm border">
+              <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-lg font-semibold text-slate-900">
+                  <p className="text-sm font-medium text-gray-900">
                     {connection.full_name}
                   </p>
-                  <p className="text-xs text-slate-500">
-                    {connection.gender}, {connection.age} years old
+                  <p className="text-xs text-gray-500">
+                    {connection.gender}, {connection.age} • {connection.location_city}
                   </p>
-                  <p className="text-xs text-slate-500">{connection.location_city}</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-gray-400">
                     Connected {new Date(connection.created_at).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <MotionLink
+                  <Link
                     to={`/chat?connectionId=${connection.id}&userId=${connection.other_user_id}`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                    className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition"
                   >
                     Message
-                  </MotionLink>
-                  <motion.button
+                  </Link>
+                  <button
                     type="button"
                     onClick={() =>
                       setActiveConnectionId((prev) =>
                         prev === connection.id ? null : connection.id
                       )
                     }
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:from-rose-500 hover:to-pink-500"
+                    className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition"
                   >
                     Send Tokens
-                  </motion.button>
+                  </button>
                 </div>
               </div>
 
               {activeConnectionId === connection.id && (
                 <form
                   onSubmit={(event) => handleTransfer(event, connection.other_user_id)}
-                  className="mt-4 space-y-3"
+                  className="space-y-2 pt-3 border-t border-gray-100"
                 >
                   <input
                     type="number"
                     min="1"
                     value={amount}
                     onChange={(event) => setAmount(event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
                     placeholder="Amount"
                   />
                   <input
                     type="text"
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-rose-400 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
                     placeholder="Message (optional)"
                   />
                   {status && (
-                    <p className="text-xs text-slate-500">{status}</p>
+                    <p className="text-xs text-gray-500">{status}</p>
                   )}
-                  <motion.button
+                  <button
                     type="submit"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                    className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition"
                   >
                     Confirm Transfer
-                  </motion.button>
+                  </button>
                 </form>
               )}
             </div>
