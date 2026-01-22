@@ -388,8 +388,15 @@ export const useWebSocket = ({
       }
       
       // Skip retry logic ONLY for manual closes or normal closes (NOT 1006)
-      if (isManualCloseRef.current || event.code === 1000) {
-        console.log(`[WS-Client] ${timestamp} Manual or normal close (code=${event.code}), not retrying`);
+      // Use strict comparison and explicit checks
+      if (isManualCloseRef.current) {
+        console.log(`[WS-Client] ${timestamp} Manual close detected, not retrying`);
+        setConnectionState('disconnected');
+        return;
+      }
+      
+      if (event.code === 1000) {
+        console.log(`[WS-Client] ${timestamp} Normal close (code=1000), not retrying`);
         setConnectionState('disconnected');
         return;
       }
