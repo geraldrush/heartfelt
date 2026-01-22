@@ -77,7 +77,7 @@ export const connectionRequestSchema = z.object({
 });
 
 export const connectionActionSchema = z.object({
-  request_id: z.string().uuid(),
+  request_id: z.string().min(1, { message: 'Request ID is required.' }),
 });
 
 export const paymentInitiateSchema = z.object({
