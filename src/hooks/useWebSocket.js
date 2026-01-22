@@ -77,6 +77,8 @@ export const useWebSocket = ({
   const lastPongTime = useRef(Date.now());
   const lastActivityTime = useRef(Date.now());
   const visibilityChangeHandler = useRef(null);
+  const connectionAttempts = useRef(0);
+  const connectionStartTime = useRef(null);
   const connectionStartTime = useRef(null);
   const networkListeners = useRef({ online: null, offline: null });
   const isManualCloseRef = useRef(false);
@@ -259,6 +261,8 @@ export const useWebSocket = ({
     const maskedToken = token.length > 8 ? `${token.slice(0, 4)}...${token.slice(-4)}` : '****';
     const maskedUrl = wsUrl.replace(/token=[^&]+/, `token=${maskedToken}`);
     
+    connectionAttempts.current++;
+    connectionStartTime.current = Date.now();
     connectionAttempts.current++;
     connectionStartTime.current = Date.now();
     console.log(`[WS-Client] ${new Date().toISOString()} Connection attempt: ${connectionAttempts.current}`);
