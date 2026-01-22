@@ -601,6 +601,16 @@ export async function getReferenceData(db) {
 }
 
 export async function updateUserProfile(db, userId, profileData) {
+  const {
+    age, gender, nationality, religion, race, education,
+    has_kids, num_kids, smoker, drinks_alcohol,
+    location_city, location_province,
+    seeking_gender, seeking_age_min, seeking_age_max, seeking_races
+  } = profileData;
+
+  // Serialize seeking_races array to JSON string
+  const seekingRacesJson = seeking_races ? JSON.stringify(seeking_races) : null;
+
   await db
     .prepare(
       `UPDATE users SET
@@ -616,24 +626,44 @@ export async function updateUserProfile(db, userId, profileData) {
         drinks_alcohol = ?,
         location_city = ?,
         location_province = ?,
+        seeking_gender = ?,
+        seeking_age_min = ?,
+        seeking_age_max = ?,
+        seeking_races = ?,
         profile_complete = 1,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?`
     )
     .bind(
-      profileData.age,
-      profileData.gender,
-      profileData.nationality,
-      profileData.religion,
-      profileData.race,
-      profileData.education,
-      profileData.has_kids ? 1 : 0,
-      profileData.num_kids,
-      profileData.smoker ? 1 : 0,
-      profileData.drinks_alcohol ? 1 : 0,
-      profileData.location_city,
-      profileData.location_province,
+      age,
+      gender,
+      nationality,
+      religion,
+      race,
+      education,
+      has_kids ? 1 : 0,
+      num_kids,
+      smoker ? 1 : 0,
+      drinks_alcohol ? 1 : 0,
+      location_city,
+      location_province,
+      seeking_gender || null,
+      seeking_age_min ?? null,
+      seeking_age_max ?? null,
+      seekingRacesJson,
       userId
     )
     .run();
+}
+
+export async function getUserPreferences(db, userId) {
+  const user = await getUserById(db, userId);
+  if (!user) return null;
+
+  return {
+    seeking_gender: user.seeking_gender,
+    seeking_age_min: user.seeking_age_min,
+    seeking_age_max: user.seeking_age_max,
+    seeking_races: user.seeking_races ? JSON.parse(user.seeking_races) : [],
+  };
 }

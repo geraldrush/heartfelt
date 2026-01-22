@@ -14,6 +14,7 @@ const stepTitles = [
   "Lifestyle & Family",
   "Location",
   "Your Story",
+  "Looking For",
 ];
 
 const MAX_IMAGES = 5;
@@ -38,6 +39,10 @@ const CreateProfile = () => {
   const [locationProvince, setLocationProvince] = useState("");
   const [storyText, setStoryText] = useState("");
   const [images, setImages] = useState([]);
+  const [seekingGender, setSeekingGender] = useState('');
+  const [seekingAgeMin, setSeekingAgeMin] = useState('');
+  const [seekingAgeMax, setSeekingAgeMax] = useState('');
+  const [seekingRaces, setSeekingRaces] = useState([]);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -167,11 +172,34 @@ const CreateProfile = () => {
     return nextErrors;
   };
 
+  const validateStep5 = () => {
+    const nextErrors = {};
+    if (!seekingGender) {
+      nextErrors.seeking_gender = "Please select who you're looking for.";
+    }
+    const minAge = Number(seekingAgeMin);
+    const maxAge = Number(seekingAgeMax);
+    if (!seekingAgeMin || minAge < 18) {
+      nextErrors.seeking_age_min = "Please enter minimum age (18+).";
+    }
+    if (!seekingAgeMax || maxAge < 18) {
+      nextErrors.seeking_age_max = "Please enter maximum age (18+).";
+    }
+    if (minAge > maxAge) {
+      nextErrors.seeking_age_max = "Maximum age must be greater than minimum.";
+    }
+    if (seekingRaces.length === 0) {
+      nextErrors.seeking_races = "Please select at least one race preference.";
+    }
+    return nextErrors;
+  };
+
   const validateCurrentStep = () => {
     if (step === 1) return validateStep1();
     if (step === 2) return validateStep2();
     if (step === 3) return validateStep3();
-    return validateStep4();
+    if (step === 4) return validateStep4();
+    return validateStep5();
   };
 
   const handleNext = () => {
@@ -181,7 +209,7 @@ const CreateProfile = () => {
       return;
     }
     setErrors({});
-    setStep((prev) => Math.min(prev + 1, 4));
+    setStep((prev) => Math.min(prev + 1, 5));
   };
 
   const handleBack = () => {
@@ -385,6 +413,10 @@ const CreateProfile = () => {
         drinks_alcohol: drinksAlcohol,
         location_city: locationCity,
         location_province: locationProvince,
+        seeking_gender: seekingGender,
+        seeking_age_min: Number(seekingAgeMin),
+        seeking_age_max: Number(seekingAgeMax),
+        seeking_races: seekingRaces,
       };
 
       const profileResponse = await updateProfile(profilePayload);
@@ -668,6 +700,99 @@ const CreateProfile = () => {
       );
     }
 
+    if (step === 5) {
+      return (
+        <div className="space-y-6">
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              I'm looking for
+            </label>
+            <select
+              value={seekingGender}
+              onChange={(e) => setSeekingGender(e.target.value)}
+              className={inputClass("seeking_gender")}
+            >
+              <option value="">Select gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="non-binary">Non-binary</option>
+              <option value="other">Other</option>
+              <option value="any">Any</option>
+            </select>
+            {errors.seeking_gender && (
+              <p className="mt-2 text-xs text-red-600">{errors.seeking_gender}</p>
+            )}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Age range (minimum)
+              </label>
+              <input
+                type="number"
+                min="18"
+                value={seekingAgeMin}
+                onChange={(e) => setSeekingAgeMin(e.target.value)}
+                className={inputClass("seeking_age_min")}
+                placeholder="18"
+              />
+              {errors.seeking_age_min && (
+                <p className="mt-2 text-xs text-red-600">{errors.seeking_age_min}</p>
+              )}
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Age range (maximum)
+              </label>
+              <input
+                type="number"
+                min="18"
+                value={seekingAgeMax}
+                onChange={(e) => setSeekingAgeMax(e.target.value)}
+                className={inputClass("seeking_age_max")}
+                placeholder="65"
+              />
+              {errors.seeking_age_max && (
+                <p className="mt-2 text-xs text-red-600">{errors.seeking_age_max}</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              Race preferences (select all that apply)
+            </label>
+            <div className="mt-3 space-y-2">
+              {(referenceData?.races || []).map((raceOption) => (
+                <label
+                  key={raceOption.id}
+                  className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={seekingRaces.includes(raceOption.name)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSeekingRaces([...seekingRaces, raceOption.name]);
+                      } else {
+                        setSeekingRaces(seekingRaces.filter(r => r !== raceOption.name));
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm text-slate-700">{raceOption.name}</span>
+                </label>
+              ))}
+            </div>
+            {errors.seeking_races && (
+              <p className="mt-2 text-xs text-red-600">{errors.seeking_races}</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <div>
@@ -775,7 +900,7 @@ const CreateProfile = () => {
                 Guided Profile Setup
               </p>
               <h1 className="mt-3 text-2xl font-semibold text-slate-900 md:text-3xl">
-                Step {step} of 4: {stepTitles[step - 1]}
+                Step {step} of 5: {stepTitles[step - 1]}
               </h1>
             </div>
             <div className="flex gap-2">
@@ -826,7 +951,7 @@ const CreateProfile = () => {
                 <div />
               )}
 
-              {step < 4 ? (
+              {step < 5 ? (
                 <button
                   type="button"
                   onClick={handleNext}

@@ -165,6 +165,11 @@ export const getStoryFeed = (filters = {}) => {
   const query = params.toString();
   return apiClient.get(`/api/stories/feed${query ? `?${query}` : ''}`);
 };
+
+export const getUserPreferences = async () => {
+  return apiClient.get('/api/stories/preferences');
+};
+
 export const sendConnectionRequest = (data) =>
   apiClient.post('/api/connections/request', data);
 export const acceptConnectionRequest = (requestId) =>

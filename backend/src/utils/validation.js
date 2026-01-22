@@ -32,6 +32,21 @@ export const googleAuthSchema = z.object({
   credential: z.string().min(1, { message: 'Google credential is required.' }),
 });
 
+export const updatePreferencesSchema = z.object({
+  seeking_gender: z.enum(['male', 'female', 'non-binary', 'other', 'any']).optional(),
+  seeking_age_min: z.number().int().min(18).max(100).optional(),
+  seeking_age_max: z.number().int().min(18).max(100).optional(),
+  seeking_races: z.array(z.string()).max(10).optional(), // Array of race names
+}).refine(
+  (data) => {
+    if (data.seeking_age_min && data.seeking_age_max) {
+      return data.seeking_age_min <= data.seeking_age_max;
+    }
+    return true;
+  },
+  { message: 'Minimum age must be less than or equal to maximum age.' }
+);
+
 export const updateProfileSchema = z.object({
   age: z.number().int().min(18),
   gender: z.enum(['male', 'female', 'non-binary', 'other']),
@@ -47,6 +62,10 @@ export const updateProfileSchema = z.object({
   drinks_alcohol: z.boolean(),
   location_city: z.string().min(1),
   location_province: z.string().min(1),
+  seeking_gender: z.enum(['male', 'female', 'non-binary', 'other', 'any']).optional(),
+  seeking_age_min: z.number().int().min(18).max(100).optional(),
+  seeking_age_max: z.number().int().min(18).max(100).optional(),
+  seeking_races: z.array(z.string()).max(10).optional(),
 });
 
 export const createStorySchema = z.object({

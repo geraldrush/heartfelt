@@ -11,6 +11,7 @@ import {
   getReferenceData,
   getUserById,
   updateUserProfile,
+  getUserPreferences,
 } from '../utils/db.js';
 
 const stories = new Hono();
@@ -151,6 +152,18 @@ stories.post('/create-story', authMiddleware, async (c) => {
   return c.json({ story_id: storyId, message: 'Story created successfully' });
 });
 
+stories.get('/preferences', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+  const preferences = await getUserPreferences(db, userId);
+  
+  if (!preferences) {
+    return c.json({ error: 'User not found.' }, 404);
+  }
+  
+  return c.json({ preferences });
+});
+
 stories.put('/update-profile', authMiddleware, async (c) => {
   // CSRF protection for profile updates
   const origin = c.req.header('Origin');
@@ -190,6 +203,11 @@ stories.put('/update-profile', authMiddleware, async (c) => {
   }
 
   const { password_hash, ...safeUser } = user;
+
+  // Parse seeking_races JSON if present
+  if (safeUser.seeking_races) {
+    safeUser.seeking_races = JSON.parse(safeUser.seeking_races);
+  }
 
   return c.json({ user: safeUser });
 });

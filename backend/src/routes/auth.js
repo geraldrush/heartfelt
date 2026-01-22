@@ -34,6 +34,10 @@ function userResponse(user) {
     full_name: user.full_name,
     token_balance: user.token_balance,
     profile_complete: Boolean(user.profile_complete),
+    seeking_gender: user.seeking_gender,
+    seeking_age_min: user.seeking_age_min,
+    seeking_age_max: user.seeking_age_max,
+    seeking_races: user.seeking_races ? JSON.parse(user.seeking_races) : [],
   };
 }
 

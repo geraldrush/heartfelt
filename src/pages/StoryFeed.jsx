@@ -7,6 +7,7 @@ import {
   getReferenceData,
   getStoryFeed,
   getTokenBalance,
+  getUserPreferences,
   sendConnectionRequest,
 } from '../utils/api.js';
 import CardStack from '../components/animations/CardStack.jsx';
@@ -69,6 +70,7 @@ const StoryFeed = () => {
   const [maxDistance, setMaxDistance] = useState(100);
   const [filtersDraft, setFiltersDraft] = useState({});
   const [filtersApplied, setFiltersApplied] = useState({});
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
   const sentinelRef = useRef(null);
 
@@ -88,6 +90,38 @@ const StoryFeed = () => {
     });
     return entries.length;
   }, [filtersApplied]);
+
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const { preferences } = await getUserPreferences();
+        
+        // Only auto-populate if user hasn't manually set filters
+        if (!preferencesLoaded && preferences) {
+          if (preferences.seeking_gender && preferences.seeking_gender !== 'any') {
+            setGender(preferences.seeking_gender);
+          }
+          if (preferences.seeking_age_min) {
+            setAgeMin(String(preferences.seeking_age_min));
+          }
+          if (preferences.seeking_age_max) {
+            setAgeMax(String(preferences.seeking_age_max));
+          }
+          if (preferences.seeking_races && preferences.seeking_races.length > 0) {
+            // For now, set the first race preference
+            // Future enhancement: support multiple race filters
+            setRace(preferences.seeking_races[0]);
+          }
+          setPreferencesLoaded(true);
+        }
+      } catch (err) {
+        console.error('Failed to load preferences:', err);
+        // Don't show error to user, just skip auto-population
+      }
+    };
+    
+    loadPreferences();
+  }, []); // Run once on mount
 
   useEffect(() => {
     const fetchMeta = async () => {
