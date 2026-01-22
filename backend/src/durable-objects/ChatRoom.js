@@ -5,7 +5,6 @@ import {
   verifyUserInConnection,
 } from '../utils/db.js';
 import { getAllowedOrigins, isOriginAllowed, isRefererAllowed } from '../utils/cors.js';
-import { sanitizeMessage } from '../utils/sanitize.js';
 
 // Server-side diagnostics helper
 const logRequestDiagnostics = (request, connectionId, timestamp) => {
@@ -308,13 +307,6 @@ export class ChatRoom {
           return; // Silently ignore duplicate
         }
         
-        // Sanitize message content to prevent XSS
-        const sanitizedContent = sanitizeMessage(payload.content);
-        if (!sanitizedContent.trim()) {
-          this.sendToUser(senderId, { type: 'error', message: 'Message content is invalid.' });
-          return;
-        }
-        
         const messageId = crypto.randomUUID();
         const createdAt = new Date().toISOString();
         
@@ -332,7 +324,7 @@ export class ChatRoom {
           id: messageId,
           connection_id: connectionId,
           sender_id: senderId,
-          content: sanitizedContent,
+          content: payload.content.trim(),
           status: 'sent',
           created_at: createdAt,
         });
@@ -342,7 +334,7 @@ export class ChatRoom {
           id: messageId,
           connection_id: connectionId,
           sender_id: senderId,
-          content: sanitizedContent,
+          content: payload.content.trim(),
           status: 'sent',
           created_at: createdAt,
         };

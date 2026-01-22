@@ -13,10 +13,10 @@ function cleanupExpiredEntries() {
   lastCleanup = now;
 }
 
-function createRateLimiter({ windowMs, max, message }) {
+function createRateLimiter({ windowMs, max, message, keyPrefix }) {
   return async (c, next) => {
     const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
-    const key = `rate_limit:${ip}`;
+    const key = `rate_limit:${keyPrefix}:${ip}`;
     const now = Date.now();
     const resetTime = now + windowMs;
     
@@ -90,23 +90,27 @@ function createRateLimiter({ windowMs, max, message }) {
 export const authRateLimit = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5,
-  message: 'Too many authentication attempts. Please try again later.'
+  message: 'Too many authentication attempts. Please try again later.',
+  keyPrefix: 'auth'
 });
 
 export const apiRateLimit = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
   max: 100,
-  message: 'Too many API requests. Please try again later.'
+  message: 'Too many API requests. Please try again later.',
+  keyPrefix: 'api'
 });
 
 export const chatRateLimit = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
   max: 60,
-  message: 'Too many chat requests. Please slow down.'
+  message: 'Too many chat requests. Please slow down.',
+  keyPrefix: 'chat'
 });
 
 export const connectionRequestRateLimit = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10,
-  message: 'Too many connection requests. Please try again later.'
+  message: 'Too many connection requests. Please try again later.',
+  keyPrefix: 'connection'
 });
