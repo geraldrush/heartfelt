@@ -552,7 +552,7 @@ const Chat = () => {
     <ChatErrorBoundary>
       <div className="flex min-h-screen flex-col bg-gray-50">
         {/* Fixed Header - Always Visible */}
-        <div className="sticky top-0 z-20 border-b bg-white shadow-md">
+        <div className="fixed top-0 left-0 right-0 z-20 border-b bg-white shadow-md">
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3">
               <button 
@@ -690,7 +690,7 @@ const Chat = () => {
         {/* Messages Area */}
         <div
           ref={listRef}
-          className="flex-1 overflow-y-auto px-4 py-3"
+          className="flex-1 overflow-y-auto px-4 py-3 pt-20"
         >
           {loading && <LoadingSpinner label="Loading messages..." className="justify-start" />}
 
@@ -749,7 +749,7 @@ const Chat = () => {
         </div>
 
         {/* Fixed Input Area */}
-        <div className="sticky bottom-0 z-20 border-t bg-white shadow-sm">
+        <div className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white shadow-sm">
           <div className="flex gap-2 px-4 py-3">
             <input
               value={inputText}
