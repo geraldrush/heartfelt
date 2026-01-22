@@ -162,6 +162,14 @@ const Chat = () => {
   const otherUserId = connection?.other_user_id;
   const otherUserName = connection?.full_name || 'Connection';
 
+  // Helper function to extract initials from name
+  const getInitials = (name) => {
+    if (!name || name === 'Connection') return 'U';
+    const words = name.trim().split(' ');
+    if (words.length === 1) return words[0].charAt(0).toUpperCase();
+    return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+  };
+
   // Log component lifecycle
   useEffect(() => {
     const timestamp = new Date().toISOString();
@@ -544,8 +552,8 @@ const Chat = () => {
     <ChatErrorBoundary>
       <div className="flex min-h-screen flex-col bg-gray-50">
         {/* Fixed Header - Always Visible */}
-        <div className="sticky top-0 z-20 border-b bg-white shadow-sm">
-          <div className="flex items-center justify-between px-4 py-3">
+        <div className="sticky top-0 z-20 border-b bg-white shadow-md">
+          <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => window.history.back()}
@@ -555,11 +563,22 @@ const Chat = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <div>
-                <h2 className="text-base font-semibold text-gray-900">{otherUserName}</h2>
-                <p className="text-xs text-gray-500">
-                  {isOtherUserOnline ? '• Online' : 'Offline'}
-                </p>
+              
+              {/* Avatar Circle */}
+              <div className="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center font-semibold text-sm">
+                {getInitials(otherUserName)}
+              </div>
+              
+              <div className="flex flex-col gap-0.5">
+                <h2 className="text-lg font-bold text-gray-900">{otherUserName}</h2>
+                <div className="flex items-center gap-1">
+                  <div className={`w-2 h-2 rounded-full ${
+                    isOtherUserOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+                  }`}></div>
+                  <p className="text-xs text-gray-500">
+                    {isOtherUserOnline ? 'Online' : 'Offline'}
+                  </p>
+                </div>
               </div>
             </div>
             <button
