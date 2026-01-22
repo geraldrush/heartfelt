@@ -5,6 +5,7 @@ import {
   getReferenceData,
   updateProfile,
   uploadStoryImage,
+  emailSignup,
 } from "../utils/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { detectAndBlurFaces } from "../utils/faceBlur.js";
@@ -24,9 +25,9 @@ const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const CreateProfile = () => {
   const navigate = useNavigate();
-  const { updateUser, user } = useAuth();
+  const { updateUser, user, login } = useAuth();
   const [step, setStep] = useState(1);
-  const [isGoogleSignup, setIsGoogleSignup] = useState(false);
+  const [isGoogleSignup, setIsGoogleSignup] = useState(!!user);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -366,26 +367,46 @@ const CreateProfile = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    
+    // Only submit on final step
+    if (step !== (isGoogleSignup ? 5 : 6)) {
+      return;
+    }
+    
     const nextErrors = validateCurrentStep();
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
     }
-    if (step === 3 && (isImageProcessing || hasBlurFailures)) {
-      if (isImageProcessing) {
-        setFormError("Please wait for face detection to finish.");
-      } else {
-        setFormError("Please retry failed images before submitting.");
-      }
+    
+    if (isImageProcessing) {
+      setFormError("Please wait for face detection to finish.");
+      return;
+    }
+    if (hasBlurFailures) {
+      setFormError("Please retry failed images before submitting.");
       return;
     }
 
     setLoading(true);
     setFormError("");
-    setStatusMessage("Uploading blurred images...");
-    setUploadProgress({ current: 0, total: images.length });
 
     try {
+      // Handle email signup on step 6
+      if (step === 6 && !isGoogleSignup) {
+        setStatusMessage("Creating account...");
+        const signupData = await emailSignup({
+          email,
+          password,
+          full_name: `User ${Date.now()}`, // Temporary name
+        });
+        login(signupData.token, signupData.user);
+        setStatusMessage("Account created! Completing profile...");
+      }
+
+      setStatusMessage("Uploading blurred images...");
+      setUploadProgress({ current: 0, total: images.length });
+
       const uploadedImageIds = [];
       const failedUploads = [];
 
@@ -1032,10 +1053,10 @@ const CreateProfile = () => {
               ) : (
                 <button
                   type="submit"
-                  disabled={loading || isImageProcessing}
+                  disabled={loading || (step === 3 && isImageProcessing)}
                   className="rounded-xl bg-rose-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {loading ? "Saving..." : "Submit"}
+                  {loading ? "Saving..." : isGoogleSignup ? "Complete Profile" : "Create Account"}
                 </button>
               )}
             </div>

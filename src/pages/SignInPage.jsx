@@ -1,22 +1,14 @@
 import React, { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
-import { emailLogin, emailSignup, googleAuth } from '../utils/api.js';
+import { emailLogin, googleAuth } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const SignInPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('');
-  const [nationality, setNationality] = useState('South Africa');
-  const [city, setCity] = useState('');
-  const [province, setProvince] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -26,35 +18,9 @@ const SignInPage = () => {
     setLoading(true);
 
     try {
-      if (isSignup) {
-        if (password !== confirmPassword) {
-          throw new Error('Passwords do not match.');
-        }
-        if (!age || Number(age) < 18) {
-          throw new Error('You must be at least 18 years old.');
-        }
-        if (!gender || !city || !province || !fullName) {
-          throw new Error('Please fill in all required fields.');
-        }
-
-        const data = await emailSignup({
-          email,
-          password,
-          full_name: fullName,
-          age: Number(age),
-          gender,
-          nationality,
-          location_city: city,
-          location_province: province,
-        });
-
-        login(data.token, data.user);
-        navigate('/create-profile');
-      } else {
-        const data = await emailLogin({ email, password });
-        login(data.token, data.user);
-        navigate(data.user.profile_complete ? '/stories' : '/create-profile');
-      }
+      const data = await emailLogin({ email, password });
+      login(data.token, data.user);
+      navigate(data.user.profile_complete ? '/stories' : '/create-profile');
     } catch (err) {
       setError(err.message || 'Something went wrong.');
     } finally {
@@ -98,14 +64,14 @@ const SignInPage = () => {
               <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-slate-900">
-                    {isSignup ? 'Create your account' : 'Welcome back'}
+                    Welcome back
                   </h2>
                   <button
                     type="button"
-                    onClick={() => setIsSignup((prev) => !prev)}
+                    onClick={() => navigate('/create-profile')}
                     className="text-sm font-semibold text-rose-600 hover:text-rose-700"
                   >
-                    {isSignup ? 'Already have an account?' : 'Need an account?'}
+                    Need an account?
                   </button>
                 </div>
 
@@ -134,117 +100,6 @@ const SignInPage = () => {
                     />
                   </div>
 
-                  {isSignup && (
-                    <>
-                      <div>
-                        <label className="text-sm font-medium text-slate-700">
-                          Confirm password
-                        </label>
-                        <input
-                          type="password"
-                          value={confirmPassword}
-                          onChange={(event) => setConfirmPassword(event.target.value)}
-                          className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-400 focus:outline-none"
-                          placeholder="Re-enter your password"
-                          required
-                        />
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div>
-                          <label className="text-sm font-medium text-slate-700">
-                            Full name
-                          </label>
-                          <input
-                            type="text"
-                            value={fullName}
-                            onChange={(event) => setFullName(event.target.value)}
-                            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-400 focus:outline-none"
-                            placeholder="Your name"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-slate-700">Age</label>
-                          <input
-                            type="number"
-                            value={age}
-                            onChange={(event) => setAge(event.target.value)}
-                            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-400 focus:outline-none"
-                            placeholder="18+"
-                            min="18"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div>
-                          <label className="text-sm font-medium text-slate-700">
-                            Gender
-                          </label>
-                          <select
-                            value={gender}
-                            onChange={(event) => setGender(event.target.value)}
-                            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-400 focus:outline-none"
-                            required
-                          >
-                            <option value="">Select gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="non-binary">Non-binary</option>
-                            <option value="other">Other</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-slate-700">
-                            Nationality
-                          </label>
-                          <select
-                            value={nationality}
-                            onChange={(event) => setNationality(event.target.value)}
-                            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-400 focus:outline-none"
-                            required
-                          >
-                            <option value="South Africa">South Africa</option>
-                            <option value="Zimbabwe">Zimbabwe</option>
-                            <option value="Namibia">Namibia</option>
-                            <option value="Botswana">Botswana</option>
-                            <option value="Mozambique">Mozambique</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div>
-                          <label className="text-sm font-medium text-slate-700">City</label>
-                          <input
-                            type="text"
-                            value={city}
-                            onChange={(event) => setCity(event.target.value)}
-                            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-400 focus:outline-none"
-                            placeholder="City"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-slate-700">
-                            Province
-                          </label>
-                          <input
-                            type="text"
-                            value={province}
-                            onChange={(event) => setProvince(event.target.value)}
-                            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-400 focus:outline-none"
-                            placeholder="Province"
-                            required
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
                   {error && (
                     <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                       {error}
@@ -256,11 +111,7 @@ const SignInPage = () => {
                     disabled={loading}
                     className="w-full premium-button"
                   >
-                    {loading
-                      ? 'Please wait...'
-                      : isSignup
-                      ? 'Create account'
-                      : 'Sign in'}
+                    {loading ? 'Please wait...' : 'Sign in'}
                   </button>
                 </form>
 
