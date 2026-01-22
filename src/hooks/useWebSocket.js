@@ -65,6 +65,11 @@ export const useWebSocket = ({
   onRead,
   onConnectionError,
 }) => {
+  // Mobile detection at hook level
+  const userAgent = navigator.userAgent;
+  const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(userAgent);
+  const isSafari = /Safari/i.test(userAgent) && !/Chrome/i.test(userAgent);
+  
   const socketRef = useRef(null);
   const retryRef = useRef(0);
   const reconnectTimer = useRef(null);
@@ -141,8 +146,6 @@ export const useWebSocket = ({
     };
     
     // Start with frequent polling for mobile (1.5s), less frequent for desktop
-    const userAgent = navigator.userAgent;
-    const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(userAgent);
     const initialInterval = isMobile ? 1500 : 2500;
     
     pollingInterval.current = setInterval(poll, initialInterval);
@@ -263,10 +266,6 @@ export const useWebSocket = ({
     console.log(`[WS-Client] ${new Date().toISOString()} Token present: ${!!token}, Retry attempt: ${retryRef.current}`);
     
     // iOS Safari specific optimizations
-    const userAgent = navigator.userAgent;
-    const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(userAgent);
-    const isSafari = /Safari/i.test(userAgent) && !/Chrome/i.test(userAgent);
-    
     if (isMobile || isSafari) {
       console.log(`[WS-Client] ${new Date().toISOString()} Mobile/Safari detected, applying optimizations`);
       
@@ -390,10 +389,13 @@ export const useWebSocket = ({
       
       // Skip retry logic ONLY for manual closes or normal closes (NOT 1006)
       if (isManualCloseRef.current || event.code === 1000) {
-        console.log(`[WS-Client] ${timestamp} Manual or normal close (${event.code}), not retrying`);
+        console.log(`[WS-Client] ${timestamp} Manual or normal close (code=${event.code}), not retrying`);
         setConnectionState('disconnected');
         return;
       }
+      
+      // Log the actual close code for debugging
+      console.log(`[WS-Client] ${timestamp} WebSocket closed with code ${event.code}, will retry`);
       
       const oldState = connectionState;
       setConnectionState('disconnected');
