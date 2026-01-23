@@ -13,7 +13,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { detectAndBlurFaces } from "../utils/faceBlur.js";
 
 const stepTitles = [
-  "Find Your Heart Match - Set Your Preferences",
+  "Who you're seeking",
   "Your Story - The Heart of Your Profile",
   "Photos with Privacy - Faces Blurred Until You Connect",
   "About You - Let's Get to Know You",
@@ -1103,7 +1103,7 @@ const CreateProfile = () => {
                 className="text-center mb-8"
               >
                 <h1 className="text-4xl font-bold text-slate-900 mb-2">AfroDate</h1>
-                <p className="text-lg text-slate-600 mb-4">Where African Singles Connect Through Stories, Not Faces</p>
+                <p className="text-lg text-slate-600 mb-4">Connect through stories, not faces. Find African singles who match your heart first</p>
                 <p className="text-sm text-slate-500 mb-6">Share your authentic story, keep your face private until you both feel the connection</p>
                 
                 <motion.div 
