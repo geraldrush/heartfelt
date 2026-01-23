@@ -3,6 +3,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import {
   createStorySchema,
   updateProfileSchema,
+  validateReferenceData,
 } from '../utils/validation.js';
 import {
   generateId,
@@ -194,6 +195,28 @@ stories.put('/update-profile', authMiddleware, async (c) => {
 
   const db = getDb(c);
   const userId = c.get('userId');
+
+  // Validate reference data
+  const refValidation = await validateReferenceData(db, parsed.data.religion, parsed.data.race, parsed.data.education);
+  if (!refValidation.valid) {
+    return c.json({ error: 'Invalid reference data', details: refValidation.errors }, 400);
+  }
+
+  // Validate seeking_races if present
+  if (parsed.data.seeking_races && parsed.data.seeking_races.length > 0) {
+    const referenceData = await getReferenceData(db);
+    const validRaces = referenceData.races.map(r => r.name);
+    const invalidRaces = parsed.data.seeking_races.filter(race => !validRaces.includes(race));
+    
+    if (invalidRaces.length > 0) {
+      return c.json({
+        error: 'Validation error',
+        details: {
+          seeking_races: `Invalid race in seeking_races: ${invalidRaces.join(', ')}. Allowed values are: ${validRaces.join(', ')}`
+        }
+      }, 400);
+    }
+  }
 
   await updateUserProfile(db, userId, parsed.data);
   const user = await getUserById(db, userId);

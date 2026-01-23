@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getReferenceData } from './db.js';
 
 const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
 
@@ -110,3 +111,32 @@ export const connectionActionSchema = z.object({
 export const paymentInitiateSchema = z.object({
   package_id: z.string().uuid(),
 });
+
+export async function validateReferenceData(db, religion, race, education) {
+  const referenceData = await getReferenceData(db);
+  const errors = {};
+  let valid = true;
+
+  // Validate religion
+  const validReligions = referenceData.religions.map(r => r.name);
+  if (!validReligions.includes(religion)) {
+    errors.religion = `Invalid religion value. Allowed values are: ${validReligions.join(', ')}`;
+    valid = false;
+  }
+
+  // Validate race
+  const validRaces = referenceData.races.map(r => r.name);
+  if (!validRaces.includes(race)) {
+    errors.race = `Invalid race value. Allowed values are: ${validRaces.join(', ')}`;
+    valid = false;
+  }
+
+  // Validate education
+  const validEducation = referenceData.education_levels.map(e => e.name);
+  if (!validEducation.includes(education)) {
+    errors.education = `Invalid education value. Allowed values are: ${validEducation.join(', ')}`;
+    valid = false;
+  }
+
+  return { valid, errors };
+}
