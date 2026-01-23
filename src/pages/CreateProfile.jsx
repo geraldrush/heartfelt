@@ -398,7 +398,12 @@ const CreateProfile = () => {
         const signupData = await emailSignup({
           email,
           password,
-          full_name: `User ${Date.now()}`, // Temporary name
+          full_name: `AfroDate User`,
+          age: Number(age),
+          gender,
+          nationality,
+          location_city: locationCity,
+          location_province: locationProvince,
         });
         login(signupData.token, signupData.user);
         setStatusMessage("Account created! Completing profile...");
