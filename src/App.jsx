@@ -65,6 +65,16 @@ const AnimatedRoutes = () => {
           }
         />
         <Route
+          path="/signup"
+          element={
+            <AuthRedirect>
+              <FadeIn>
+                <CreateProfile />
+              </FadeIn>
+            </AuthRedirect>
+          }
+        />
+        <Route
           path="/create-profile"
           element={
             <ProtectedRoute requireIncompleteProfile>
@@ -157,7 +167,7 @@ const App = () => {
 
   // Lazy load BlazeFace only when needed (CreateProfile page)
   useEffect(() => {
-    if (location?.pathname === '/create-profile') {
+    if (location?.pathname === '/create-profile' || location?.pathname === '/signup') {
       let mounted = true;
       setModelReady(false);
       loadBlazeFaceModel()
@@ -177,7 +187,7 @@ const App = () => {
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <AuthProvider>
         <div className="pull-to-refresh">
-          {!modelReady && location?.pathname === '/create-profile' && (
+          {!modelReady && (location?.pathname === '/create-profile' || location?.pathname === '/signup') && (
             <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-emerald-600 px-4 py-2 text-xs font-semibold text-white">
               Loading face detection model...
             </div>

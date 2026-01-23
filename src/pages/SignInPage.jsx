@@ -68,7 +68,7 @@ const SignInPage = () => {
                   </h2>
                   <button
                     type="button"
-                    onClick={() => navigate('/create-profile')}
+                    onClick={() => navigate('/signup')}
                     className="text-sm font-semibold text-rose-600 hover:text-rose-700"
                   >
                     Need an account?
