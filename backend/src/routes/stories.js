@@ -195,12 +195,23 @@ stories.put('/update-profile', authMiddleware, async (c) => {
 
   const db = getDb(c);
   const userId = c.get('userId');
+  const timestamp = new Date().toISOString();
+
+  console.log(`[Profile Update] ${timestamp} Request received for user: ${userId}`, {
+    age: parsed.data.age,
+    gender: parsed.data.gender,
+    religion: parsed.data.religion,
+    race: parsed.data.race,
+    education: parsed.data.education
+  });
 
   // Validate reference data
   const refValidation = await validateReferenceData(db, parsed.data.religion, parsed.data.race, parsed.data.education);
   if (!refValidation.valid) {
     return c.json({ error: 'Invalid reference data', details: refValidation.errors }, 400);
   }
+
+  console.log(`[Profile Update] ${timestamp} Reference data validation passed for user: ${userId}`);
 
   // Validate seeking_races if present
   if (parsed.data.seeking_races && parsed.data.seeking_races.length > 0) {
@@ -218,7 +229,39 @@ stories.put('/update-profile', authMiddleware, async (c) => {
     }
   }
 
-  await updateUserProfile(db, userId, parsed.data);
+  console.log(`[Profile Update] ${timestamp} Calling updateUserProfile for user: ${userId}`);
+
+  try {
+    await updateUserProfile(db, userId, parsed.data);
+    console.log(`[Profile Update] ${timestamp} Profile updated successfully for user: ${userId}`);
+  } catch (error) {
+    if (error.type === 'CONSTRAINT_VIOLATION') {
+      console.error(`[Profile Update] ${timestamp} Constraint violation for user ${userId}:`, error.field, error.message);
+      
+      const fieldMessages = {
+        religion: 'Invalid religion value. Please select from the provided options.',
+        race: 'Invalid race value. Please select from the provided options.',
+        education: 'Invalid education level. Please select from the provided options.',
+        gender: 'Invalid gender value. Please select from the provided options.',
+        seeking_gender: 'Invalid seeking gender value. Please select from the provided options.'
+      };
+      
+      const userFriendlyMessage = fieldMessages[error.field] || `Invalid value for ${error.field}. Please check your input.`;
+      
+      return c.json({
+        error: 'Validation error',
+        details: { [error.field]: userFriendlyMessage }
+      }, 400);
+    }
+    
+    if (error.type === 'DATABASE_ERROR') {
+      console.error(`[Profile Update] ${timestamp} Database error for user ${userId}:`, error.message);
+      return c.json({ error: 'Failed to update profile. Please try again.' }, 500);
+    }
+    
+    console.error(`[Profile Update] ${timestamp} Unexpected error for user ${userId}:`, error);
+    return c.json({ error: 'An unexpected error occurred. Please try again.' }, 500);
+  }
   const user = await getUserById(db, userId);
 
   if (!user) {

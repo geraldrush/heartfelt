@@ -601,6 +601,9 @@ export async function getReferenceData(db) {
 }
 
 export async function updateUserProfile(db, userId, profileData) {
+  const timestamp = new Date().toISOString();
+  console.log(`[DB] ${timestamp} Updating profile for user: ${userId}`);
+  
   const {
     age, gender, nationality, religion, race, education,
     has_kids, num_kids, smoker, drinks_alcohol,
@@ -608,52 +611,86 @@ export async function updateUserProfile(db, userId, profileData) {
     seeking_gender, seeking_age_min, seeking_age_max, seeking_races
   } = profileData;
 
+  // Log sanitized profile data
+  console.log(`[DB] ${timestamp} Profile data:`, {
+    age, gender, nationality, religion, race, education,
+    has_kids, num_kids, smoker, drinks_alcohol,
+    location_city, location_province, seeking_gender,
+    seeking_age_min, seeking_age_max, seeking_races
+  });
+
   // Serialize seeking_races array to JSON string
   const seekingRacesJson = seeking_races ? JSON.stringify(seeking_races) : null;
 
-  await db
-    .prepare(
-      `UPDATE users SET
-        age = ?,
-        gender = ?,
-        nationality = ?,
-        religion = ?,
-        race = ?,
-        education = ?,
-        has_kids = ?,
-        num_kids = ?,
-        smoker = ?,
-        drinks_alcohol = ?,
-        location_city = ?,
-        location_province = ?,
-        seeking_gender = ?,
-        seeking_age_min = ?,
-        seeking_age_max = ?,
-        seeking_races = ?,
-        profile_complete = 1,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?`
-    )
-    .bind(
-      age,
-      gender,
-      nationality,
-      religion,
-      race,
-      education,
-      has_kids ? 1 : 0,
-      num_kids,
-      smoker ? 1 : 0,
-      drinks_alcohol ? 1 : 0,
-      location_city,
-      location_province,
-      seeking_gender || null,
-      seeking_age_min ?? null,
-      seeking_age_max ?? null,
-      seekingRacesJson,
-      userId
-    )
-    .run();
+  try {
+    await db
+      .prepare(
+        `UPDATE users SET
+          age = ?,
+          gender = ?,
+          nationality = ?,
+          religion = ?,
+          race = ?,
+          education = ?,
+          has_kids = ?,
+          num_kids = ?,
+          smoker = ?,
+          drinks_alcohol = ?,
+          location_city = ?,
+          location_province = ?,
+          seeking_gender = ?,
+          seeking_age_min = ?,
+          seeking_age_max = ?,
+          seeking_races = ?,
+          profile_complete = 1,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?`
+      )
+      .bind(
+        age,
+        gender,
+        nationality,
+        religion,
+        race,
+        education,
+        has_kids ? 1 : 0,
+        num_kids,
+        smoker ? 1 : 0,
+        drinks_alcohol ? 1 : 0,
+        location_city,
+        location_province,
+        seeking_gender || null,
+        seeking_age_min ?? null,
+        seeking_age_max ?? null,
+        seekingRacesJson,
+        userId
+      )
+      .run();
+  } catch (error) {
+    console.error(`[DB] ${timestamp} Profile update failed for user ${userId}:`, error.message);
+    
+    if (error.message.includes('CHECK constraint failed') || error.message.includes('constraint failed')) {
+      // Extract field name from error message if possible
+      let field = 'unknown';
+      if (error.message.includes('religion')) field = 'religion';
+      else if (error.message.includes('race')) field = 'race';
+      else if (error.message.includes('education')) field = 'education';
+      else if (error.message.includes('gender')) field = 'gender';
+      
+      throw {
+        type: 'CONSTRAINT_VIOLATION',
+        field,
+        message: error.message,
+        originalError: error
+      };
+    }
+    
+    throw {
+      type: 'DATABASE_ERROR',
+      message: error.message,
+      originalError: error
+    };
+  }
 }
 
 export async function getUserPreferences(db, userId) {
