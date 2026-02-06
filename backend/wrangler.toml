@@ -54,3 +54,7 @@ new_classes = ["ChatRoom"]
 [deployment]
 previews_enabled = false
 
+routes = [
+  { pattern = "api.afrodate.co.za/*", zone_name = "afrodate.co.za" }
+]
+
