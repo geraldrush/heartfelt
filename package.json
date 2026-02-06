@@ -13,7 +13,7 @@
     "build": "vite build",
     "build:backend": "cd backend && wrangler deploy",
     "migrate:local": "cd backend && wrangler d1 execute heartfelt-db --local --file=./migrations/0001_initial_schema.sql && wrangler d1 execute heartfelt-db --local --file=./migrations/0002_seed_data.sql",
-    "migrate:prod": "cd backend && wrangler d1 execute heartfelt-db --remote --file=./migrations/0001_initial_schema.sql && wrangler d1 execute heartfelt-db --remote --file=./migrations/0002_seed_data.sql",
+    "migrate:prod": "cd backend && wrangler d1 execute heartfelt-db --remote --file=./migrations/0001_initial_schema.sql && wrangler d1 execute heartfelt-db --remote --file=./migrations/0002_seed_data.sql && wrangler d1 execute heartfelt-db --remote --file=./migrations/0003_add_preferences.sql",
     "lint": "eslint .",
     "preview": "vite preview"
   },
