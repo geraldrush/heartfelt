@@ -3,6 +3,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import { emailLogin, googleAuth } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { isBasicProfileComplete } from '../utils/profileCompletion.js';
 
 const SignInPage = () => {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ const SignInPage = () => {
     try {
       const data = await emailLogin({ email, password });
       login(data.token, data.user);
-      navigate(data.user.profile_complete ? '/stories' : '/create-profile');
+      navigate(isBasicProfileComplete(data.user) ? '/stories' : '/onboarding-basics');
     } catch (err) {
       setError(err.message || 'Something went wrong.');
     } finally {
@@ -35,7 +36,7 @@ const SignInPage = () => {
     try {
       const data = await googleAuth(credentialResponse.credential);
       login(data.token, data.user);
-      navigate(data.user.profile_complete ? '/stories' : '/create-profile');
+      navigate(isBasicProfileComplete(data.user) ? '/stories' : '/onboarding-basics');
     } catch (err) {
       setError(err.message || 'Google sign-in failed.');
     } finally {

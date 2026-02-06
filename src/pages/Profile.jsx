@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPen, FaSignOutAlt, FaTachometerAlt, FaCamera, FaSave, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getCurrentUser, updateProfile, getTokenBalance } from '../utils/api.js';
+import { getCurrentUser, updateProfilePartial, getTokenBalance } from '../utils/api.js';
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 
@@ -62,7 +62,7 @@ const Profile = () => {
     
     try {
       const updateData = { [editingField]: editValue };
-      await updateProfile(updateData);
+      await updateProfilePartial(updateData);
       
       const updatedUser = { ...user, [editingField]: editValue };
       setUser(updatedUser);

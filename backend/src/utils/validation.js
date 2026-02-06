@@ -48,6 +48,47 @@ export const updatePreferencesSchema = z.object({
   { message: 'Minimum age must be less than or equal to maximum age.' }
 );
 
+export const onboardingBasicsSchema = z.object({
+  age: z.number().int().min(18),
+  gender: z.enum(['male', 'female', 'non-binary', 'other']),
+  seeking_gender: z.enum(['male', 'female', 'non-binary', 'other', 'any']),
+});
+
+export const updateProfilePartialSchema = z.object({
+  full_name: z.string().min(2).optional(),
+  email: z.string().email().optional(),
+  age: z.number().int().min(18).optional(),
+  gender: z.enum(['male', 'female', 'non-binary', 'other']).optional(),
+  nationality: z.string().min(1).optional(),
+  religion: z.string().min(1).optional(),
+  race: z.string().min(1).optional(),
+  education: z.string().min(1).optional(),
+  has_kids: z.boolean().optional(),
+  num_kids: z
+    .number()
+    .int()
+    .refine((value) => [0, 1, 2, 3].includes(value), {
+      message: 'Number of kids must be 0, 1, 2, or 3+.',
+    })
+    .optional(),
+  smoker: z.boolean().optional(),
+  drinks_alcohol: z.boolean().optional(),
+  location_city: z.string().min(1).optional(),
+  location_province: z.string().min(1).optional(),
+  seeking_gender: z.enum(['male', 'female', 'non-binary', 'other', 'any']).optional(),
+  seeking_age_min: z.number().int().min(18).max(100).optional(),
+  seeking_age_max: z.number().int().min(18).max(100).optional(),
+  seeking_races: z.array(z.string()).max(10).optional(),
+}).refine(
+  (data) => {
+    if (data.seeking_age_min && data.seeking_age_max) {
+      return data.seeking_age_min <= data.seeking_age_max;
+    }
+    return true;
+  },
+  { message: 'Minimum age must be less than or equal to maximum age.' }
+);
+
 export const updateProfileSchema = z.object({
   age: z.number().int().min(18),
   gender: z.enum(['male', 'female', 'non-binary', 'other']),

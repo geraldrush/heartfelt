@@ -34,6 +34,21 @@ function userResponse(user) {
     full_name: user.full_name,
     token_balance: user.token_balance,
     profile_complete: Boolean(user.profile_complete),
+    age: user.age,
+    gender: user.gender,
+    nationality: user.nationality,
+    religion: user.religion,
+    race: user.race,
+    education: user.education,
+    has_kids: user.has_kids === null || user.has_kids === undefined ? null : Boolean(user.has_kids),
+    num_kids: user.num_kids,
+    smoker: user.smoker === null || user.smoker === undefined ? null : Boolean(user.smoker),
+    drinks_alcohol:
+      user.drinks_alcohol === null || user.drinks_alcohol === undefined
+        ? null
+        : Boolean(user.drinks_alcohol),
+    location_city: user.location_city,
+    location_province: user.location_province,
     seeking_gender: user.seeking_gender,
     seeking_age_min: user.seeking_age_min,
     seeking_age_max: user.seeking_age_max,

@@ -144,6 +144,8 @@ export const uploadStoryImage = (formData) => {
 
 export const createStory = (data) => apiClient.post('/api/stories/create-story', data);
 export const updateProfile = (data) => apiClient.put('/api/stories/update-profile', data);
+export const updateOnboardingBasics = (data) => apiClient.put('/api/stories/onboarding-basics', data);
+export const updateProfilePartial = (data) => apiClient.put('/api/stories/update-profile-partial', data);
 export const getReferenceData = () => apiClient.get('/api/stories/reference/data');
 export const processImage = (data) => apiClient.post('/api/images/process', data);
 export const getStoryImages = (storyId) => apiClient.get(`/api/stories/${storyId}/images`);

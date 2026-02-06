@@ -1,5 +1,6 @@
 // src/pages/StoryFeed.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaFilter } from 'react-icons/fa';
 import {
@@ -22,6 +23,8 @@ import ActiveFilters from '../components/ActiveFilters.jsx';
 import { usePullToRefresh } from '../hooks/usePullToRefresh.js';
 import Button from '../components/ui/Button.jsx';
 import { triggerHaptic } from '../utils/haptics.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { getProfileCompletion } from '../utils/profileCompletion.js';
 
 const PAGE_SIZE = 20;
 
@@ -38,6 +41,8 @@ const StoryCardSkeleton = () => (
 );
 
 const StoryFeed = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -77,6 +82,9 @@ const StoryFeed = () => {
     () => fetchStories({ reset: true })
   );
 
+  const completion = useMemo(() => getProfileCompletion(user), [user]);
+  const showCompletionBanner = completion.percent < 100;
+
   const activeFilterCount = useMemo(() => {
     const entries = Object.entries(filtersApplied).filter(([key, value]) => {
       if (value === '' || value === null || value === undefined) {
@@ -97,20 +105,36 @@ const StoryFeed = () => {
         
         // Only auto-populate if user hasn't manually set filters
         if (!preferencesLoaded && preferences) {
-          const newFilters = { ...filters };
-          if (preferences.seeking_gender && preferences.seeking_gender !== 'any') {
-            newFilters.gender = preferences.seeking_gender;
-          }
-          if (preferences.seeking_age_min) {
-            newFilters.age_min = String(preferences.seeking_age_min);
-          }
-          if (preferences.seeking_age_max) {
-            newFilters.age_max = String(preferences.seeking_age_max);
-          }
-          if (preferences.seeking_races && preferences.seeking_races.length > 0) {
-            newFilters.race = preferences.seeking_races[0];
-          }
-          setFilters(newFilters);
+          setFilters((prev) => {
+            const newFilters = { ...prev };
+            let updated = false;
+            if (preferences.seeking_gender && preferences.seeking_gender !== 'any') {
+              newFilters.gender = preferences.seeking_gender;
+              updated = true;
+            } else if (user?.gender === 'male') {
+              newFilters.gender = 'female';
+              updated = true;
+            } else if (user?.gender === 'female') {
+              newFilters.gender = 'male';
+              updated = true;
+            }
+            if (preferences.seeking_age_min) {
+              newFilters.age_min = String(preferences.seeking_age_min);
+              updated = true;
+            }
+            if (preferences.seeking_age_max) {
+              newFilters.age_max = String(preferences.seeking_age_max);
+              updated = true;
+            }
+            if (preferences.seeking_races && preferences.seeking_races.length > 0) {
+              newFilters.race = preferences.seeking_races[0];
+              updated = true;
+            }
+            if (updated) {
+              return newFilters;
+            }
+            return prev;
+          });
           setPreferencesLoaded(true);
         }
       } catch (err) {
@@ -120,7 +144,7 @@ const StoryFeed = () => {
     };
     
     loadPreferences();
-  }, []); // Run once on mount
+  }, [preferencesLoaded, user?.gender]);
 
   useEffect(() => {
     const fetchMeta = async () => {
@@ -526,6 +550,35 @@ const StoryFeed = () => {
       
       <div className="relative z-10 px-4 py-0 md:px-4 md:pb-28 md:pt-8">
         <div className="w-full md:max-w-6xl mx-auto">
+          {showCompletionBanner && (
+            <div className="sticky top-[calc(0.5rem+env(safe-area-inset-top,0px))] z-40 mb-6">
+              <div className="glass-card rounded-2xl border border-emerald-100/60 bg-white/90 px-4 py-4 shadow-lg backdrop-blur">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">
+                      Profile {completion.percent}% complete
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      Update your profile and location to find matches faster.
+                    </p>
+                    <div className="mt-2 h-2 w-full max-w-xs rounded-full bg-slate-200 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                        style={{ width: `${completion.percent}%` }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/profile')}
+                    className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                  >
+                    Complete profile
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Header */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}

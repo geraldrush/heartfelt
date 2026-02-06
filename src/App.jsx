@@ -18,6 +18,7 @@ import ReceivedRequests from './pages/ReceivedRequests'; // Import new component
 import Connections from './pages/Connections'; // Import new component
 import Profile from './pages/Profile'; // Import new component
 import TokensPage from './pages/TokensPage';
+import OnboardingBasics from './pages/OnboardingBasics.jsx';
 import { loadBlazeFaceModel } from './utils/faceBlur.js';
 
 const AuthRedirect = ({ children }) => {
@@ -85,9 +86,19 @@ const AnimatedRoutes = () => {
           }
         />
         <Route
+          path="/onboarding-basics"
+          element={
+            <ProtectedRoute requireIncompleteBasics>
+              <FadeIn>
+                <OnboardingBasics />
+              </FadeIn>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/stories"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requireBasics>
               <FadeIn>
                 <StoryFeed />
               </FadeIn>

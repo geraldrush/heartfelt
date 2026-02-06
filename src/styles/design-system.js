@@ -1,39 +1,39 @@
 const designSystem = {
   colors: {
-    primary: '#f43f5e',
-    primaryDark: '#be123c',
-    success: '#10b981',
-    successDark: '#047857',
-    caution: '#f59e0b',
+    primary: '#ff6b6b',
+    primaryDark: '#e54949',
+    success: '#1fbf8f',
+    successDark: '#12956c',
+    caution: '#ffb347',
     neutral: {
-      light: '#f8fafc',
-      muted: '#cbd5f5',
-      mid: '#64748b',
-      dark: '#0f172a',
+      light: '#f6f4f2',
+      muted: '#d4dde9',
+      mid: '#4b5563',
+      dark: '#121826',
     },
     text: {
-      primary: '#1e293b',
-      secondary: '#475569',
+      primary: '#121826',
+      secondary: '#4b5563',
       inverse: '#ffffff',
     },
   },
   typography: {
     display: {
-      xl: '30px',
-      lg: '24px',
+      xl: '32px',
+      lg: '26px',
     },
     heading: {
-      lg: '20px',
+      lg: '22px',
       md: '18px',
     },
     body: {
       base: '16px',
-      sm: '14px',
+      sm: '15px',
     },
     caption: '12px',
     fontFamily: {
-      primary: '"Inter", "Plus Jakarta Sans", system-ui, sans-serif',
-      display: '"Fraunces", "Inter", serif',
+      primary: '"Manrope", system-ui, sans-serif',
+      display: '"Outfit", "Manrope", sans-serif',
     },
   },
   spacing: {

@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
 import {
   createStorySchema,
+  onboardingBasicsSchema,
+  updateProfilePartialSchema,
   updateProfileSchema,
   validateReferenceData,
 } from '../utils/validation.js';
@@ -11,11 +13,34 @@ import {
   getDb,
   getReferenceData,
   getUserById,
+  updateUserBasics,
+  updateUserPartial,
   updateUserProfile,
   getUserPreferences,
 } from '../utils/db.js';
 
 const stories = new Hono();
+
+const normalizeUser = (user) => {
+  if (!user) return user;
+  const { password_hash, ...safeUser } = user;
+  if (safeUser.seeking_races) {
+    safeUser.seeking_races = JSON.parse(safeUser.seeking_races);
+  }
+  if (safeUser.has_kids !== null && safeUser.has_kids !== undefined) {
+    safeUser.has_kids = Boolean(safeUser.has_kids);
+  }
+  if (safeUser.smoker !== null && safeUser.smoker !== undefined) {
+    safeUser.smoker = Boolean(safeUser.smoker);
+  }
+  if (safeUser.drinks_alcohol !== null && safeUser.drinks_alcohol !== undefined) {
+    safeUser.drinks_alcohol = Boolean(safeUser.drinks_alcohol);
+  }
+  if (safeUser.profile_complete !== null && safeUser.profile_complete !== undefined) {
+    safeUser.profile_complete = Boolean(safeUser.profile_complete);
+  }
+  return safeUser;
+};
 
 stories.get('/reference/data', async (c) => {
   const db = getDb(c);
@@ -268,14 +293,141 @@ stories.put('/update-profile', authMiddleware, async (c) => {
     return c.json({ error: 'User not found.' }, 404);
   }
 
-  const { password_hash, ...safeUser } = user;
+  return c.json({ user: normalizeUser(user) });
+});
 
-  // Parse seeking_races JSON if present
-  if (safeUser.seeking_races) {
-    safeUser.seeking_races = JSON.parse(safeUser.seeking_races);
+stories.put('/onboarding-basics', authMiddleware, async (c) => {
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+
+  const raw = c.env.CORS_ORIGIN || '';
+  const allowed = raw.split(',').map(value => value.trim()).filter(Boolean);
+  const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
+  const list = allowed.length > 0 ? allowed : defaultOrigins;
+
+  if (origin && !list.includes(origin)) {
+    return c.json({ error: 'Forbidden origin' }, 403);
   }
 
-  return c.json({ user: safeUser });
+  if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
+    return c.json({ error: 'Invalid referer' }, 403);
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const parsed = onboardingBasicsSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json(
+      { error: 'Validation error', details: parsed.error.flatten() },
+      400
+    );
+  }
+
+  const db = getDb(c);
+  const userId = c.get('userId');
+
+  await updateUserBasics(db, userId, parsed.data);
+
+  const user = await getUserById(db, userId);
+  if (!user) {
+    return c.json({ error: 'User not found.' }, 404);
+  }
+
+  return c.json({ user: normalizeUser(user) });
+});
+
+stories.put('/update-profile-partial', authMiddleware, async (c) => {
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+
+  const raw = c.env.CORS_ORIGIN || '';
+  const allowed = raw.split(',').map(value => value.trim()).filter(Boolean);
+  const defaultOrigins = ['http://localhost:5173', 'https://heartfelt.pages.dev'];
+  const list = allowed.length > 0 ? allowed : defaultOrigins;
+
+  if (origin && !list.includes(origin)) {
+    return c.json({ error: 'Forbidden origin' }, 403);
+  }
+
+  if (referer && !list.some(allowedOrigin => referer.startsWith(allowedOrigin))) {
+    return c.json({ error: 'Invalid referer' }, 403);
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const parsed = updateProfilePartialSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json(
+      { error: 'Validation error', details: parsed.error.flatten() },
+      400
+    );
+  }
+
+  const updateData = { ...parsed.data };
+  if (Object.keys(updateData).length === 0) {
+    return c.json({ error: 'No fields to update.' }, 400);
+  }
+
+  const db = getDb(c);
+  const userId = c.get('userId');
+
+  if (updateData.religion || updateData.race || updateData.education) {
+    const referenceData = await getReferenceData(db);
+    const validReligions = referenceData.religions.map(r => r.name);
+    const validRaces = referenceData.races.map(r => r.name);
+    const validEducation = referenceData.education_levels.map(e => e.name);
+
+    if (updateData.religion && !validReligions.includes(updateData.religion)) {
+      return c.json({ error: 'Invalid religion value.' }, 400);
+    }
+    if (updateData.race && !validRaces.includes(updateData.race)) {
+      return c.json({ error: 'Invalid race value.' }, 400);
+    }
+    if (updateData.education && !validEducation.includes(updateData.education)) {
+      return c.json({ error: 'Invalid education value.' }, 400);
+    }
+  }
+
+  if (updateData.seeking_races && updateData.seeking_races.length > 0) {
+    const referenceData = await getReferenceData(db);
+    const validRaces = referenceData.races.map(r => r.name);
+    const invalidRaces = updateData.seeking_races.filter(race => !validRaces.includes(race));
+    if (invalidRaces.length > 0) {
+      return c.json({
+        error: 'Validation error',
+        details: {
+          seeking_races: `Invalid race in seeking_races: ${invalidRaces.join(', ')}.`,
+        },
+      }, 400);
+    }
+  }
+
+  if (typeof updateData.has_kids === 'boolean' && updateData.has_kids === false) {
+    updateData.num_kids = 0;
+  }
+
+  if (Array.isArray(updateData.seeking_races)) {
+    updateData.seeking_races = JSON.stringify(updateData.seeking_races);
+  }
+
+  if (typeof updateData.has_kids === 'boolean') {
+    updateData.has_kids = updateData.has_kids ? 1 : 0;
+  }
+  if (typeof updateData.smoker === 'boolean') {
+    updateData.smoker = updateData.smoker ? 1 : 0;
+  }
+  if (typeof updateData.drinks_alcohol === 'boolean') {
+    updateData.drinks_alcohol = updateData.drinks_alcohol ? 1 : 0;
+  }
+
+  await updateUserPartial(db, userId, updateData);
+
+  const user = await getUserById(db, userId);
+  if (!user) {
+    return c.json({ error: 'User not found.' }, 404);
+  }
+
+  return c.json({ user: normalizeUser(user) });
 });
 
 stories.get('/feed', authMiddleware, async (c) => {

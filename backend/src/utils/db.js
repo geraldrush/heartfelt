@@ -704,3 +704,35 @@ export async function getUserPreferences(db, userId) {
     seeking_races: user.seeking_races ? JSON.parse(user.seeking_races) : [],
   };
 }
+
+export async function updateUserBasics(db, userId, basics) {
+  const { age, gender, seeking_gender } = basics;
+  await db
+    .prepare(
+      `UPDATE users SET
+        age = ?,
+        gender = ?,
+        seeking_gender = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?`
+    )
+    .bind(age, gender, seeking_gender, userId)
+    .run();
+}
+
+export async function updateUserPartial(db, userId, updates) {
+  const entries = Object.entries(updates).filter(([, value]) => value !== undefined);
+  if (entries.length === 0) {
+    return;
+  }
+
+  const columns = entries.map(([key]) => `${key} = ?`).join(', ');
+  const values = entries.map(([, value]) => value);
+
+  await db
+    .prepare(
+      `UPDATE users SET ${columns}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+    )
+    .bind(...values, userId)
+    .run();
+}
