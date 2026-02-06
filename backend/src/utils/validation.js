@@ -15,13 +15,16 @@ export const emailSignupSchema = z.object({
   age: z.coerce
     .number()
     .int({ message: 'Age must be a whole number.' })
-    .min(18, { message: 'You must be at least 18 years old.' }),
-  gender: z.enum(['male', 'female', 'non-binary', 'other'], {
-    message: 'Gender is required.',
-  }),
-  nationality: z.string().min(1, { message: 'Nationality is required.' }),
-  location_city: z.string().min(1, { message: 'City is required.' }),
-  location_province: z.string().min(1, { message: 'Province is required.' }),
+    .min(18, { message: 'You must be at least 18 years old.' })
+    .optional(),
+  gender: z
+    .enum(['male', 'female', 'non-binary', 'other'], {
+      message: 'Gender is required.',
+    })
+    .optional(),
+  nationality: z.string().min(1, { message: 'Nationality is required.' }).optional(),
+  location_city: z.string().min(1, { message: 'City is required.' }).optional(),
+  location_province: z.string().min(1, { message: 'Province is required.' }).optional(),
 });
 
 export const emailLoginSchema = z.object({
