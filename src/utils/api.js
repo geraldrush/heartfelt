@@ -184,6 +184,8 @@ export const cancelConnectionRequest = (requestId) =>
 export const getSentRequests = () => apiClient.get('/api/connections/sent');
 export const getReceivedRequests = () => apiClient.get('/api/connections/received');
 export const getConnections = () => apiClient.get('/api/connections/list');
+export const getConnectionProfile = (connectionId) =>
+  apiClient.get(`/api/connections/profile/${connectionId}`);
 export const getConnectionCounts = () => apiClient.get('/api/connections/counts');
 export const getMessages = (connectionId, { limit = 50, offset = 0, before } = {}) => {
   const params = new URLSearchParams({ limit, offset });

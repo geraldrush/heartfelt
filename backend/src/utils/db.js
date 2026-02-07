@@ -327,12 +327,19 @@ export async function getConnections(db, userId) {
         u.full_name,
         u.age,
         u.gender,
-        u.location_city
+        u.location_city,
+        s.id AS story_id,
+        CASE
+          WHEN u.updated_at >= datetime('now', '-10 minutes') THEN 1
+          ELSE 0
+        END AS is_online
       FROM connections c
       JOIN users u ON u.id = CASE
         WHEN c.user_id_1 = ? THEN c.user_id_2
         ELSE c.user_id_1
       END
+      LEFT JOIN stories s
+        ON s.user_id = u.id AND s.is_active = 1
       WHERE (c.user_id_1 = ? OR c.user_id_2 = ?) AND c.status = 'active'
       ORDER BY c.created_at DESC`
     )

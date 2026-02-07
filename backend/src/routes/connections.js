@@ -12,6 +12,7 @@ import {
   getSentConnectionRequests,
   getUserById,
   updateConnectionRequestStatus,
+  verifyUserInConnection,
 } from '../utils/db.js';
 import {
   connectionActionSchema,
@@ -293,7 +294,68 @@ connections.get('/list', authMiddleware, async (c) => {
   const db = getDb(c);
   const userId = c.get('userId');
   const list = await getConnections(db, userId);
-  return c.json({ connections: list });
+  const origin = new URL(c.req.url).origin;
+  const connections = list.map((item) => ({
+    ...item,
+    is_online: Boolean(item.is_online),
+    image_url: item.story_id ? `${origin}/api/stories/${item.story_id}/blurred` : null,
+  }));
+  return c.json({ connections });
+});
+
+connections.get('/profile/:connectionId', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+  const connectionId = c.req.param('connectionId');
+
+  const verification = await verifyUserInConnection(db, connectionId, userId);
+  if (!verification.valid) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const profile = await db.prepare(
+    `SELECT
+      u.id,
+      u.full_name,
+      u.age,
+      u.gender,
+      u.nationality,
+      u.religion,
+      u.race,
+      u.education,
+      u.has_kids,
+      u.num_kids,
+      u.smoker,
+      u.drinks_alcohol,
+      u.location_city,
+      u.location_province,
+      s.id as story_id,
+      s.story_text
+    FROM connections c
+    JOIN users u ON u.id = CASE
+      WHEN c.user_id_1 = ? THEN c.user_id_2
+      ELSE c.user_id_1
+    END
+    LEFT JOIN stories s ON s.user_id = u.id AND s.is_active = 1
+    WHERE c.id = ? AND c.status = 'active'`
+  ).bind(userId, connectionId).first();
+
+  if (!profile) {
+    return c.json({ error: 'Profile not found.' }, 404);
+  }
+
+  let imageUrl = null;
+  if (profile.story_id) {
+    const origin = new URL(c.req.url).origin;
+    imageUrl = `${origin}/api/stories/${profile.story_id}/blurred`;
+  }
+
+  return c.json({
+    profile: {
+      ...profile,
+      image_url: imageUrl,
+    },
+  });
 });
 
 connections.get('/counts', authMiddleware, async (c) => {

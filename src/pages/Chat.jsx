@@ -1,6 +1,6 @@
 // src/pages/Chat.jsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   createTokenRequest,
@@ -165,6 +165,7 @@ class ChatErrorBoundary extends React.Component {
 const Chat = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const connectionId = searchParams.get('connectionId');
   const [connection, setConnection] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -191,6 +192,7 @@ const Chat = () => {
 
   const otherUserId = connection?.other_user_id;
   const otherUserName = connection?.full_name || 'Connection';
+  const otherUserImage = connection?.image_url || null;
 
   // Helper function to extract initials from name
   const getInitials = (name) => {
@@ -584,11 +586,14 @@ const Chat = () => {
   };
 
   const getConnectionText = () => {
+    if (connectionState === 'connected' && isOtherUserOnline) return 'Online now';
     if (connectionState === 'connecting') return 'Reconnecting...';
-    if (connectionState === 'connected') return isOtherUserOnline ? 'Online' : 'Offline';
+    if (connectionState === 'connected' && !isOtherUserOnline) {
+      return connection?.is_online ? 'Online recently' : 'Offline';
+    }
     if (connectionState === 'error' || connectionState === 'disconnected') return 'Disconnected';
     if (connectionState === 'polling') return 'Limited connectivity';
-    return isOtherUserOnline ? 'Online' : 'Offline';
+    return connection?.is_online ? 'Online recently' : 'Offline';
   };
 
   const emptyIcon = (
@@ -623,9 +628,28 @@ const Chat = () => {
               </button>
               
               {/* Avatar Circle */}
-              <div className="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center font-semibold text-sm">
-                {getInitials(otherUserName)}
-              </div>
+              <button
+                type="button"
+                onClick={() => navigate(`/connection/${connectionId}`)}
+                className="relative h-10 w-10 overflow-hidden rounded-full bg-rose-100 text-white"
+              >
+                {otherUserImage ? (
+                  <img
+                    src={otherUserImage}
+                    alt={otherUserName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-rose-600">
+                    {getInitials(otherUserName)}
+                  </span>
+                )}
+                <span
+                  className={`absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${
+                    (isOtherUserOnline || connection?.is_online) ? 'bg-emerald-500' : 'bg-slate-300'
+                  }`}
+                />
+              </button>
               
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
@@ -635,10 +659,7 @@ const Chat = () => {
                     connectionQuality={connectionQuality}
                   />
                 </div>
-                <p className="text-xs text-gray-500">
-                  {connectionState === 'connected' && isOtherUserOnline ? 'Online' : 
-                   connectionState === 'connected' && !isOtherUserOnline ? 'Offline' : ''}
-                </p>
+                <p className="text-xs text-gray-500">{getConnectionText()}</p>
               </div>
             </div>
             <button
