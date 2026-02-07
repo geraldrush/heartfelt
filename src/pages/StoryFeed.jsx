@@ -506,7 +506,7 @@ const StoryFeed = () => {
         <button
           type="button"
           onClick={() => setSelectedStory(story)}
-          className="w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+          className="w-full rounded-2xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-600"
         >
           Read story
         </button>

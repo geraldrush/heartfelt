@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import logo from '../assets/afrodate.png';
+import logo from '../assets/afrodate_logo.png';
 import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import { emailSignup, googleAuth } from '../utils/api.js';
