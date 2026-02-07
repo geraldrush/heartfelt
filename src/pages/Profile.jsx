@@ -1,9 +1,22 @@
 // src/pages/Profile.jsx
-import React, { useState, useEffect } from 'react';
-import { FaPen, FaSignOutAlt, FaTachometerAlt, FaCamera, FaSave, FaTimes, FaCloudUploadAlt } from 'react-icons/fa';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  FaCamera,
+  FaCloudUploadAlt,
+  FaSignOutAlt,
+  FaTachometerAlt,
+} from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { createStory, deleteAccount, getCurrentUser, updateProfilePartial, getTokenBalance, uploadStoryImage } from '../utils/api.js';
+import {
+  createStory,
+  deleteAccount,
+  getCurrentUser,
+  getReferenceData,
+  getTokenBalance,
+  updateProfile,
+  uploadStoryImage,
+} from '../utils/api.js';
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import { getProfileCompletion } from '../utils/profileCompletion.js';
@@ -12,17 +25,60 @@ const MAX_IMAGES = 5;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
+const NATIONALITIES = [
+  'South Africa', 'Nigeria', 'Kenya', 'Egypt', 'Ghana', 'Ethiopia', 'Uganda', 'Tanzania',
+  'Morocco', 'Algeria', 'Tunisia', 'Angola', 'Mozambique', 'Namibia', 'Botswana',
+  'Zimbabwe', 'Zambia', 'Rwanda', 'Senegal', 'Cameroon', 'DR Congo', 'Sudan', 'Somalia',
+  'Eritrea', 'South Sudan', 'Libya', 'Mauritius', 'Seychelles', 'Ivory Coast', 'Sierra Leone',
+  'Gambia', 'Mali', 'Niger', 'Benin', 'Togo', 'Burkina Faso', 'Guinea', 'Liberia', 'Gabon',
+  'Equatorial Guinea', 'Republic of Congo', 'Central African Republic', 'Chad', 'Malawi',
+  'Madagascar', 'Comoros', 'Cabo Verde', 'Djibouti', 'Lesotho', 'Eswatini',
+  'United Kingdom', 'United States', 'Canada', 'France', 'Germany', 'Netherlands',
+  'Portugal', 'Spain', 'Italy', 'Australia', 'United Arab Emirates', 'Qatar',
+];
+
+const CITY_SUGGESTIONS = [
+  'Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Bloemfontein', 'Gqeberha',
+  'Nairobi', 'Lagos', 'Abuja', 'Accra', 'Kumasi', 'Addis Ababa', 'Cairo', 'Alexandria',
+  'Casablanca', 'Rabat', 'Tunis', 'Algiers', 'Tripoli', 'Khartoum', 'Kampala',
+  'Dar es Salaam', 'Zanzibar', 'Maputo', 'Luanda', 'Harare', 'Bulawayo', 'Lusaka',
+  'Gaborone', 'Windhoek', 'Kigali', 'Dakar', 'Abidjan', 'Yaounde', 'Douala',
+  'Mombasa', 'Port Harcourt', 'Enugu', 'Ibadan',
+  'London', 'Paris', 'Berlin', 'Amsterdam', 'Lisbon', 'Madrid', 'Rome',
+  'New York', 'Washington', 'Toronto', 'Vancouver', 'Dubai', 'Doha', 'Sydney', 'Melbourne',
+];
+
 const Profile = () => {
   const navigate = useNavigate();
   const { logout, user: authUser, updateUser } = useAuth();
-  
+
   const [user, setUser] = useState(null);
+  const [referenceData, setReferenceData] = useState(null);
   const [tokenBalance, setTokenBalance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [editingField, setEditingField] = useState(null);
-  const [editValue, setEditValue] = useState('');
+
+  const [form, setForm] = useState({
+    full_name: '',
+    email: '',
+    age: '',
+    gender: '',
+    nationality: '',
+    religion: '',
+    race: '',
+    education: '',
+    has_kids: false,
+    num_kids: 0,
+    smoker: false,
+    drinks_alcohol: false,
+    location_city: '',
+    location_province: '',
+    seeking_gender: 'any',
+    seeking_age_min: '',
+    seeking_age_max: '',
+  });
+
   const [storyText, setStoryText] = useState('');
   const [images, setImages] = useState([]);
   const [storyError, setStoryError] = useState('');
@@ -34,12 +90,34 @@ const Profile = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const [userData, balanceData] = await Promise.all([
+        const [userData, balanceData, refs] = await Promise.all([
           getCurrentUser(),
-          getTokenBalance()
+          getTokenBalance(),
+          getReferenceData(),
         ]);
         setUser(userData.user);
         setTokenBalance(balanceData.balance);
+        setReferenceData(refs);
+        setForm((prev) => ({
+          ...prev,
+          full_name: userData.user?.full_name || '',
+          email: userData.user?.email || '',
+          age: userData.user?.age ?? '',
+          gender: userData.user?.gender || '',
+          nationality: userData.user?.nationality || '',
+          religion: userData.user?.religion || '',
+          race: userData.user?.race || '',
+          education: userData.user?.education || '',
+          has_kids: Boolean(userData.user?.has_kids),
+          num_kids: userData.user?.num_kids ?? 0,
+          smoker: Boolean(userData.user?.smoker),
+          drinks_alcohol: Boolean(userData.user?.drinks_alcohol),
+          location_city: userData.user?.location_city || '',
+          location_province: userData.user?.location_province || '',
+          seeking_gender: userData.user?.seeking_gender || 'any',
+          seeking_age_min: userData.user?.seeking_age_min ?? '',
+          seeking_age_max: userData.user?.seeking_age_max ?? '',
+        }));
       } catch (err) {
         setError(err.message || 'Failed to load profile data');
       } finally {
@@ -49,6 +127,7 @@ const Profile = () => {
     fetchUserData();
   }, []);
 
+  const completion = useMemo(() => getProfileCompletion(user || authUser), [user, authUser]);
 
   const handleSignOut = () => {
     if (window.confirm('Are you sure you want to sign out?')) {
@@ -77,34 +156,39 @@ const Profile = () => {
     }
   };
 
-  const startEdit = (field, currentValue) => {
-    setEditingField(field);
-    setEditValue(currentValue || '');
+  const updateField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const cancelEdit = () => {
-    setEditingField(null);
-    setEditValue('');
-  };
-
-  const saveField = async () => {
-    if (!editingField || !user) return;
-    
+  const handleSaveProfile = async (event) => {
+    event.preventDefault();
     setSaving(true);
     setError('');
-    
+
     try {
-      const updateData = { [editingField]: editValue };
-      await updateProfilePartial(updateData);
-      
-      const updatedUser = { ...user, [editingField]: editValue };
-      setUser(updatedUser);
-      updateUser(updatedUser);
-      
-      setEditingField(null);
-      setEditValue('');
+      const payload = {
+        age: Number(form.age),
+        gender: form.gender,
+        nationality: form.nationality.trim(),
+        religion: form.religion,
+        race: form.race,
+        education: form.education,
+        has_kids: Boolean(form.has_kids),
+        num_kids: form.has_kids ? Number(form.num_kids) : 0,
+        smoker: Boolean(form.smoker),
+        drinks_alcohol: Boolean(form.drinks_alcohol),
+        location_city: form.location_city.trim(),
+        location_province: form.location_province.trim(),
+        seeking_gender: form.seeking_gender || 'any',
+        seeking_age_min: form.seeking_age_min === '' ? undefined : Number(form.seeking_age_min),
+        seeking_age_max: form.seeking_age_max === '' ? undefined : Number(form.seeking_age_max),
+      };
+
+      const data = await updateProfile(payload);
+      setUser(data.user);
+      updateUser(data.user);
     } catch (err) {
-      setError(err.message || 'Failed to update profile');
+      setError(err.message || 'Failed to update profile.');
     } finally {
       setSaving(false);
     }
@@ -221,75 +305,13 @@ const Profile = () => {
     );
   }
 
-  const renderField = (label, field, value, type = 'text') => {
-    const isEditing = editingField === field;
-    
-    return (
-      <div className="flex items-center justify-between gap-3 py-3 border-b border-white/60 last:border-b-0">
-        <div className="flex-grow">
-          <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 mb-1">{label}</label>
-          {isEditing ? (
-            <div className="flex items-center gap-2">
-              {type === 'select' ? (
-                <select
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  className="premium-input flex-1"
-                >
-                  <option value="">Select {label.toLowerCase()}</option>
-                  {field === 'gender' && (
-                    <>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="non-binary">Non-binary</option>
-                      <option value="other">Other</option>
-                    </>
-                  )}
-                </select>
-              ) : type === 'textarea' ? (
-                <textarea
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  className="premium-input flex-1 h-20 resize-none"
-                  maxLength={500}
-                />
-              ) : (
-                <input
-                  type={type}
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  className="premium-input flex-1"
-                  min={type === 'number' ? '18' : undefined}
-                />
-              )}
-              <Button size="sm" onClick={saveField} disabled={saving}>
-                <FaSave className="w-3 h-3" />
-              </Button>
-              <Button variant="secondary" size="sm" onClick={cancelEdit}>
-                <FaTimes className="w-3 h-3" />
-              </Button>
-            </div>
-          ) : (
-            <p className="text-slate-900 font-medium">{value || 'Not set'}</p>
-          )}
-        </div>
-        {!isEditing && (
-          <button
-            onClick={() => startEdit(field, value)}
-            className="ml-3 text-slate-400 hover:text-slate-600"
-          >
-            <FaPen className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-    );
-  };
-
-  const completion = getProfileCompletion(user);
+  const religions = referenceData?.religions || [];
+  const races = referenceData?.races || [];
+  const educationLevels = referenceData?.education_levels || [];
 
   return (
     <div className="mobile-container pull-to-refresh bg-premium-mesh pb-[calc(110px+env(safe-area-inset-bottom,0px))] md:pb-8">
-      <div className="mx-auto max-w-2xl px-4 py-6">
+      <div className="mx-auto max-w-3xl px-4 py-6">
         <div className="flex flex-col gap-4 mb-6">
           <div className="flex items-center justify-between">
             <div>
@@ -333,60 +355,7 @@ const Profile = () => {
           </div>
         )}
 
-        <div className="grid gap-4">
-          <div className="glass-card rounded-3xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Token balance</h2>
-                <p className="text-sm text-slate-500">Use tokens to connect faster.</p>
-              </div>
-              <Button onClick={() => navigate('/tokens')} size="sm">
-                Buy Tokens
-              </Button>
-            </div>
-            <div className="text-3xl font-semibold text-rose-500">
-              {tokenBalance === null ? '...' : tokenBalance}
-            </div>
-          </div>
-
-          <div className="glass-card rounded-3xl p-5">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Basic information</h2>
-            <div className="space-y-1">
-              {renderField('Full Name', 'full_name', user.full_name)}
-              {renderField('Email', 'email', user.email)}
-              {renderField('Age', 'age', user.age, 'number')}
-              {renderField('Gender', 'gender', user.gender, 'select')}
-            </div>
-          </div>
-
-          <div className="glass-card rounded-3xl p-5">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Location</h2>
-            <div className="space-y-1">
-              {renderField('City', 'location_city', user.location_city)}
-              {renderField('Province', 'location_province', user.location_province)}
-              {renderField('Nationality', 'nationality', user.nationality)}
-            </div>
-          </div>
-
-          <div className="glass-card rounded-3xl p-5">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Personal details</h2>
-            <div className="space-y-1">
-              {renderField('Religion', 'religion', user.religion)}
-              {renderField('Race', 'race', user.race)}
-              {renderField('Education', 'education', user.education)}
-            </div>
-          </div>
-
-          <div className="glass-card rounded-3xl p-5">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Lifestyle</h2>
-            <div className="space-y-1">
-              {renderField('Has Kids', 'has_kids', user.has_kids ? 'Yes' : 'No')}
-              {user.has_kids && renderField('Number of Kids', 'num_kids', user.num_kids, 'number')}
-              {renderField('Smoker', 'smoker', user.smoker ? 'Yes' : 'No')}
-              {renderField('Drinks Alcohol', 'drinks_alcohol', user.drinks_alcohol ? 'Yes' : 'No')}
-            </div>
-          </div>
-
+        <form onSubmit={handleSaveProfile} className="grid gap-4">
           <div className="glass-card rounded-3xl p-5">
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -476,20 +445,296 @@ const Profile = () => {
             </button>
           </div>
 
-          <div className="glass-card rounded-3xl p-5 border border-red-100">
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Delete account</h2>
-            <p className="text-sm text-slate-500">
-              This will permanently remove your profile, story, and connections.
-            </p>
-            <button
-              type="button"
-              onClick={handleDeleteAccount}
-              disabled={deletingAccount}
-              className="mt-4 w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100"
-            >
-              {deletingAccount ? 'Deleting...' : 'Delete my account'}
-            </button>
+          <div className="glass-card rounded-3xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Token balance</h2>
+                <p className="text-sm text-slate-500">Use tokens to connect faster.</p>
+              </div>
+              <Button onClick={() => navigate('/tokens')} size="sm">
+                Buy Tokens
+              </Button>
+            </div>
+            <div className="text-3xl font-semibold text-rose-500">
+              {tokenBalance === null ? '...' : tokenBalance}
+            </div>
           </div>
+
+          <div className="glass-card rounded-3xl p-5">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Basic information</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Full Name</label>
+                <input
+                  type="text"
+                  value={form.full_name}
+                  onChange={(e) => updateField('full_name', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                  placeholder="Your name"
+                  disabled
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Email</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => updateField('email', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                  placeholder="you@example.com"
+                  disabled
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Age</label>
+                <input
+                  type="number"
+                  min="18"
+                  value={form.age}
+                  onChange={(e) => updateField('age', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Gender</label>
+                <select
+                  value={form.gender}
+                  onChange={(e) => updateField('gender', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                  required
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="non-binary">Non-binary</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card rounded-3xl p-5">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Location</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">City</label>
+                <input
+                  type="text"
+                  value={form.location_city}
+                  onChange={(e) => updateField('location_city', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                  placeholder="Search city"
+                  list="city-suggestions"
+                  required
+                />
+                <datalist id="city-suggestions">
+                  {CITY_SUGGESTIONS.map((city) => (
+                    <option key={city} value={city} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">State / Province / Region</label>
+                <input
+                  type="text"
+                  value={form.location_province}
+                  onChange={(e) => updateField('location_province', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                  placeholder="Region"
+                  required
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nationality</label>
+                <input
+                  type="text"
+                  value={form.nationality}
+                  onChange={(e) => updateField('nationality', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                  placeholder="Search nationality"
+                  list="nationality-suggestions"
+                  required
+                />
+                <datalist id="nationality-suggestions">
+                  {NATIONALITIES.map((country) => (
+                    <option key={country} value={country} />
+                  ))}
+                </datalist>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card rounded-3xl p-5">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Personal details</h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Religion</label>
+                <select
+                  value={form.religion}
+                  onChange={(e) => updateField('religion', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                  required
+                >
+                  <option value="">Select religion</option>
+                  {religions.map((option) => (
+                    <option key={option.id} value={option.name}>{option.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Race</label>
+                <select
+                  value={form.race}
+                  onChange={(e) => updateField('race', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                  required
+                >
+                  <option value="">Select race</option>
+                  {races.map((option) => (
+                    <option key={option.id} value={option.name}>{option.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Education</label>
+                <select
+                  value={form.education}
+                  onChange={(e) => updateField('education', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                  required
+                >
+                  <option value="">Select level</option>
+                  {educationLevels.map((option) => (
+                    <option key={option.id} value={option.name}>{option.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card rounded-3xl p-5">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Lifestyle</h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Has kids</label>
+                <select
+                  value={form.has_kids ? 'yes' : 'no'}
+                  onChange={(e) => updateField('has_kids', e.target.value === 'yes')}
+                  className="mt-2 w-full premium-input"
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Number of kids</label>
+                <select
+                  value={form.has_kids ? String(form.num_kids) : '0'}
+                  onChange={(e) => updateField('num_kids', Number(e.target.value))}
+                  className="mt-2 w-full premium-input"
+                  disabled={!form.has_kids}
+                >
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3+</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Smoker</label>
+                <select
+                  value={form.smoker ? 'yes' : 'no'}
+                  onChange={(e) => updateField('smoker', e.target.value === 'yes')}
+                  className="mt-2 w-full premium-input"
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Drinks alcohol</label>
+                <select
+                  value={form.drinks_alcohol ? 'yes' : 'no'}
+                  onChange={(e) => updateField('drinks_alcohol', e.target.value === 'yes')}
+                  className="mt-2 w-full premium-input"
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card rounded-3xl p-5">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Preferences</h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Seeking</label>
+                <select
+                  value={form.seeking_gender}
+                  onChange={(e) => updateField('seeking_gender', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                >
+                  <option value="any">Any</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="non-binary">Non-binary</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Age min</label>
+                <input
+                  type="number"
+                  min="18"
+                  max="100"
+                  value={form.seeking_age_min}
+                  onChange={(e) => updateField('seeking_age_min', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Age max</label>
+                <input
+                  type="number"
+                  min="18"
+                  max="100"
+                  value={form.seeking_age_max}
+                  onChange={(e) => updateField('seeking_age_max', e.target.value)}
+                  className="mt-2 w-full premium-input"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+            >
+              {saving ? 'Saving changes...' : 'Save Profile Changes'}
+            </button>
+            <p className="text-xs text-slate-500 text-center">
+              Your profile is updated in one submission.
+            </p>
+          </div>
+        </form>
+
+        <div className="glass-card rounded-3xl p-5 border border-red-100 mt-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-2">Delete account</h2>
+          <p className="text-sm text-slate-500">
+            This will permanently remove your profile, story, and connections.
+          </p>
+          <button
+            type="button"
+            onClick={handleDeleteAccount}
+            disabled={deletingAccount}
+            className="mt-4 w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+          >
+            {deletingAccount ? 'Deleting...' : 'Delete my account'}
+          </button>
         </div>
       </div>
     </div>
