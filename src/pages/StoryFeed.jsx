@@ -63,6 +63,7 @@ const StoryFeed = () => {
   const [connectingStory, setConnectingStory] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [toast, setToast] = useState(null);
+  const [bannerDismissedUntil, setBannerDismissedUntil] = useState(0);
 
   const [filters, setFilters] = useState({
     age_min: '',
@@ -83,7 +84,17 @@ const StoryFeed = () => {
   );
 
   const completion = useMemo(() => getProfileCompletion(user), [user]);
-  const showCompletionBanner = completion.percent < 100;
+  const showCompletionBanner = completion.percent < 100 && Date.now() > bannerDismissedUntil;
+
+  useEffect(() => {
+    if (!bannerDismissedUntil) {
+      return undefined;
+    }
+    const timeout = window.setTimeout(() => {
+      setBannerDismissedUntil(0);
+    }, Math.max(1000, bannerDismissedUntil - Date.now()));
+    return () => window.clearTimeout(timeout);
+  }, [bannerDismissedUntil]);
 
   const activeFilterCount = useMemo(() => {
     const entries = Object.entries(filtersApplied).filter(([key, value]) => {
@@ -566,13 +577,23 @@ const StoryFeed = () => {
                       />
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/profile')}
-                    className="rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
-                  >
-                    Complete profile
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/profile')}
+                      className="rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                    >
+                      Complete profile
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBannerDismissedUntil(Date.now() + 60000)}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                      aria-label="Dismiss banner"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -794,7 +815,7 @@ const StoryFeed = () => {
             )}
 
             {/* Stories Content - Mobile Only */}
-            <div className="flex flex-col items-center h-[calc(100dvh-140px)] sm:h-[calc(100dvh-160px)] pt-4 stories-container">
+            <div className="flex flex-col items-center h-[calc(100dvh-220px)] sm:h-[calc(100dvh-240px)] pt-4 stories-container">
               {loading ? (
                 <div className="flex items-center justify-center h-full w-full max-w-md">
                   <div className="grid gap-8">
@@ -814,29 +835,6 @@ const StoryFeed = () => {
                     renderCard={renderCard}
                     disabled={showImageViewer}
                   />
-                  
-                  {/* Action Buttons Below Card */}
-                  {currentStory && (
-                    <div className="flex gap-4 mt-6">
-                      <button
-                        type="button"
-                        onClick={() => handlePass(currentStory)}
-                        className="px-8 py-3 bg-red-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
-                      >
-                        Skip
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setConnectingStory(currentStory);
-                          setShowMessageModal(true);
-                        }}
-                        className="px-8 py-3 bg-green-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
-                      >
-                        Connect
-                      </button>
-                    </div>
-                  )}
                   
                   <HeartAnimation trigger={heartTrigger} />
                 </div>
@@ -913,6 +911,55 @@ const StoryFeed = () => {
                 </motion.div>
               )}
             </div>
+            {currentStory && (
+              <div className="fixed bottom-[calc(90px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 px-5">
+                <div className="mx-auto flex max-w-md items-center gap-3 rounded-3xl bg-white/95 p-3 shadow-2xl backdrop-blur">
+                  <button
+                    type="button"
+                    onClick={() => handlePass(currentStory)}
+                    className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600"
+                  >
+                    Pass
+                  </button>
+                  {currentStory.connection_status === 'pending_received' ? (
+                    <button
+                      type="button"
+                      onClick={() => handleAccept(currentStory)}
+                      className="flex-1 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
+                    >
+                      Accept
+                    </button>
+                  ) : currentStory.connection_status === 'connected' ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex-1 rounded-2xl bg-emerald-100 px-4 py-3 text-sm font-semibold text-emerald-600"
+                    >
+                      Connected
+                    </button>
+                  ) : currentStory.connection_status === 'pending_sent' ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex-1 rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700"
+                    >
+                      Requested
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConnectingStory(currentStory);
+                        setShowMessageModal(true);
+                      }}
+                      className="flex-1 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
+                    >
+                      Connect
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
