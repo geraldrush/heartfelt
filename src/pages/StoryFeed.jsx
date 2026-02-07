@@ -503,6 +503,14 @@ const StoryFeed = () => {
       </div>
       
       <div className="flex-1 p-4 bg-white flex flex-col justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setSelectedStory(story)}
+          className="w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+        >
+          Read story
+        </button>
+
         <div className="flex flex-wrap gap-2">
           {[story.religion, story.race, story.education].filter(Boolean).slice(0, 3).map((tag, index) => (
             <span key={index} className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-100">
@@ -510,14 +518,6 @@ const StoryFeed = () => {
             </span>
           ))}
         </div>
-
-        <button
-          type="button"
-          onClick={() => setSelectedStory(story)}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
-        >
-          Read story
-        </button>
 
         {story.connection_status !== 'none' && (
           <div>
@@ -912,7 +912,7 @@ const StoryFeed = () => {
                   <button
                     type="button"
                     onClick={() => handlePass(currentStory)}
-                    className="flex-1 min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600"
+                    className="flex-1 min-w-0 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
                   >
                     Pass
                   </button>
