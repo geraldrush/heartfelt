@@ -57,14 +57,22 @@ connections.post('/request', authMiddleware, connectionRequestRateLimit, async (
   const transactionId = generateId();
   const message = parsed.data.message || 'Connection request sent';
 
-  const result = await db.batch([
-    db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ? AND token_balance >= ?')
-      .bind(cost, senderId, cost),
-    db.prepare('INSERT INTO connection_requests (id, sender_id, receiver_id, status, message, expires_at) VALUES (?, ?, ?, ?, ?, ?)')
-      .bind(requestId, senderId, receiverId, 'pending', message, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
-    db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
-      .bind(transactionId, senderId, -cost, 'connection_request_sent', receiverId, requestId, senderId, message, new Date().toISOString())
-  ]);
+  try {
+    await db.batch([
+      db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ? AND token_balance >= ?')
+        .bind(cost, senderId, cost),
+      db.prepare('INSERT INTO connection_requests (id, sender_id, receiver_id, status, message, expires_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .bind(requestId, senderId, receiverId, 'pending', message, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
+      db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
+        .bind(transactionId, senderId, -cost, 'connection_request_sent', receiverId, requestId, senderId, message, new Date().toISOString())
+    ]);
+  } catch (error) {
+    if (error?.message?.includes('SQLITE_CONSTRAINT')) {
+      return c.json({ error: 'Connection request already pending.' }, 409);
+    }
+    console.error('Connection request error:', error);
+    return c.json({ error: 'Database error occurred.' }, 500);
+  }
 
   const updatedUser = await db.prepare('SELECT token_balance FROM users WHERE id = ?').bind(senderId).first();
   
