@@ -72,7 +72,7 @@ const SignUpPage = () => {
                 AfroDate
               </h1>
               <p className="mt-4 text-base text-slate-600">
-                Create your account and start connecting through stories and shared values.
+                Meet Africans across the continent and build genuine, lasting connections with people who value community, culture, and meaningful relationships.
               </p>
 
               <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
@@ -172,21 +172,52 @@ const SignUpPage = () => {
             <div className="flex flex-col justify-between rounded-2xl bg-slate-900 p-6 sm:p-10 text-white">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-rose-300">
-                  Heart-first dating
+                  Pan‑African community
                 </p>
                 <h3 className="mt-4 text-3xl font-semibold">
-                  Build trust before you reveal.
+                  Connect with Africans everywhere.
                 </h3>
                 <p className="mt-4 text-sm text-slate-300">
-                  Tell your story, set your preferences, and connect with people who share your values.
+                  AfroDate helps you meet diverse people across Africa and the diaspora, so you can build genuine connections grounded in shared values and real conversation.
                 </p>
+                <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                  <div className="relative h-48 w-full">
+                    <div className="absolute inset-0 bg-gradient-to-br from-rose-500/30 via-amber-400/20 to-emerald-400/20" />
+                    <svg
+                      viewBox="0 0 480 280"
+                      className="absolute inset-0 h-full w-full"
+                      aria-hidden="true"
+                    >
+                      <defs>
+                        <linearGradient id="afroGlow" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#F97316" stopOpacity="0.7" />
+                          <stop offset="50%" stopColor="#EC4899" stopOpacity="0.6" />
+                          <stop offset="100%" stopColor="#10B981" stopOpacity="0.6" />
+                        </linearGradient>
+                      </defs>
+                      <path
+                        d="M40 210 C120 120, 220 80, 300 110 C380 140, 420 210, 460 230"
+                        stroke="url(#afroGlow)"
+                        strokeWidth="6"
+                        fill="none"
+                        opacity="0.8"
+                      />
+                      <circle cx="120" cy="130" r="26" fill="#F97316" opacity="0.8" />
+                      <circle cx="240" cy="90" r="18" fill="#EC4899" opacity="0.8" />
+                      <circle cx="360" cy="150" r="22" fill="#10B981" opacity="0.8" />
+                    </svg>
+                    <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-black/30 px-4 py-3 text-xs text-white/90 backdrop-blur">
+                      Discover new perspectives. Build lasting bonds.
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="mt-10 rounded-2xl bg-white/10 p-6 text-sm text-slate-200">
                 <p className="font-semibold text-white">Getting started</p>
                 <ul className="mt-3 space-y-2">
                   <li>Confirm you’re 18+.</li>
-                  <li>Set who you’re looking for.</li>
-                  <li>Complete your profile on your schedule.</li>
+                  <li>Set your preferences and location.</li>
+                  <li>Meet verified, legal‑age members across Africa.</li>
                 </ul>
               </div>
             </div>
