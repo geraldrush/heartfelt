@@ -197,55 +197,66 @@ const TokensPage = () => {
   }, [packages]);
 
   return (
-    <div className="mobile-container pull-to-refresh bg-gradient-to-br from-rose-100 via-pink-50 to-peach-100 px-4 py-10 pb-[calc(100px+env(safe-area-inset-bottom,0px))] md:pb-28 text-slate-900">
+    <div className="mobile-container pull-to-refresh bg-[radial-gradient(circle_at_top,rgba(255,235,238,0.9),rgba(248,250,252,1)_55%)] px-4 py-8 pb-[calc(100px+env(safe-area-inset-bottom,0px))] md:pb-28 text-slate-900">
       <div className="mx-auto w-full max-w-4xl">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold md:text-4xl">Token Wallet</h1>
-            <p className="mt-2 text-sm text-rose-900/70">{summary}</p>
+        <div className="rounded-3xl border border-white/60 bg-white/80 p-5 shadow-xl backdrop-blur md:p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Wallet</p>
+              <h1 className="mt-2 text-3xl font-semibold md:text-4xl">Token Balance</h1>
+              <p className="mt-2 text-sm text-slate-500">{summary}</p>
+            </div>
+            <div className="flex items-center gap-3 rounded-2xl bg-slate-900 px-5 py-4 text-white shadow-lg">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/15">
+                <FontAwesomeIcon icon={faCoins} className="text-lg" />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/70">Balance</p>
+                <p className="text-2xl font-semibold">
+                  {loading ? '...' : balance ?? 0}
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="rounded-2xl bg-white/20 px-6 py-4 text-center">
-            <FontAwesomeIcon icon={faCoins} className="mb-2 text-2xl text-rose-600" />
-            <p className="text-xs uppercase tracking-[0.2em] text-rose-900/60">Balance</p>
-            <p className="mt-1 text-2xl font-semibold">
-              {loading ? '...' : balance ?? 0}
-            </p>
-          </div>
-        </div>
 
-        {error && (
-          <div className="mt-6 rounded-xl bg-rose-100 px-4 py-3 text-sm text-rose-700">
-            {error}
-          </div>
-        )}
-
-        {paymentStatus && (
-          <div className="mt-4 rounded-xl bg-white/70 px-4 py-3 text-sm text-slate-700">
-            {paymentStatus}
-          </div>
-        )}
-
-        <div className="mt-8 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Transaction History</h2>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={() => setShowBuyModal(true)}
-              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-rose-600 shadow hover:bg-rose-50"
+              className="rounded-full bg-rose-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-rose-700"
             >
               Buy Tokens
             </button>
             <button
               type="button"
               onClick={() => setShowTransfer(true)}
-              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-rose-600 shadow hover:bg-rose-50"
+              className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow hover:bg-slate-50"
             >
               Transfer Tokens
             </button>
           </div>
         </div>
 
-        <div className="mt-4 overflow-hidden rounded-2xl bg-white text-slate-700 shadow">
+        {error && (
+          <div className="mt-6 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        )}
+
+        {paymentStatus && (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+            {paymentStatus}
+          </div>
+        )}
+
+        <div className="mt-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">Activity</h2>
+            <p className="text-xs text-slate-500">Recent token movements</p>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-3xl border border-slate-100 bg-white text-slate-700 shadow-lg">
           {/* Mobile Card Layout */}
           <div className="md:hidden">
             {loading ? (
@@ -257,23 +268,28 @@ const TokensPage = () => {
             ) : (
               transactions.map((tx) => (
                 <div key={tx.id} className="border-b border-slate-100 px-4 py-4 last:border-b-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <FontAwesomeIcon
-                        icon={tx.amount > 0 ? faArrowDown : faArrowUp}
-                        className={tx.amount > 0 ? 'text-emerald-500' : 'text-red-500'}
-                      />
-                      <span className="font-medium text-sm">{tx.transaction_type}</span>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className={`grid h-10 w-10 place-items-center rounded-2xl ${
+                        tx.amount > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                      }`}>
+                        <FontAwesomeIcon icon={tx.amount > 0 ? faArrowDown : faArrowUp} />
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{tx.transaction_type}</p>
+                        <p className="text-xs text-slate-500">{new Date(tx.created_at).toLocaleDateString()}</p>
+                      </div>
                     </div>
-                    <span className={`font-semibold ${tx.amount > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {tx.amount > 0 ? '+' : ''}{tx.amount}
-                    </span>
+                    <div className="text-right">
+                      <p className={`text-sm font-semibold ${tx.amount > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {tx.amount > 0 ? '+' : ''}{tx.amount}
+                      </p>
+                      <p className="text-xs text-slate-400">Bal {tx.balance_after}</p>
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-500 space-y-1">
-                    <div>{new Date(tx.created_at).toLocaleDateString()}</div>
-                    <div>{tx.description || '—'}</div>
-                    <div>Balance: {tx.balance_after}</div>
-                  </div>
+                  {tx.description && (
+                    <p className="mt-2 text-xs text-slate-500">{tx.description}</p>
+                  )}
                 </div>
               ))
             )}
@@ -281,7 +297,7 @@ const TokensPage = () => {
           
           {/* Desktop Table Layout */}
           <div className="hidden md:block">
-            <div className="grid grid-cols-5 gap-2 border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase text-slate-500">
+            <div className="grid grid-cols-5 gap-2 border-b border-slate-200 bg-slate-50/80 px-4 py-3 text-xs font-semibold uppercase text-slate-500">
               <span>Date</span>
               <span>Type</span>
               <span>Amount</span>
@@ -302,13 +318,14 @@ const TokensPage = () => {
                 >
                   <span>{new Date(tx.created_at).toLocaleDateString()}</span>
                   <span className="flex items-center gap-2">
-                    <FontAwesomeIcon
-                      icon={tx.amount > 0 ? faArrowDown : faArrowUp}
-                      className={tx.amount > 0 ? 'text-emerald-500' : 'text-red-500'}
-                    />
+                    <span className={`grid h-7 w-7 place-items-center rounded-full ${
+                      tx.amount > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                    }`}>
+                      <FontAwesomeIcon icon={tx.amount > 0 ? faArrowDown : faArrowUp} />
+                    </span>
                     {tx.transaction_type}
                   </span>
-                  <span className={tx.amount > 0 ? 'text-emerald-600' : 'text-red-600'}>
+                  <span className={tx.amount > 0 ? 'text-emerald-600' : 'text-rose-600'}>
                     {tx.amount > 0 ? '+' : ''}{tx.amount}
                   </span>
                   <span>{tx.description || '—'}</span>
@@ -324,7 +341,7 @@ const TokensPage = () => {
             <button
               type="button"
               onClick={handleLoadMore}
-              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-rose-600 shadow hover:bg-rose-50"
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow hover:bg-slate-50"
             >
               Load More
             </button>
@@ -334,7 +351,7 @@ const TokensPage = () => {
 
       {showTransfer && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 text-slate-700 shadow-xl">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 text-slate-700 shadow-xl">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Send Tokens</h3>
               <button
@@ -377,13 +394,13 @@ const TokensPage = () => {
                 />
               </div>
               {transferStatus && (
-                <div className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                <div className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
                   {transferStatus}
                 </div>
               )}
               <button
                 type="submit"
-                className="w-full rounded-xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
+                className="w-full rounded-full bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
               >
                 Send Tokens
               </button>
@@ -394,7 +411,7 @@ const TokensPage = () => {
 
       {showBuyModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-3xl rounded-2xl bg-white p-6 text-slate-700 shadow-xl">
+          <div className="w-full max-w-3xl rounded-3xl bg-white p-6 text-slate-700 shadow-xl">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Buy Tokens</h3>
               <button
@@ -448,7 +465,7 @@ const TokensPage = () => {
             )}
 
             {paymentError && (
-              <div className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              <div className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
                 {paymentError}
               </div>
             )}
@@ -457,7 +474,7 @@ const TokensPage = () => {
               type="button"
               onClick={handleBuyTokens}
               disabled={!selectedPackage || paymentLoading}
-              className="mt-6 w-full rounded-xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-rose-300"
+              className="mt-6 w-full rounded-full bg-rose-600 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-rose-300"
             >
               {paymentLoading ? 'Redirecting to Payfast...' : 'Proceed to Payment'}
             </button>
