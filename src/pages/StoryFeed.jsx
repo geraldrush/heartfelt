@@ -551,17 +551,17 @@ const StoryFeed = () => {
       <div className="relative z-10 px-4 py-0 md:px-4 md:pb-28 md:pt-8">
         <div className="w-full md:max-w-6xl mx-auto">
           {showCompletionBanner && (
-            <div className="sticky top-[calc(0.5rem+env(safe-area-inset-top,0px))] z-40 mb-6">
-              <div className="glass-card rounded-2xl border border-emerald-100/60 bg-white/90 px-4 py-4 shadow-lg backdrop-blur">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="sticky top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-40 mb-5">
+              <div className="rounded-3xl border border-emerald-100/70 bg-white/95 px-4 py-4 shadow-xl backdrop-blur">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">
+                    <p className="text-sm font-semibold text-slate-900">
                       Profile {completion.percent}% complete
                     </p>
-                    <p className="text-xs text-slate-600">
-                      Update your profile and location to find matches faster.
+                    <p className="text-xs text-slate-500">
+                      Add your location and details to get better matches.
                     </p>
-                    <div className="mt-2 h-2 w-full max-w-xs rounded-full bg-slate-200 overflow-hidden">
+                    <div className="mt-2 h-2 w-full max-w-xs rounded-full bg-slate-200/70 overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
                         style={{ width: `${completion.percent}%` }}
@@ -571,7 +571,7 @@ const StoryFeed = () => {
                   <button
                     type="button"
                     onClick={() => navigate('/profile')}
-                    className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                    className="rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
                   >
                     Complete profile
                   </button>
@@ -586,7 +586,7 @@ const StoryFeed = () => {
             className="hidden md:flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8"
           >
             <div>
-              <h1 className="text-xl font-semibold bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 bg-clip-text text-transparent mb-1">
+              <h1 className="text-xl font-semibold bg-gradient-to-r from-emerald-600 via-rose-500 to-amber-500 bg-clip-text text-transparent mb-1">
                 Discover Stories
               </h1>
               <p className="text-sm text-gray-600">
@@ -594,37 +594,13 @@ const StoryFeed = () => {
               </p>
             </div>
             
-            <div className="hidden md:block glass-card rounded-3xl px-4 py-3 text-center">
-              <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Tokens</p>
-              <p className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+            <div className="hidden md:block rounded-3xl border border-emerald-100/60 bg-white/90 px-5 py-3 text-center shadow-lg backdrop-blur">
+              <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Tokens</p>
+              <p className="text-2xl font-bold text-emerald-600">
                 {tokenBalance === null ? '...' : tokenBalance}
               </p>
             </div>
           </motion.div>
-
-          {/* Mobile Token Badge */}
-          <div className="fixed top-[calc(1rem+env(safe-area-inset-top,0px))] right-4 z-40 md:hidden glass-card rounded-full px-4 py-2 flex items-center gap-2">
-            <span className="text-lg">🪙</span>
-            <span className="text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-              {tokenBalance === null ? '...' : tokenBalance}
-            </span>
-          </div>
-
-          {/* Mobile Filter Icon Button */}
-          <motion.button
-            type="button"
-            onClick={() => setShowFilters((prev) => !prev)}
-            className="fixed top-[calc(1rem+env(safe-area-inset-top,0px))] left-4 z-40 md:hidden glass-card rounded-full w-12 h-12 flex items-center justify-center"
-            animate={activeFilterCount > 0 ? { scale: [1, 1.05, 1] } : {}}
-            transition={{ repeat: Infinity, duration: 2 }}
-          >
-            <FaFilter className={activeFilterCount > 0 ? "text-purple-600" : "text-gray-600"} />
-            {activeFilterCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {activeFilterCount}
-              </span>
-            )}
-          </motion.button>
 
           {/* Filter Controls */}
           <motion.div 
@@ -638,13 +614,13 @@ const StoryFeed = () => {
               onClick={() => setShowFilters((prev) => !prev)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="glass-card rounded-2xl px-6 py-3 font-semibold text-purple-600 hover:text-purple-700 transition-colors"
-            >
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </motion.button>
+            className="rounded-2xl border border-emerald-100/60 bg-white/90 px-6 py-3 font-semibold text-emerald-700 shadow-sm transition-colors hover:text-emerald-800"
+          >
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </motion.button>
             
             {activeFilterCount > 0 && (
-              <span className="glass-card rounded-full px-4 py-2 text-sm font-medium text-gray-600">
+              <span className="rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
                 {activeFilterCount} active filters
               </span>
             )}
@@ -752,6 +728,32 @@ const StoryFeed = () => {
 
           {/* Mobile Layout */}
           <div className="md:hidden">
+            <div className="sticky top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-30 mb-4">
+              <div className="flex items-center justify-between rounded-3xl bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Stories</p>
+                  <p className="text-lg font-semibold text-slate-900">Discover</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowFilters((prev) => !prev)}
+                    className="relative flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm"
+                  >
+                    <FaFilter className="text-emerald-500" />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-rose-500 text-[10px] font-semibold text-white flex items-center justify-center">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </button>
+                  <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                    🪙 {tokenBalance === null ? '...' : tokenBalance}
+                  </div>
+                </div>
+              </div>
+            </div>
             {/* Active Filters */}
             <ActiveFilters
               filters={filtersApplied}
@@ -794,7 +796,7 @@ const StoryFeed = () => {
             )}
 
             {/* Stories Content - Mobile Only */}
-            <div className="flex flex-col items-center h-[calc(100dvh-120px)] sm:h-[calc(100dvh-140px)] pt-16 stories-container">
+            <div className="flex flex-col items-center h-[calc(100dvh-140px)] sm:h-[calc(100dvh-160px)] pt-4 stories-container">
               {loading ? (
                 <div className="flex items-center justify-center h-full w-full max-w-md">
                   <div className="grid gap-8">

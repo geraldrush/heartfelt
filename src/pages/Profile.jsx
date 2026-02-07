@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPen, FaSignOutAlt, FaTachometerAlt, FaCamera, FaSave, FaTimes, FaCloudUploadAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { createStory, getCurrentUser, updateProfilePartial, getTokenBalance, uploadStoryImage } from '../utils/api.js';
+import { createStory, deleteAccount, getCurrentUser, updateProfilePartial, getTokenBalance, uploadStoryImage } from '../utils/api.js';
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import { getProfileCompletion } from '../utils/profileCompletion.js';
@@ -29,6 +29,7 @@ const Profile = () => {
   const [storyStatus, setStoryStatus] = useState('');
   const [uploadingStory, setUploadingStory] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -53,6 +54,26 @@ const Profile = () => {
     if (window.confirm('Are you sure you want to sign out?')) {
       logout();
       navigate('/', { replace: true });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmDelete = window.confirm(
+      'This will permanently delete your account and profile. This action cannot be undone.'
+    );
+    if (!confirmDelete) {
+      return;
+    }
+
+    setDeletingAccount(true);
+    try {
+      await deleteAccount();
+      logout();
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(err.message || 'Failed to delete account.');
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -275,10 +296,12 @@ const Profile = () => {
               <p className="text-xs uppercase tracking-[0.3em] text-slate-500">My account</p>
               <h1 className="text-3xl font-semibold text-slate-900 mt-2">Profile</h1>
             </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <FaSignOutAlt className="w-4 h-4 mr-1" />
-              Sign Out
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <FaSignOutAlt className="w-4 h-4 mr-1" />
+                Sign Out
+              </Button>
+            </div>
           </div>
 
           <div className="glass-card rounded-3xl p-5">
@@ -450,6 +473,21 @@ const Profile = () => {
               className="mt-5 w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
             >
               {uploadingStory ? 'Saving...' : 'Save Story & Photos'}
+            </button>
+          </div>
+
+          <div className="glass-card rounded-3xl p-5 border border-red-100">
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Delete account</h2>
+            <p className="text-sm text-slate-500">
+              This will permanently remove your profile, story, and connections.
+            </p>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={deletingAccount}
+              className="mt-4 w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+            >
+              {deletingAccount ? 'Deleting...' : 'Delete my account'}
             </button>
           </div>
         </div>

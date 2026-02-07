@@ -120,6 +120,7 @@ export const refreshToken = async () => {
   }
 };
 export const getCurrentUser = () => apiClient.get('/api/auth/me');
+export const deleteAccount = () => apiClient.delete('/api/auth/account');
 
 export const uploadStoryImage = (formData) => {
   const token = localStorage.getItem('auth_token');

@@ -325,4 +325,99 @@ auth.get('/me', authMiddleware, async (c) => {
   return c.json({ user: userResponse(user) });
 });
 
+auth.delete('/account', authMiddleware, async (c) => {
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+
+  const isValidOrigin = origin ? isOriginAllowed(origin, c.env) : false;
+  const isValidReferer = referer ? isRefererAllowed(referer, c.env) : false;
+
+  if (!isValidOrigin && !isValidReferer) {
+    const allowedOrigins = getAllowedOrigins(c.env);
+    console.log(`[Auth] Invalid origin/referer: origin=${origin}, referer=${referer}, allowed: ${allowedOrigins.join(', ')}`);
+    return c.json({ error: 'Invalid origin or referer' }, 403);
+  }
+
+  const db = getDb(c);
+  const userId = c.get('userId');
+
+  const tableExists = async (name) => {
+    const row = await db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+      .bind(name)
+      .first();
+    return Boolean(row?.name);
+  };
+
+  const deleteIfExists = async (name, statement, params = []) => {
+    if (!(await tableExists(name))) {
+      return;
+    }
+    await db.prepare(statement).bind(...params).run();
+  };
+
+  if (await tableExists('story_images')) {
+    const imageRows = await db
+      .prepare(
+        `SELECT si.original_url, si.blurred_url
+         FROM story_images si
+         JOIN stories s ON s.id = si.story_id
+         WHERE s.user_id = ?`
+      )
+      .bind(userId)
+      .all();
+
+    if (Array.isArray(imageRows?.results)) {
+      for (const row of imageRows.results) {
+        if (row.original_url) {
+          await c.env.R2_BUCKET.delete(row.original_url);
+        }
+        if (row.blurred_url) {
+          await c.env.R2_BUCKET.delete(row.blurred_url);
+        }
+      }
+    }
+  }
+
+  await deleteIfExists(
+    'story_images',
+    `DELETE FROM story_images WHERE story_id IN (SELECT id FROM stories WHERE user_id = ?)`,
+    [userId]
+  );
+  await deleteIfExists('stories', 'DELETE FROM stories WHERE user_id = ?', [userId]);
+  await deleteIfExists(
+    'messages',
+    `DELETE FROM messages WHERE sender_id = ? OR connection_id IN (
+      SELECT id FROM connections WHERE user_id_1 = ? OR user_id_2 = ?
+    )`,
+    [userId, userId, userId]
+  );
+  await deleteIfExists(
+    'connection_requests',
+    'DELETE FROM connection_requests WHERE sender_id = ? OR receiver_id = ?',
+    [userId, userId]
+  );
+  await deleteIfExists(
+    'connections',
+    'DELETE FROM connections WHERE user_id_1 = ? OR user_id_2 = ?',
+    [userId, userId]
+  );
+  await deleteIfExists('token_transactions', 'DELETE FROM token_transactions WHERE user_id = ?', [userId]);
+  await deleteIfExists(
+    'token_requests',
+    'DELETE FROM token_requests WHERE requester_id = ? OR recipient_id = ?',
+    [userId, userId]
+  );
+  await deleteIfExists(
+    'blocked_users',
+    'DELETE FROM blocked_users WHERE blocker_id = ? OR blocked_id = ?',
+    [userId, userId]
+  );
+  await deleteIfExists('story_reports', 'DELETE FROM story_reports WHERE reporter_id = ?', [userId]);
+
+  await db.prepare('DELETE FROM users WHERE id = ?').bind(userId).run();
+
+  return c.json({ success: true });
+});
+
 export default auth;
