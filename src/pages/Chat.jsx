@@ -247,6 +247,24 @@ const Chat = () => {
     );
   };
 
+  const messageKey = (msg) =>
+    msg.id || `${msg.sender_id}|${msg.created_at}|${msg.content}`;
+
+  const mergeUniqueMessages = (base, incoming, { prepend = false } = {}) => {
+    const combined = prepend ? [...incoming, ...base] : [...base, ...incoming];
+    const seen = new Set();
+    const unique = [];
+    for (const msg of combined) {
+      const key = messageKey(msg);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      unique.push(msg);
+    }
+    return unique;
+  };
+
   const {
     sendMessage,
     sendTypingIndicator,
@@ -260,22 +278,7 @@ const Chat = () => {
   } = useWebSocket({
     connectionId: connection ? connectionId : null, // Only connect if valid connection exists
     onMessage: (data) => {
-      // Check if message already exists to prevent duplicates
-      setMessages((prev) => {
-        // Check for duplicates by ID, content, and timestamp
-        const exists = prev.some(msg => 
-          msg.id === data.id || 
-          (msg.content === data.content && 
-           msg.sender_id === data.sender_id && 
-           Math.abs(new Date(msg.created_at) - new Date(data.created_at)) < 1000)
-        );
-        if (exists) {
-          console.log('[WS-Client] Duplicate message detected, ignoring:', data.id);
-          return prev; // Don't add duplicate
-        }
-        console.log('[WS-Client] Adding new message from WebSocket:', data.id);
-        return [...prev, data]; // Add new message at end
-      });
+      setMessages((prev) => mergeUniqueMessages(prev, [data], { prepend: false }));
       sendDeliveryConfirmation(data.id);
     },
     onTyping: (data) => {
@@ -354,7 +357,7 @@ const Chat = () => {
       
       if (reset) {
         // Initial load - replace all messages
-        setMessages(orderedMessages);
+        setMessages(mergeUniqueMessages([], orderedMessages, { prepend: false }));
         setOffset(orderedMessages.length);
         // Scroll to bottom after messages load
         setTimeout(() => {
@@ -364,7 +367,7 @@ const Chat = () => {
         }, 100);
       } else {
         // Load more (older messages) - prepend to existing messages
-        setMessages((prev) => [...orderedMessages, ...prev]);
+        setMessages((prev) => mergeUniqueMessages(prev, orderedMessages, { prepend: true }));
         setOffset((prev) => prev + orderedMessages.length);
       }
       
