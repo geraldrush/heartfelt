@@ -480,14 +480,25 @@ const StoryFeed = () => {
           </span>
         </div>
 
-        {/* Name and age overlay */}
-        <div className="absolute bottom-4 left-4 right-4">
+        {/* Name, location, and lifestyle overlay */}
+        <div className="absolute bottom-4 left-4 right-4 space-y-2">
           <h3 className="text-xl font-semibold text-white mb-1 drop-shadow-lg">
             {story.age} • {story.gender}
           </h3>
           <p className="text-white/90 text-xs drop-shadow-md">
             {story.location_city}, {story.location_province}
           </p>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
+              👶 {story.has_kids ? `${story.num_kids} kids` : 'No kids'}
+            </span>
+            <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
+              {story.smoker ? '🚬 Smoker' : '🚭 Non-smoker'}
+            </span>
+            <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
+              {story.drinks_alcohol ? '🍷 Drinks' : '🚫 No alcohol'}
+            </span>
+          </div>
         </div>
       </div>
       
@@ -498,18 +509,6 @@ const StoryFeed = () => {
               {tag}
             </span>
           ))}
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
-          <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-full">
-            👶 {story.has_kids ? `${story.num_kids} kids` : 'No kids'}
-          </span>
-          <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-full">
-            {story.smoker ? '🚬 Smoker' : '🚭 Non-smoker'}
-          </span>
-          <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-full">
-            {story.drinks_alcohol ? '🍷 Drinks' : '🚫 No alcohol'}
-          </span>
         </div>
 
         <button
