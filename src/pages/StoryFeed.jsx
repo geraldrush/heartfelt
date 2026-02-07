@@ -559,41 +559,37 @@ const StoryFeed = () => {
       <div className="relative z-10 px-4 py-0 md:px-4 md:pb-28 md:pt-8">
         <div className="w-full md:max-w-6xl mx-auto">
           {showCompletionBanner && (
-            <div className="sticky top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-40 mb-5">
-              <div className="rounded-3xl border border-emerald-100/70 bg-white/95 px-4 py-4 shadow-xl backdrop-blur">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      Profile {completion.percent}% complete
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      Add your location and details to get better matches.
-                    </p>
-                    <div className="mt-2 h-2 w-full max-w-xs rounded-full bg-slate-200/70 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
-                        style={{ width: `${completion.percent}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => navigate('/profile')}
-                      className="rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
-                    >
-                      Complete profile
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBannerDismissedUntil(Date.now() + 60000)}
-                      className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50"
-                      aria-label="Dismiss banner"
-                    >
-                      ✕
-                    </button>
+            <div className="fixed top-[env(safe-area-inset-top,0px)] left-0 right-0 z-[80] pointer-events-none px-4">
+              <div className="mx-auto w-full max-w-md rounded-3xl border border-emerald-100/70 bg-white/95 px-4 py-4 shadow-2xl backdrop-blur pointer-events-auto relative mt-2">
+                <button
+                  type="button"
+                  onClick={() => setBannerDismissedUntil(Date.now() + 60000)}
+                  className="absolute right-3 top-3 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                  aria-label="Dismiss banner"
+                >
+                  ✕
+                </button>
+                <div className="pr-10">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Profile {completion.percent}% complete
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Add your location and details to get better matches.
+                  </p>
+                  <div className="mt-2 h-2 w-full max-w-xs rounded-full bg-slate-200/70 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                      style={{ width: `${completion.percent}%` }}
+                    />
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/profile')}
+                  className="mt-3 w-full rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                >
+                  Complete profile
+                </button>
               </div>
             </div>
           )}
@@ -912,11 +908,11 @@ const StoryFeed = () => {
             </div>
             {currentStory && (
               <div className="fixed bottom-[calc(90px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 px-5">
-                <div className="mx-auto flex max-w-md items-center gap-3 rounded-3xl bg-white/95 p-3 shadow-2xl backdrop-blur">
+                <div className="mx-auto flex max-w-md flex-nowrap items-center gap-3 rounded-3xl bg-white/95 p-3 shadow-2xl backdrop-blur">
                   <button
                     type="button"
                     onClick={() => handlePass(currentStory)}
-                    className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600"
+                    className="flex-1 min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600"
                   >
                     Pass
                   </button>
@@ -924,7 +920,7 @@ const StoryFeed = () => {
                     <button
                       type="button"
                       onClick={() => handleAccept(currentStory)}
-                      className="flex-1 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
+                      className="flex-1 min-w-0 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
                     >
                       Accept
                     </button>
@@ -932,7 +928,7 @@ const StoryFeed = () => {
                     <button
                       type="button"
                       disabled
-                      className="flex-1 rounded-2xl bg-emerald-100 px-4 py-3 text-sm font-semibold text-emerald-600"
+                      className="flex-1 min-w-0 rounded-2xl bg-emerald-100 px-4 py-3 text-sm font-semibold text-emerald-600"
                     >
                       Connected
                     </button>
@@ -940,7 +936,7 @@ const StoryFeed = () => {
                     <button
                       type="button"
                       disabled
-                      className="flex-1 rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700"
+                      className="flex-1 min-w-0 rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700"
                     >
                       Requested
                     </button>
@@ -951,7 +947,7 @@ const StoryFeed = () => {
                         setConnectingStory(currentStory);
                         setShowMessageModal(true);
                       }}
-                      className="flex-1 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
+                      className="flex-1 min-w-0 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
                     >
                       Connect
                     </button>
