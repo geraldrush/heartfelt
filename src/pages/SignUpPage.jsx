@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import logo from '../assets/afrodate.png';
 import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import { emailSignup, googleAuth } from '../utils/api.js';
@@ -68,11 +69,15 @@ const SignUpPage = () => {
         <div className="w-full glass-card p-6 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-12">
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
-              <h1 className="text-4xl font-bold text-slate-900">
-                AfroDate
-              </h1>
+              <div className="flex items-center">
+                <img
+                  src={logo}
+                  alt="AfroDate"
+                  className="h-12 w-auto"
+                />
+              </div>
               <p className="mt-4 text-base text-slate-600">
-                Meet Africans across the continent and build genuine, lasting connections with people who value community, culture, and meaningful relationships.
+                Connect with Africans and people who love African culture. Build genuine, lasting connections with people who value community and meaningful relationships.
               </p>
 
               <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">

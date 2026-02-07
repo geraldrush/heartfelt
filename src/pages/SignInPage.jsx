@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import logo from '../assets/afrodate.png';
 import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import { emailLogin, googleAuth } from '../utils/api.js';
@@ -54,14 +55,18 @@ const SignInPage = () => {
         <div className="w-full glass-card p-6 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-12">
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
-              <h1 className="text-4xl font-bold text-slate-900">
-                AfroDate
-              </h1>
+              <div className="flex items-center">
+                <img
+                  src={logo}
+                  alt="AfroDate"
+                  className="h-12 w-auto"
+                />
+              </div>
               <p className="mt-4 text-base text-slate-600">
-                Meet Africans across the continent and the diaspora. Build genuine, respectful connections with people who value culture, community, and long‑term relationships.
+                Connect with Africans and people who love African culture. Build genuine, respectful connections with people who value community and long‑term relationships.
               </p>
               <p className="mt-3 text-sm text-slate-500">
-                Today, migration and busy lives make it harder to meet people who truly understand your background and values. AfroDate bridges those distances, helping Africans everywhere connect, share culture, and build relationships that feel like home.
+                Today, migration and busy lives make it harder to meet people who understand your background and values. AfroDate bridges those distances, bringing people together across cultures to build relationships that feel like home.
               </p>
 
               <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
