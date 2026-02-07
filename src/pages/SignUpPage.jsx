@@ -69,12 +69,13 @@ const SignUpPage = () => {
         <div className="w-full glass-card p-6 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-12">
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
-              <div className="flex items-center">
+              <div className="flex items-center gap-3">
                 <img
                   src={logo}
                   alt="AfroDate"
                   className="h-12 w-auto"
                 />
+                <span className="text-3xl font-bold text-slate-900">AfroDate</span>
               </div>
               <p className="mt-4 text-base text-slate-600">
                 Connect with Africans and people who love African culture. Build genuine, lasting connections with people who value community and meaningful relationships.
