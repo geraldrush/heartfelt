@@ -413,8 +413,8 @@ const StoryFeed = () => {
   );
 
   const renderCard = (story) => (
-    <div className="relative h-full flex flex-col overflow-hidden rounded-[32px] bg-gradient-to-br from-purple-50 via-rose-50 to-pink-100 backdrop-blur-sm border border-purple-100/50 shadow-2xl">
-      <div className="relative h-[55%] sm:h-[50%] md:h-80">
+    <div className="relative h-full flex flex-col overflow-hidden rounded-[32px] bg-white/95 border border-slate-100 shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
+      <div className="relative h-[62%] sm:h-[58%] md:h-80">
         {story.blurred_image_url ? (
           <img
             src={story.blurred_image_url}
@@ -423,7 +423,7 @@ const StoryFeed = () => {
             decoding="async"
             className="h-full w-full object-cover transition-opacity duration-300"
             style={{
-              backgroundImage: 'linear-gradient(to bottom right, rgb(233, 213, 255), rgb(251, 207, 232))',
+              backgroundImage: 'linear-gradient(to bottom right, rgb(255, 238, 230), rgb(231, 250, 244))',
               backgroundSize: 'cover',
             }}
             onLoad={(e) => {
@@ -438,16 +438,16 @@ const StoryFeed = () => {
         )}
         
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/75 via-slate-900/20 to-transparent" />
         
         {/* Nationality flag / Connection status */}
         <div className="absolute left-4 top-4">
           {story.connection_status === 'pending_received' ? (
-            <span className="glass-card px-3 py-1.5 text-xs font-semibold bg-blue-100/80 text-blue-700 rounded-full backdrop-blur-md">
-              💕 Wants to Connect
+            <span className="rounded-full bg-emerald-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-md">
+              New request
             </span>
           ) : (
-            <span className="glass-card px-3 py-1.5 text-xs font-semibold text-white rounded-full backdrop-blur-md">
+            <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-700 backdrop-blur-md">
               {story.nationality === 'South Africa' ? '🇿🇦' : 
                story.nationality === 'Zimbabwe' ? '🇿🇼' : 
                story.nationality === 'Namibia' ? '🇳🇦' : 
@@ -459,19 +459,19 @@ const StoryFeed = () => {
         
         {/* Online status */}
         <div className="absolute right-4 top-4">
-          <span className={`glass-card px-3 py-1.5 text-xs font-semibold rounded-full flex items-center gap-2 backdrop-blur-md ${
-            story.is_online === true ? 'text-emerald-400' : 'text-gray-300'
+          <span className={`rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-2 backdrop-blur-md ${
+            story.is_online === true ? 'bg-emerald-500/90 text-white' : 'bg-white/80 text-slate-500'
           }`}>
             <span className={`w-2 h-2 rounded-full ${
-              story.is_online === true ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'
+              story.is_online === true ? 'bg-white animate-pulse' : 'bg-slate-400'
             }`} />
             {story.is_online === true ? 'Online' : 'Offline'}
           </span>
         </div>
 
         {/* Name and age overlay */}
-        <div className="absolute bottom-3 left-3 right-3">
-          <h3 className="text-lg font-semibold text-white mb-1 drop-shadow-lg">
+        <div className="absolute bottom-4 left-4 right-4">
+          <h3 className="text-xl font-semibold text-white mb-1 drop-shadow-lg">
             {story.age} • {story.gender}
           </h3>
           <p className="text-white/90 text-xs drop-shadow-md">
@@ -480,51 +480,49 @@ const StoryFeed = () => {
         </div>
       </div>
       
-      <div className="flex-1 p-4 space-y-3 overflow-y-auto max-h-[50%] md:max-h-none bg-gradient-to-b from-transparent via-white/30 to-white/60">
-        {/* Tags */}
+      <div className="flex-1 p-4 bg-white flex flex-col justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          {[story.religion, story.race, story.education].filter(Boolean).map((tag, index) => (
-            <span key={index} className="px-3 py-1 bg-gradient-to-r from-purple-100/80 to-pink-100/80 text-purple-700 text-xs font-medium rounded-full border border-purple-200/50 backdrop-blur-sm">
+          {[story.religion, story.race, story.education].filter(Boolean).slice(0, 3).map((tag, index) => (
+            <span key={index} className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-100">
               {tag}
             </span>
           ))}
         </div>
 
-        {/* Lifestyle info */}
-        <div className="flex flex-wrap gap-3 text-xs text-gray-600">
-          <span className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full backdrop-blur-sm">
-            👶 {story.has_kids ? `Has ${story.num_kids} kids` : 'No kids'}
+        <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+          <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-full">
+            👶 {story.has_kids ? `${story.num_kids} kids` : 'No kids'}
           </span>
-          <span className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full backdrop-blur-sm">
+          <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-full">
             {story.smoker ? '🚬 Smoker' : '🚭 Non-smoker'}
           </span>
-          <span className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full backdrop-blur-sm">
+          <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-full">
             {story.drinks_alcohol ? '🍷 Drinks' : '🚫 No alcohol'}
           </span>
         </div>
 
-        {/* Story text */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-          <p className="text-gray-700 text-xs leading-relaxed">
-            {truncateText(story.story_text)}
-          </p>
-        </div>
+        <button
+          type="button"
+          onClick={() => setSelectedStory(story)}
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+        >
+          Read story
+        </button>
 
-        {/* Connection status */}
         {story.connection_status !== 'none' && (
-          <div className="pt-2">
-            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm ${
+          <div>
+            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
               story.connection_status === 'connected'
-                ? 'bg-emerald-100/80 text-emerald-700 border border-emerald-200/50'
+                ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
                 : story.connection_status === 'pending_sent'
-                ? 'bg-amber-100/80 text-amber-700 border border-amber-200/50'
-                : 'bg-blue-100/80 text-blue-700 border border-blue-200/50'
+                ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
             }`}>
               {story.connection_status === 'connected'
                 ? '✨ Connected'
                 : story.connection_status === 'pending_sent'
                 ? '⏳ Request Sent'
-                : '💕 Wants to Connect'}
+                : 'New request'}
             </span>
           </div>
         )}
