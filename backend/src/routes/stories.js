@@ -48,6 +48,49 @@ stories.get('/reference/data', async (c) => {
   return c.json(data);
 });
 
+stories.get('/me', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+
+  const story = await db.prepare(
+    `SELECT
+      s.id AS story_id,
+      s.story_text,
+      s.created_at,
+      si.id AS image_id,
+      si.blurred_url AS blurred_image_url
+    FROM stories s
+    LEFT JOIN story_images si
+      ON si.id = (
+        SELECT id
+        FROM story_images
+        WHERE story_id = s.id AND processing_status = 'completed'
+        ORDER BY created_at ASC
+        LIMIT 1
+      )
+    WHERE s.user_id = ? AND s.is_active = 1
+    LIMIT 1`
+  ).bind(userId).first();
+
+  if (!story) {
+    return c.json({ story: null });
+  }
+
+  const origin = new URL(c.req.url).origin;
+  const imageUrl = story.blurred_image_url
+    ? `${origin}/api/stories/${story.story_id}/blurred`
+    : null;
+
+  return c.json({
+    story: {
+      id: story.story_id,
+      story_text: story.story_text,
+      created_at: story.created_at,
+      image_url: imageUrl,
+    },
+  });
+});
+
 stories.post('/upload-image', authMiddleware, async (c) => {
   // CSRF protection for file upload operations
   const origin = c.req.header('Origin');

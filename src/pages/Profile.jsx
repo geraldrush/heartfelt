@@ -48,6 +48,20 @@ const CITY_SUGGESTIONS = [
   'New York', 'Washington', 'Toronto', 'Vancouver', 'Dubai', 'Doha', 'Sydney', 'Melbourne',
 ];
 
+const PROVINCE_SUGGESTIONS = [
+  'Gauteng', 'Western Cape', 'KwaZulu-Natal', 'Eastern Cape', 'Free State',
+  'Limpopo', 'Mpumalanga', 'North West', 'Northern Cape',
+  'Lagos', 'Abuja', 'Kano', 'Rivers', 'Oyo', 'Delta',
+  'Nairobi County', 'Mombasa County', 'Kisumu County',
+  'Greater Accra', 'Ashanti', 'Western', 'Northern',
+  'Cairo Governorate', 'Giza Governorate', 'Alexandria Governorate',
+  'Casablanca-Settat', 'Rabat-Salé-Kénitra', 'Tunis', 'Algiers Province',
+  'Harare Province', 'Bulawayo Province', 'Lusaka Province', 'Kigali City',
+  'Greater London', 'Île-de-France', 'Berlin', 'Madrid', 'Lisbon', 'Rome',
+  'New York State', 'California', 'Texas', 'Ontario', 'British Columbia',
+  'Dubai', 'Doha', 'New South Wales', 'Victoria',
+];
+
 const Profile = () => {
   const navigate = useNavigate();
   const { logout, user: authUser, updateUser } = useAuth();
@@ -86,6 +100,7 @@ const Profile = () => {
   const [uploadingStory, setUploadingStory] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showMissing, setShowMissing] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -329,13 +344,28 @@ const Profile = () => {
           <div className="glass-card rounded-3xl p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Profile completion</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Profile completion</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowMissing((prev) => !prev)}
+                    className="h-5 w-5 rounded-full border border-slate-200 text-[10px] font-semibold text-slate-500"
+                    aria-label="Show missing fields"
+                  >
+                    i
+                  </button>
+                </div>
                 <p className="text-2xl font-semibold text-slate-900 mt-1">{completion.percent}%</p>
               </div>
-              <Button variant="secondary" size="sm" onClick={() => navigate('/stories')}>
-                <FaTachometerAlt className="w-4 h-4 mr-1" />
-                Browse
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => navigate('/profile/preview')}>
+                  Preview
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => navigate('/stories')}>
+                  <FaTachometerAlt className="w-4 h-4 mr-1" />
+                  Browse
+                </Button>
+              </div>
             </div>
             <div className="mt-4 h-2 w-full rounded-full bg-slate-200 overflow-hidden">
               <div
@@ -346,6 +376,20 @@ const Profile = () => {
             <p className="text-xs text-slate-500 mt-2">
               Complete your profile for better matches.
             </p>
+            {showMissing && (
+              <div className="mt-3 rounded-2xl border border-slate-200 bg-white/80 p-3 text-xs text-slate-600">
+                <p className="font-semibold text-slate-700 mb-2">Missing details</p>
+                {completion.missing.length === 0 ? (
+                  <p>All set! Your profile is complete.</p>
+                ) : (
+                  <ul className="list-disc list-inside space-y-1">
+                    {completion.missing.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -542,8 +586,14 @@ const Profile = () => {
                   onChange={(e) => updateField('location_province', e.target.value)}
                   className="mt-2 w-full premium-input"
                   placeholder="Region"
+                  list="province-suggestions"
                   required
                 />
+                <datalist id="province-suggestions">
+                  {PROVINCE_SUGGESTIONS.map((province) => (
+                    <option key={province} value={province} />
+                  ))}
+                </datalist>
               </div>
               <div className="sm:col-span-2">
                 <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nationality</label>

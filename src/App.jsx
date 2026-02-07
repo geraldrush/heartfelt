@@ -17,6 +17,7 @@ const SentRequests = React.lazy(() => import('./pages/SentRequests'));
 const ReceivedRequests = React.lazy(() => import('./pages/ReceivedRequests'));
 const Connections = React.lazy(() => import('./pages/Connections'));
 const Profile = React.lazy(() => import('./pages/Profile'));
+const ProfilePreview = React.lazy(() => import('./pages/ProfilePreview.jsx'));
 const TokensPage = React.lazy(() => import('./pages/TokensPage'));
 const OnboardingBasics = React.lazy(() => import('./pages/OnboardingBasics.jsx'));
 const ConnectionProfile = React.lazy(() => import('./pages/ConnectionProfile.jsx'));
@@ -158,6 +159,16 @@ const AnimatedRoutes = () => {
               <ProtectedRoute>
                 <FadeIn>
                   <Profile />
+                </FadeIn>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/preview"
+            element={
+              <ProtectedRoute>
+                <FadeIn>
+                  <ProfilePreview />
                 </FadeIn>
               </ProtectedRoute>
             }

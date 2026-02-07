@@ -150,6 +150,7 @@ export const updateProfilePartial = (data) => apiClient.put('/api/stories/update
 export const getReferenceData = () => apiClient.get('/api/stories/reference/data');
 export const processImage = (data) => apiClient.post('/api/images/process', data);
 export const getStoryImages = (storyId) => apiClient.get(`/api/stories/${storyId}/images`);
+export const getMyStory = () => apiClient.get('/api/stories/me');
 export const getTokenBalance = () => apiClient.get('/api/tokens/balance');
 export const transferTokens = (data) => apiClient.post('/api/tokens/transfer', data);
 export const getTokenHistory = ({ limit = 50, offset = 0 } = {}) =>
