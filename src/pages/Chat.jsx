@@ -193,6 +193,8 @@ const Chat = () => {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [tokenBalance, setTokenBalance] = useState(0);
   const [videoCallInvitation, setVideoCallInvitation] = useState(null);
+  const [peerReady, setPeerReady] = useState(false);
+  const peerRef = useRef(null);
 
   const listRef = useRef(null);
   const topSentinelRef = useRef(null);
@@ -427,7 +429,38 @@ const Chat = () => {
     loadMessages({ reset: true });
     loadTokenRequests();
     getTokenBalance().then(data => setTokenBalance(data.balance));
-  }, [connectionId]);
+    
+    // Initialize PeerJS connection when chat opens
+    if (user?.id && !peerRef.current) {
+      import('peerjs').then(({ default: Peer }) => {
+        const peer = new Peer(user.id, {
+          host: '0.peerjs.com',
+          secure: true,
+          port: 443,
+          path: '/'
+        });
+        
+        peer.on('open', () => {
+          console.log('Peer connected:', user.id);
+          setPeerReady(true);
+        });
+        
+        peer.on('error', (error) => {
+          console.error('Peer error:', error);
+        });
+        
+        peerRef.current = peer;
+      });
+    }
+    
+    return () => {
+      if (peerRef.current) {
+        peerRef.current.destroy();
+        peerRef.current = null;
+        setPeerReady(false);
+      }
+    };
+  }, [connectionId, user?.id]);
 
   // Cleanup on unmount
   useEffect(() => {
