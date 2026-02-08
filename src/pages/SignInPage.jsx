@@ -53,8 +53,8 @@ const SignInPage = () => {
   return (
     <div className="min-h-screen bg-premium-mesh">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-2 py-8 sm:px-6 sm:py-12">
-        <div className="w-full glass-card p-6 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-12">
-          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="w-full glass-card p-0 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-12">
+          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] px-2 py-8 sm:px-6 sm:py-12">
             <div>
               <div className="hidden md:block">
                 <div className="flex items-center gap-3">
@@ -241,7 +241,7 @@ const SignInPage = () => {
 
             <div className="flex flex-col justify-between rounded-2xl bg-slate-900 p-6 sm:p-10 text-white">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-rose-300">
+                <p className="text-xs uppercase tracking-[0.3em] text-amber-300">
                   Pan‑African connections
                 </p>
                 <h3 className="mt-4 text-3xl font-semibold">
