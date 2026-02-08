@@ -79,7 +79,7 @@ const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: 
             disabled={isStarting}
             className="bg-green-600 text-white px-6 py-3 rounded-full font-semibold disabled:opacity-50"
           >
-            {isStarting ? 'Starting...' : 'Start Call (10 tokens)'}
+            {isStarting ? 'Starting...' : 'Start Call'}
           </button>
         )}
         <button
