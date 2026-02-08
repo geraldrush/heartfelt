@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useVideoCall } from '../hooks/useVideoCall';
 
-const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: initialBalance }) => {
-  const { startCall, endCall, isCallActive, localStream, remoteStream, tokenBalance } = useVideoCall(userId, connectionId, remotePeerId);
+const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: initialBalance, peer }) => {
+  const { startCall, endCall, isCallActive, localStream, remoteStream, tokenBalance } = useVideoCall(userId, connectionId, remotePeerId, peer);
   const [error, setError] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
   const localVideoRef = useRef(null);

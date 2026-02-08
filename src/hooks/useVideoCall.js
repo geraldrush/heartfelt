@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import Peer from 'peerjs';
 import { requestVideoCall } from '../utils/api';
 
-export const useVideoCall = (userId, connectionId, recipientId) => {
-  const [peer, setPeer] = useState(null);
+export const useVideoCall = (userId, connectionId, recipientId, externalPeer = null) => {
+  const [peer, setPeer] = useState(externalPeer);
   const [call, setCall] = useState(null);
   const [isCallActive, setIsCallActive] = useState(false);
   const [remoteStream, setRemoteStream] = useState(null);
@@ -11,42 +11,32 @@ export const useVideoCall = (userId, connectionId, recipientId) => {
   const localStreamRef = useRef(null);
 
   useEffect(() => {
-    const newPeer = new Peer(userId, {
-      host: '0.peerjs.com',
-      secure: true,
-      port: 443,
-      path: '/'
-    });
-
-    newPeer.on('open', () => {
-      console.log('Peer connected:', userId);
-      setPeer(newPeer);
-    });
-
-    newPeer.on('error', (error) => {
-      console.error('Peer error:', error);
-    });
-
-    newPeer.on('call', (incomingCall) => {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then((stream) => {
-          localStreamRef.current = stream;
-          incomingCall.answer(stream);
-          
-          incomingCall.on('stream', (remoteStream) => {
-            setRemoteStream(remoteStream);
-            setIsCallActive(true);
+    if (externalPeer) {
+      setPeer(externalPeer);
+      
+      const handleIncomingCall = (incomingCall) => {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then((stream) => {
+            localStreamRef.current = stream;
+            incomingCall.answer(stream);
+            
+            incomingCall.on('stream', (remoteStream) => {
+              setRemoteStream(remoteStream);
+              setIsCallActive(true);
+            });
+            
+            setCall(incomingCall);
           });
-          
-          setCall(incomingCall);
-        });
-    });
-
-    return () => {
-      newPeer?.destroy();
-      localStreamRef.current?.getTracks().forEach(track => track.stop());
-    };
-  }, [userId]);
+      };
+      
+      externalPeer.on('call', handleIncomingCall);
+      
+      return () => {
+        externalPeer.off('call', handleIncomingCall);
+        localStreamRef.current?.getTracks().forEach(track => track.stop());
+      };
+    }
+  }, [externalPeer]);
 
   const startCall = async (remotePeerId) => {
     try {

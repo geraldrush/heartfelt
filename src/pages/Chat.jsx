@@ -945,12 +945,13 @@ const Chat = () => {
       )}
 
       {/* Video Call Component */}
-      {showVideoCall && (
+      {showVideoCall && peerRef.current && (
         <VideoCall
           userId={user?.id}
           connectionId={connectionId}
           remotePeerId={otherUserId}
           tokenBalance={tokenBalance}
+          peer={peerRef.current}
           onClose={() => {
             setShowVideoCall(false);
             getTokenBalance().then(data => setTokenBalance(data.balance));
