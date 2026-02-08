@@ -53,6 +53,9 @@ export function scheduleRefreshTimer(token, callback) {
   const expiry = getTokenExpiry(token);
   if (!expiry) return null;
   
+  // Validate callback is a function
+  if (typeof callback !== 'function') return null;
+  
   const refreshTime = expiry - Date.now() - (5 * 60 * 1000); // 5 minutes before expiry
   if (refreshTime <= 0) return null;
   
