@@ -163,12 +163,6 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
     }
     
     const requestId = generateId();
-    const notificationData = JSON.stringify({ connection_id: body.connection_id, caller_id: userId });
-    
-    await db
-      .prepare('INSERT INTO notifications (id, user_id, type, title, message, data) VALUES (?, ?, ?, ?, ?, ?)')
-      .bind(generateId(), body.recipient_id, 'video_call_request', 'Incoming Video Call', `${user.full_name} is calling you`, notificationData)
-      .run();
     
     return c.json({ 
       success: true, 
