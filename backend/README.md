@@ -24,9 +24,9 @@ Cloudflare Workers backend with Durable Objects for real-time chat functionality
 Create `.dev.vars` file in backend directory:
 
 ```
-JWT_SECRET=your-local-jwt-secret-32-chars-min
+JWT_SECRET=<generate-with-openssl-rand-base64-32>
 CORS_ORIGIN=http://localhost:5173
-GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_ID=<your-google-client-id>
 ```
 
 ### Security Notes

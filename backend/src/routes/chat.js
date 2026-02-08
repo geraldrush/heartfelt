@@ -162,10 +162,16 @@ chat.get('/unread-counts', authMiddleware, async (c) => {
       GROUP BY c.id
     `).bind(userId, userId, userId).all();
     
+    if (!result || !result.results) {
+      return c.json({ unread_counts: {} });
+    }
+    
     const unreadCounts = {};
-    result.results.forEach(row => {
-      unreadCounts[row.connection_id] = row.unread_count;
-    });
+    if (result && Array.isArray(result.results)) {
+      result.results.forEach(row => {
+        unreadCounts[row.connection_id] = row.unread_count;
+      });
+    }
     
     return c.json({ unread_counts: unreadCounts });
   } catch (error) {

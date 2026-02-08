@@ -220,11 +220,18 @@ auth.post('/google', authRateLimit, async (c) => {
   });
 
   if (!tokenInfoResponse.ok) {
+    // Consume response body to prevent resource leak
+    await tokenInfoResponse.text().catch(() => {});
     return c.json({ error: 'Invalid Google credential.' }, 401);
   }
 
   const signupBonusTokens = getSignupBonusTokens(c);
-  const tokenInfo = await tokenInfoResponse.json();
+  let tokenInfo;
+  try {
+    tokenInfo = await tokenInfoResponse.json();
+  } catch (error) {
+    return c.json({ error: 'Invalid Google credential response.' }, 401);
+  }
   const googleId = tokenInfo.sub;
   const email = tokenInfo.email;
   const fullName = tokenInfo.name || tokenInfo.email || 'Heartfelt User';
@@ -367,7 +374,7 @@ auth.delete('/account', authMiddleware, async (c) => {
       .bind(userId)
       .all();
 
-    if (Array.isArray(imageRows?.results)) {
+    if (imageRows && Array.isArray(imageRows.results)) {
       for (const row of imageRows.results) {
         if (row.original_url) {
           await c.env.R2_BUCKET.delete(row.original_url);

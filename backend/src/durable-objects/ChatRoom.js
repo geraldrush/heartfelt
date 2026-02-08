@@ -313,8 +313,9 @@ export class ChatRoom {
         }
         
         // Check for duplicate message using client_id
-        if (payload.client_id && this.messageIds.has(payload.client_id)) {
-          console.log(`[WS-Server] Duplicate message detected: ${payload.client_id}`);
+        const sanitizedClientId = payload.client_id && typeof payload.client_id === 'string' ? sanitizeContent(payload.client_id) : null;
+        if (sanitizedClientId && this.messageIds.has(sanitizedClientId)) {
+          console.log(`[WS-Server] Duplicate message detected: ${sanitizedClientId}`);
           return; // Silently ignore duplicate
         }
         
@@ -322,8 +323,8 @@ export class ChatRoom {
         const createdAt = new Date().toISOString();
         
         // Track message to prevent duplicates
-        if (payload.client_id) {
-          this.messageIds.add(payload.client_id);
+        if (sanitizedClientId) {
+          this.messageIds.add(sanitizedClientId);
           // Clean up old message IDs (keep last 1000)
           if (this.messageIds.size > 1000) {
             const oldIds = Array.from(this.messageIds).slice(0, 100);
@@ -357,7 +358,7 @@ export class ChatRoom {
           type: 'delivery_confirmation',
           id: messageId,
           status: 'sent',
-          client_id: payload.client_id ? sanitizeContent(String(payload.client_id)) : null,
+          client_id: sanitizedClientId,
         });
         break;
       }
@@ -374,10 +375,9 @@ export class ChatRoom {
       }
       case 'delivery_confirmation': {
         if (payload.id && typeof payload.id === 'string') {
-          const sanitizedId = sanitizeContent(payload.id);
-          await updateMessageStatus(this.env.DB, sanitizedId, 'delivered');
+          await updateMessageStatus(this.env.DB, payload.id, 'delivered');
           this.broadcast(
-            { type: 'delivery_confirmation', id: sanitizedId, status: 'delivered' },
+            { type: 'delivery_confirmation', id: payload.id, status: 'delivered' },
             senderId
           );
         }
@@ -385,10 +385,9 @@ export class ChatRoom {
       }
       case 'read_receipt': {
         if (payload.id && typeof payload.id === 'string') {
-          const sanitizedId = sanitizeContent(payload.id);
-          await updateMessageStatus(this.env.DB, sanitizedId, 'read');
+          await updateMessageStatus(this.env.DB, payload.id, 'read');
           this.broadcast(
-            { type: 'read_receipt', id: sanitizedId, status: 'read' },
+            { type: 'read_receipt', id: payload.id, status: 'read' },
             senderId
           );
         }
