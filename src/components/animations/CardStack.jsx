@@ -1,10 +1,10 @@
 import React, { useMemo, useCallback } from 'react';
 import { useDrag } from 'react-use-gesture';
 import { motion } from 'framer-motion';
-import { FaArrowUp, FaHeart, FaTimes } from 'react-icons/fa';
-import { triggerHaptic } from '../../utils/haptics.js';
+import { FaArrowUp, FaTimes, FaUndoAlt } from 'react-icons/fa';
 
 const SWIPE_THRESHOLD = 150;
+const SWIPE_BACK_THRESHOLD = 120;
 
 const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, onCardClick, disabled = false }) => {
   const [dragState, setDragState] = React.useState({ x: 0, y: 0, rot: 0, scale: 1 });
@@ -23,17 +23,16 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
       onSwipeUp(topItem);
     }
     
-    setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
-    setIsAnimating(false);
+    window.setTimeout(() => {
+      setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
+      setIsAnimating(false);
+    }, 180);
   }, [isAnimating, onSwipeLeft, onSwipeRight, onSwipeUp]);
 
-  const bind = useDrag(({ down, movement: [mx, my], tap }) => {
+  const bind = useDrag(({ down, movement: [mx, my], cancel }) => {
     if (disabled || isAnimating) return;
     
     if (down) {
-      if (Math.abs(mx) > 10 || Math.abs(my) > 10) {
-        triggerHaptic('light');
-      }
       setDragState({ x: mx, y: my, rot: mx / 15, scale: 1.02 });
       return;
     }
@@ -41,9 +40,16 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
     const swipeLeft = mx < -SWIPE_THRESHOLD;
     const swipeRight = mx > SWIPE_THRESHOLD;
     const swipeUp = my < -SWIPE_THRESHOLD;
+    const swipeBack = mx > SWIPE_BACK_THRESHOLD;
+
+    if (swipeBack && onSwipeRight) {
+      // Treat swipe-right as undo/back (no vibration)
+      onSwipeRight(items[0]);
+      setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
+      return;
+    }
 
     if (swipeRight || swipeLeft || swipeUp) {
-      triggerHaptic('medium');
       const toX = swipeLeft ? -500 : swipeRight ? 500 : 0;
       const toY = swipeUp ? -500 : 0;
       setDragState({ x: toX, y: toY, rot: mx / 10, scale: 1 });
@@ -51,7 +57,9 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
       const topItem = items[0];
       if (topItem) {
         const direction = swipeLeft ? 'left' : swipeRight ? 'right' : 'up';
-        handleSwipeComplete(direction, topItem);
+        window.setTimeout(() => {
+          handleSwipeComplete(direction, topItem);
+        }, 140);
       }
     } else {
       setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
@@ -106,12 +114,12 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
                     </div>
                   </motion.div>
                   <motion.div
-                    className="pointer-events-none absolute inset-0 z-10 flex items-start justify-end rounded-[32px] bg-emerald-500/20 p-4 text-emerald-600"
+                    className="pointer-events-none absolute inset-0 z-10 flex items-start justify-end rounded-[32px] bg-slate-500/20 p-4 text-slate-700"
                     animate={{ opacity: dragState.x > 30 ? Math.min(dragState.x / 150, 1) : 0 }}
                   >
-                    <div className="flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold">
-                      <FaHeart />
-                      Connect
+                    <div className="flex items-center gap-2 rounded-full bg-white/85 px-3 py-1 text-xs font-semibold">
+                      <FaUndoAlt />
+                      Undo
                     </div>
                   </motion.div>
                   <motion.div

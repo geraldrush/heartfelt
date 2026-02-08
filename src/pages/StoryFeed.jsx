@@ -365,19 +365,20 @@ const StoryFeed = () => {
     }
   };
 
-  const handlePass = (story) => {
+  const handlePass = (story, { silent = false } = {}) => {
     if (isAnimating) return; // Prevent multiple rapid passes
-    triggerHaptic('light');
+    if (!silent) {
+      triggerHaptic('light');
+    }
     removeStory(story, 'pass');
   };
 
   const handleSwipeLeft = (story) => {
-    handlePass(story);
+    handlePass(story, { silent: true });
   };
 
-  const handleSwipeRight = (story) => {
-    setConnectingStory(story);
-    setShowMessageModal(true);
+  const handleSwipeRight = () => {
+    handleUndo({ silent: true });
   };
 
   const handleSendMessage = async () => {
@@ -395,13 +396,14 @@ const StoryFeed = () => {
     setConnectingStory(null);
   };
 
-  const handleUndo = () => {
+  const handleUndo = ({ silent = false } = {}) => {
     const [last] = swipeHistory;
     if (!last) {
       return;
     }
-    
-    triggerHaptic('medium');
+    if (!silent) {
+      triggerHaptic('medium');
+    }
     setSwipeHistory((prev) => prev.slice(1));
     restoreStory(last.story);
   };
@@ -944,18 +946,6 @@ const StoryFeed = () => {
         </div>
       </div>
 
-      {/* Undo Button */}
-      {swipeHistory.length > 0 && (
-        <motion.button
-          type="button"
-          onClick={handleUndo}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="fixed bottom-[calc(120px+env(safe-area-inset-bottom,0px))] left-4 z-40 glass-card rounded-full px-4 py-2 text-sm font-semibold text-gray-600 shadow-lg md:bottom-12 md:left-6"
-        >
-          ↶ Undo
-        </motion.button>
-      )}
 
       {/* Story Detail Modal */}
       {!showImageViewer && selectedStory && (
