@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import logo from '../assets/afrodate_logo.png';
+import coupleImage from '../assets/couple.png';
 import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import { emailLogin, googleAuth } from '../utils/api.js';
@@ -55,7 +56,26 @@ const SignInPage = () => {
         <div className="w-full glass-card p-6 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-12">
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
-              <div className="flex items-center gap-3">
+              <div className="mb-6 overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-lg backdrop-blur md:hidden">
+                <div className="relative h-56 w-full">
+                  <img
+                    src={coupleImage}
+                    alt="AfroDate couple"
+                    className="absolute inset-0 h-full w-full object-cover opacity-70"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/25 to-black/40" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white">
+                    <img
+                      src={logo}
+                      alt="AfroDate"
+                      className="h-16 w-auto"
+                    />
+                    <span className="mt-3 text-3xl font-bold">AfroDate</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="hidden items-center gap-3 md:flex">
                 <img
                   src={logo}
                   alt="AfroDate"
