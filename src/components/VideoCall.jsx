@@ -21,11 +21,6 @@ const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: 
   }, [remoteStream]);
 
   const handleStartCall = async () => {
-    if (initialBalance < 10) {
-      setError('You need at least 10 tokens to start a video call');
-      return;
-    }
-    
     setIsStarting(true);
     setError(null);
     

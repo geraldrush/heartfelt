@@ -160,7 +160,18 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
   try {
     const user = await db.prepare('SELECT token_balance, full_name FROM users WHERE id = ?').bind(userId).first();
     if (!user || user.token_balance < cost) {
-      return c.json({ error: 'Insufficient tokens' }, 402);
+      try {
+        await createNotification(db, {
+          user_id: userId,
+          type: 'token_low',
+          title: 'Top up tokens',
+          message: 'You need at least 10 tokens to start a video call. Top up to continue.',
+          data: { required: cost, balance: user?.token_balance ?? 0 }
+        });
+      } catch (notifyError) {
+        console.error('[Chat] Failed to create low token notification:', notifyError);
+      }
+      return c.json({ error: 'Insufficient tokens', code: 'INSUFFICIENT_TOKENS' }, 402);
     }
     
     const requestId = generateId();
