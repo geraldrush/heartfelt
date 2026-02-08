@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaFilter } from 'react-icons/fa';
+import { NotificationBell } from '../components/NotificationBell.jsx';
 import {
   acceptConnectionRequest,
   getReferenceData,
@@ -606,11 +607,14 @@ const StoryFeed = () => {
               </p>
             </div>
             
-            <div className="hidden md:block rounded-3xl border border-emerald-100/60 bg-white/90 px-5 py-3 text-center shadow-lg backdrop-blur">
-              <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Tokens</p>
-              <p className="text-2xl font-bold text-emerald-600">
-                {tokenBalance === null ? '...' : tokenBalance}
-              </p>
+            <div className="flex items-center gap-4">
+              <NotificationBell />
+              <div className="hidden md:block rounded-3xl border border-emerald-100/60 bg-white/90 px-5 py-3 text-center shadow-lg backdrop-blur">
+                <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Tokens</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {tokenBalance === null ? '...' : tokenBalance}
+                </p>
+              </div>
             </div>
           </motion.div>
 

@@ -21,6 +21,7 @@ const ProfilePreview = React.lazy(() => import('./pages/ProfilePreview.jsx'));
 const TokensPage = React.lazy(() => import('./pages/TokensPage'));
 const OnboardingBasics = React.lazy(() => import('./pages/OnboardingBasics.jsx'));
 const ConnectionProfile = React.lazy(() => import('./pages/ConnectionProfile.jsx'));
+const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage.jsx'));
 
 const AuthRedirect = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -179,6 +180,16 @@ const AnimatedRoutes = () => {
               <ProtectedRoute>
                 <FadeIn>
                   <TokensPage />
+                </FadeIn>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <FadeIn>
+                  <NotificationsPage />
                 </FadeIn>
               </ProtectedRoute>
             }

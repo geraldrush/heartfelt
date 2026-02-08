@@ -18,6 +18,7 @@ import {
   connectionActionSchema,
   connectionRequestSchema,
 } from '../utils/validation.js';
+import { createNotification } from './notifications.js';
 
 const connections = new Hono();
 
@@ -79,6 +80,15 @@ connections.post('/request', authMiddleware, connectionRequestRateLimit, async (
   if (!updatedUser || updatedUser.token_balance < 0) {
     return c.json({ error: 'Insufficient tokens.' }, 402);
   }
+
+  // Create notification for receiver
+  await createNotification(db, {
+    user_id: receiverId,
+    type: 'connection_request',
+    title: 'New Connection Request',
+    message: `${sender.full_name} sent you a connection request`,
+    data: { request_id: requestId, sender_id: senderId }
+  });
 
   return c.json({
     success: true,

@@ -215,3 +215,9 @@ export const getTokenPackages = () => apiClient.get('/api/payments/packages');
 export const initiatePayment = (data) => apiClient.post('/api/payments/initiate', data);
 export const getPaymentStatus = (paymentId) =>
   apiClient.get(`/api/payments/status/${paymentId}`);
+export const getNotifications = ({ limit = 50, offset = 0 } = {}) =>
+  apiClient.get(`/api/notifications?limit=${limit}&offset=${offset}`);
+export const markNotificationAsRead = (notificationId) =>
+  apiClient.post(`/api/notifications/${notificationId}/read`);
+export const getUnreadNotificationCount = () =>
+  apiClient.get('/api/notifications/unread-count');
