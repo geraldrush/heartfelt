@@ -690,29 +690,20 @@ const Chat = () => {
                 <p className="text-xs text-gray-500">{getConnectionText()}</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowTokenRequest((prev) => !prev)}
-                className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition"
-              >
-                {showTokenRequest ? 'Close' : 'Request'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (tokenBalance < 10) {
-                    alert('You need at least 10 tokens to start a video call');
-                    return;
-                  }
-                  setShowVideoCall(true);
-                }}
-                disabled={tokenBalance < 10}
-                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg transition"
-              >
-                📹 Call
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (tokenBalance < 10) {
+                  alert('You need at least 10 tokens to start a video call');
+                  return;
+                }
+                setShowVideoCall(true);
+              }}
+              disabled={tokenBalance < 10}
+              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg transition"
+            >
+              📹 Call
+            </button>
           </div>
         </div>
 
