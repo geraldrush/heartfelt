@@ -50,6 +50,11 @@ export function shouldRefreshToken(token) {
 }
 
 export function scheduleRefreshTimer(token, callback) {
+  // Validate token format
+  if (!token || typeof token !== 'string' || !token.match(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)) {
+    return null;
+  }
+  
   const expiry = getTokenExpiry(token);
   if (!expiry) return null;
   

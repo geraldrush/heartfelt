@@ -4,6 +4,7 @@ class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null, errorInfo: null };
+    this.handleRefresh = this.handleRefresh.bind(this);
   }
 
   static getDerivedStateFromError(error) {
@@ -22,6 +23,10 @@ class ErrorBoundary extends React.Component {
     }
   }
 
+  handleRefresh() {
+    window.location.reload();
+  }
+
   render() {
     if (this.state.hasError) {
       return (
@@ -37,7 +42,7 @@ class ErrorBoundary extends React.Component {
               We're sorry, but something unexpected happened. Please try refreshing the page.
             </p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={this.handleRefresh}
               className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition"
             >
               Refresh Page

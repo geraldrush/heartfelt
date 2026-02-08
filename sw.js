@@ -75,7 +75,10 @@ self.addEventListener('fetch', (event) => {
         if (url.origin !== self.location.origin) {
           return new Response('Forbidden', { status: 403 });
         }
-        return fetch(event.request);
+        return fetch(event.request, {
+          redirect: 'manual',
+          referrerPolicy: 'no-referrer'
+        });
       })
   );
 });

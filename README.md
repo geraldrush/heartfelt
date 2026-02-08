@@ -19,8 +19,8 @@ A React-based social platform with Cloudflare Workers backend.
 
 1. Configure `backend/.dev.vars` for development:
    ```
-   JWT_SECRET=your_32_character_secret_here
-   GOOGLE_CLIENT_ID=your_google_client_id
+   JWT_SECRET=<generate-with-openssl-rand-base64-32>
+   GOOGLE_CLIENT_ID=<your-google-client-id>
    ```
 
 2. Configure production secrets:

@@ -497,8 +497,9 @@ const Profile = () => {
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Basic information</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Full Name</label>
+                <label htmlFor="full-name-input" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Full Name</label>
                 <input
+                  id="full-name-input"
                   type="text"
                   value={form.full_name}
                   onChange={(e) => updateField('full_name', e.target.value)}
@@ -508,8 +509,9 @@ const Profile = () => {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Email</label>
+                <label htmlFor="email-input" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Email</label>
                 <input
+                  id="email-input"
                   type="email"
                   value={form.email}
                   onChange={(e) => updateField('email', e.target.value)}
@@ -519,8 +521,9 @@ const Profile = () => {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Age</label>
+                <label htmlFor="age-input" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Age</label>
                 <input
+                  id="age-input"
                   type="number"
                   min="18"
                   value={form.age}
@@ -530,8 +533,9 @@ const Profile = () => {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Gender</label>
+                <label htmlFor="gender-select" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Gender</label>
                 <select
+                  id="gender-select"
                   value={form.gender}
                   onChange={(e) => updateField('gender', e.target.value)}
                   className="mt-2 w-full premium-input"
@@ -551,8 +555,9 @@ const Profile = () => {
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Location</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">City</label>
+                <label htmlFor="city-input" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">City</label>
                 <input
+                  id="city-input"
                   type="text"
                   value={form.location_city}
                   onChange={(e) => updateField('location_city', e.target.value)}
@@ -568,8 +573,9 @@ const Profile = () => {
                 </datalist>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">State / Province / Region</label>
+                <label htmlFor="province-input" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">State / Province / Region</label>
                 <input
+                  id="province-input"
                   type="text"
                   value={form.location_province}
                   onChange={(e) => updateField('location_province', e.target.value)}
@@ -585,8 +591,9 @@ const Profile = () => {
                 </datalist>
               </div>
               <div className="sm:col-span-2">
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nationality</label>
+                <label htmlFor="nationality-input" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nationality</label>
                 <input
+                  id="nationality-input"
                   type="text"
                   value={form.nationality}
                   onChange={(e) => updateField('nationality', e.target.value)}
@@ -608,8 +615,9 @@ const Profile = () => {
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Personal details</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Religion</label>
+                <label htmlFor="religion-select" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Religion</label>
                 <select
+                  id="religion-select"
                   value={form.religion}
                   onChange={(e) => updateField('religion', e.target.value)}
                   className="mt-2 w-full premium-input"
@@ -622,8 +630,9 @@ const Profile = () => {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Race</label>
+                <label htmlFor="race-select" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Race</label>
                 <select
+                  id="race-select"
                   value={form.race}
                   onChange={(e) => updateField('race', e.target.value)}
                   className="mt-2 w-full premium-input"
@@ -642,8 +651,9 @@ const Profile = () => {
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Lifestyle</h2>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Has kids</label>
+                <label htmlFor="has-kids-select" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Has kids</label>
                 <select
+                  id="has-kids-select"
                   value={form.has_kids ? 'yes' : 'no'}
                   onChange={(e) => updateField('has_kids', e.target.value === 'yes')}
                   className="mt-2 w-full premium-input"
@@ -653,8 +663,9 @@ const Profile = () => {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Number of kids</label>
+                <label htmlFor="num-kids-select" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Number of kids</label>
                 <select
+                  id="num-kids-select"
                   value={form.has_kids ? String(form.num_kids) : '0'}
                   onChange={(e) => updateField('num_kids', Number(e.target.value))}
                   className="mt-2 w-full premium-input"
@@ -667,8 +678,9 @@ const Profile = () => {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Smoker</label>
+                <label htmlFor="smoker-select" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Smoker</label>
                 <select
+                  id="smoker-select"
                   value={form.smoker ? 'yes' : 'no'}
                   onChange={(e) => updateField('smoker', e.target.value === 'yes')}
                   className="mt-2 w-full premium-input"
@@ -678,8 +690,9 @@ const Profile = () => {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Drinks alcohol</label>
+                <label htmlFor="drinks-alcohol-select" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Drinks alcohol</label>
                 <select
+                  id="drinks-alcohol-select"
                   value={form.drinks_alcohol ? 'yes' : 'no'}
                   onChange={(e) => updateField('drinks_alcohol', e.target.value === 'yes')}
                   className="mt-2 w-full premium-input"
@@ -695,8 +708,9 @@ const Profile = () => {
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Preferences</h2>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Seeking</label>
+                <label htmlFor="seeking-gender-select" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Seeking</label>
                 <select
+                  id="seeking-gender-select"
                   value={form.seeking_gender}
                   onChange={(e) => updateField('seeking_gender', e.target.value)}
                   className="mt-2 w-full premium-input"
@@ -709,8 +723,9 @@ const Profile = () => {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Age min</label>
+                <label htmlFor="seeking-age-min-input" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Age min</label>
                 <input
+                  id="seeking-age-min-input"
                   type="number"
                   min="18"
                   max="100"
@@ -720,8 +735,9 @@ const Profile = () => {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Age max</label>
+                <label htmlFor="seeking-age-max-input" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Age max</label>
                 <input
+                  id="seeking-age-max-input"
                   type="number"
                   min="18"
                   max="100"
@@ -732,8 +748,8 @@ const Profile = () => {
               </div>
             </div>
             <div className="mt-4">
-              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Seeking races</label>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <label htmlFor="seeking-races-group" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Seeking races</label>
+              <div id="seeking-races-group" className="mt-2 grid gap-2 sm:grid-cols-2">
                 {races.map((option) => {
                   const checked = Array.isArray(form.seeking_races) && form.seeking_races.includes(option.name);
                   return (

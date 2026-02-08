@@ -97,8 +97,9 @@ const SignUpPage = () => {
 
                 <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
                   <div>
-                    <label className="text-sm font-medium text-slate-700">Full name</label>
+                    <label htmlFor="full-name-input" className="text-sm font-medium text-slate-700">Full name</label>
                     <input
+                      id="full-name-input"
                       type="text"
                       value={fullName}
                       onChange={(event) => setFullName(event.target.value)}
@@ -109,8 +110,9 @@ const SignUpPage = () => {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-slate-700">Email</label>
+                    <label htmlFor="email-input" className="text-sm font-medium text-slate-700">Email</label>
                     <input
+                      id="email-input"
                       type="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
@@ -121,8 +123,9 @@ const SignUpPage = () => {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-slate-700">Password</label>
+                    <label htmlFor="password-input" className="text-sm font-medium text-slate-700">Password</label>
                     <input
+                      id="password-input"
                       type="password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
@@ -133,8 +136,9 @@ const SignUpPage = () => {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-slate-700">Confirm password</label>
+                    <label htmlFor="confirm-password-input" className="text-sm font-medium text-slate-700">Confirm password</label>
                     <input
+                      id="confirm-password-input"
                       type="password"
                       value={confirmPassword}
                       onChange={(event) => setConfirmPassword(event.target.value)}

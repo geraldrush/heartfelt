@@ -27,10 +27,16 @@ async function request(method, path, data) {
   if (!path.startsWith('/api/')) {
     throw new Error('Invalid API path');
   }
-  
-  // Prevent path traversal and ensure path is safe
-  if (path.includes('..') || path.includes('//') || !path.match(/^\/api\/[a-zA-Z0-9\/_-]+$/)) {
+
+  const [pathname, search = ''] = path.split('?');
+  // Prevent path traversal and ensure path is safe (pathname only)
+  if (pathname.includes('..') || pathname.includes('//') || !pathname.match(/^\/api\/[a-zA-Z0-9\/_-]+$/)) {
     throw new Error('Invalid API path format');
+  }
+
+  // Allow standard query params but block suspicious characters
+  if (search && !search.match(/^[a-zA-Z0-9=&_%.-]+$/)) {
+    throw new Error('Invalid API query format');
   }
   
   const fullUrl = `${API_URL}${path}`;

@@ -364,8 +364,9 @@ const TokensPage = () => {
             </div>
             <form onSubmit={handleTransfer} className="mt-4 space-y-4">
               <div>
-                <label className="text-sm font-medium">Recipient User ID</label>
+                <label htmlFor="recipient-id-input" className="text-sm font-medium">Recipient User ID</label>
                 <input
+                  id="recipient-id-input"
                   value={recipientId}
                   onChange={(event) => setRecipientId(event.target.value)}
                   className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none"
@@ -373,8 +374,9 @@ const TokensPage = () => {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Amount</label>
+                <label htmlFor="amount-input" className="text-sm font-medium">Amount</label>
                 <input
+                  id="amount-input"
                   type="number"
                   min="1"
                   value={amount}
@@ -384,8 +386,9 @@ const TokensPage = () => {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Message (optional)</label>
+                <label htmlFor="message-input" className="text-sm font-medium">Message (optional)</label>
                 <textarea
+                  id="message-input"
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
                   className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none"

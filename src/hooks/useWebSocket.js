@@ -376,7 +376,7 @@ export const useWebSocket = ({
         // Sanitize string fields to prevent XSS
         const sanitizeField = (field) => {
           if (typeof field === 'string') {
-            return field.replace(/[<>"']/g, '');
+            return field.replace(/[<>"'&\/]/g, '');
           }
           return field;
         };
@@ -390,7 +390,7 @@ export const useWebSocket = ({
         switch (data.type) {
           case 'chat_message':
             lastActivityTime.current = Date.now();
-            onMessage?.(data);
+            onMessage?.({...data, content: sanitizeField(data.content)});
             break;
           case 'typing_indicator':
             lastActivityTime.current = Date.now();

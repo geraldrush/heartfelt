@@ -83,8 +83,9 @@ const OnboardingBasics = () => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="text-sm font-medium text-slate-700">Age</label>
+            <label htmlFor="age-input" className="text-sm font-medium text-slate-700">Age</label>
             <input
+              id="age-input"
               type="number"
               min="18"
               value={age}
@@ -95,8 +96,9 @@ const OnboardingBasics = () => {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700">Gender</label>
+            <label htmlFor="gender-select" className="text-sm font-medium text-slate-700">Gender</label>
             <select
+              id="gender-select"
               value={gender}
               onChange={(event) => setGender(event.target.value)}
               className="mt-2 w-full premium-input"
@@ -110,8 +112,9 @@ const OnboardingBasics = () => {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700">Looking for</label>
+            <label htmlFor="seeking-select" className="text-sm font-medium text-slate-700">Looking for</label>
             <select
+              id="seeking-select"
               value={seekingGender}
               onChange={(event) => setSeekingGender(event.target.value)}
               className="mt-2 w-full premium-input"

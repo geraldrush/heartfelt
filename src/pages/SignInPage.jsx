@@ -88,8 +88,9 @@ const SignInPage = () => {
 
                   <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
                     <div>
-                      <label className="text-sm font-medium text-slate-700">Email</label>
+                      <label htmlFor="email-input" className="text-sm font-medium text-slate-700">Email</label>
                       <input
+                        id="email-input"
                         type="email"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
@@ -100,8 +101,9 @@ const SignInPage = () => {
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-slate-700">Password</label>
+                      <label htmlFor="password-input" className="text-sm font-medium text-slate-700">Password</label>
                       <input
+                        id="password-input"
                         type="password"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
@@ -182,8 +184,9 @@ const SignInPage = () => {
                       </div>
                       <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
                         <div>
-                          <label className="text-sm font-medium text-slate-700">Email</label>
+                          <label htmlFor="mobile-email-input" className="text-sm font-medium text-slate-700">Email</label>
                           <input
+                            id="mobile-email-input"
                             type="email"
                             value={email}
                             onChange={(event) => setEmail(event.target.value)}
@@ -194,8 +197,9 @@ const SignInPage = () => {
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium text-slate-700">Password</label>
+                          <label htmlFor="mobile-password-input" className="text-sm font-medium text-slate-700">Password</label>
                           <input
+                            id="mobile-password-input"
                             type="password"
                             value={password}
                             onChange={(event) => setPassword(event.target.value)}

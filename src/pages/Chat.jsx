@@ -1,5 +1,5 @@
 // src/pages/Chat.jsx
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -128,6 +128,7 @@ class ChatErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
+    this.handleRefresh = this.handleRefresh.bind(this);
   }
 
   static getDerivedStateFromError(error) {
@@ -140,6 +141,10 @@ class ChatErrorBoundary extends React.Component {
     console.error(`[WS-Client] ${timestamp} Error info:`, errorInfo);
   }
 
+  handleRefresh() {
+    window.location.reload();
+  }
+
   render() {
     if (this.state.hasError) {
       return (
@@ -148,7 +153,7 @@ class ChatErrorBoundary extends React.Component {
             <h2 className="text-lg font-semibold text-red-600 mb-2">Something went wrong</h2>
             <p className="mb-4">The chat component encountered an error. Please refresh the page.</p>
             <button 
-              onClick={() => window.location.reload()} 
+              onClick={this.handleRefresh} 
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
               Refresh Page
@@ -202,6 +207,18 @@ const Chat = () => {
     return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
   };
 
+  const handleGoBack = useCallback(() => {
+    window.history.back();
+  }, []);
+
+  const handleNavigateToConnection = useCallback(() => {
+    navigate(`/connection/${connectionId}`);
+  }, [navigate, connectionId]);
+
+  const handleLoginRedirect = useCallback(() => {
+    window.location.href = '/login';
+  }, []);
+
   // Log component lifecycle
   useEffect(() => {
     const timestamp = new Date().toISOString();
@@ -233,7 +250,7 @@ const Chat = () => {
           <p className="mb-4">Connection ID: {connectionId}</p>
           <p className="mb-4">This connection doesn't exist or you don't have access to it.</p>
           <button 
-            onClick={() => window.history.back()} 
+            onClick={handleGoBack} 
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Go Back
@@ -619,7 +636,7 @@ const Chat = () => {
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3">
               <button 
-                onClick={() => window.history.back()}
+                onClick={handleGoBack}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -630,7 +647,7 @@ const Chat = () => {
               {/* Avatar Circle */}
               <button
                 type="button"
-                onClick={() => navigate(`/connection/${connectionId}`)}
+                onClick={handleNavigateToConnection}
                 className="relative h-10 w-10 overflow-hidden rounded-full bg-rose-100 text-white"
               >
                 {otherUserImage ? (
@@ -706,7 +723,7 @@ const Chat = () => {
               <div className="flex gap-1">
                 {connectionError.userAction === 'login' && (
                   <button 
-                    onClick={() => window.location.href = '/login'}
+                    onClick={handleLoginRedirect}
                     className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
                   >
                     Log In
@@ -714,7 +731,7 @@ const Chat = () => {
                 )}
                 {connectionError.userAction === 'goBack' && (
                   <button 
-                    onClick={() => window.history.back()}
+                    onClick={handleGoBack}
                     className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
                   >
                     Go Back
