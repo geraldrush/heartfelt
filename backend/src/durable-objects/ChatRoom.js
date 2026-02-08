@@ -6,6 +6,17 @@ import {
 } from '../utils/db.js';
 import { getAllowedOrigins, isOriginAllowed, isRefererAllowed } from '../utils/cors.js';
 
+// Sanitize content to prevent XSS
+const sanitizeContent = (content) => {
+  return content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+};
+
 // Server-side diagnostics helper
 const logRequestDiagnostics = (request, connectionId, timestamp) => {
   const origin = request.headers.get('Origin');
@@ -320,11 +331,13 @@ export class ChatRoom {
           }
         }
         
+        const sanitizedContent = sanitizeContent(payload.content.trim());
+        
         await createMessage(this.env.DB, {
           id: messageId,
           connection_id: connectionId,
           sender_id: senderId,
-          content: payload.content.trim(),
+          content: sanitizedContent,
           status: 'sent',
           created_at: createdAt,
         });
@@ -334,7 +347,7 @@ export class ChatRoom {
           id: messageId,
           connection_id: connectionId,
           sender_id: senderId,
-          content: payload.content.trim(),
+          content: sanitizedContent,
           status: 'sent',
           created_at: createdAt,
         };
@@ -344,7 +357,7 @@ export class ChatRoom {
           type: 'delivery_confirmation',
           id: messageId,
           status: 'sent',
-          client_id: payload.client_id || null,
+          client_id: payload.client_id ? sanitizeContent(String(payload.client_id)) : null,
         });
         break;
       }
@@ -360,20 +373,22 @@ export class ChatRoom {
         break;
       }
       case 'delivery_confirmation': {
-        if (payload.id) {
-          await updateMessageStatus(this.env.DB, payload.id, 'delivered');
+        if (payload.id && typeof payload.id === 'string') {
+          const sanitizedId = sanitizeContent(payload.id);
+          await updateMessageStatus(this.env.DB, sanitizedId, 'delivered');
           this.broadcast(
-            { type: 'delivery_confirmation', id: payload.id, status: 'delivered' },
+            { type: 'delivery_confirmation', id: sanitizedId, status: 'delivered' },
             senderId
           );
         }
         break;
       }
       case 'read_receipt': {
-        if (payload.id) {
-          await updateMessageStatus(this.env.DB, payload.id, 'read');
+        if (payload.id && typeof payload.id === 'string') {
+          const sanitizedId = sanitizeContent(payload.id);
+          await updateMessageStatus(this.env.DB, sanitizedId, 'read');
           this.broadcast(
-            { type: 'read_receipt', id: payload.id, status: 'read' },
+            { type: 'read_receipt', id: sanitizedId, status: 'read' },
             senderId
           );
         }

@@ -14,13 +14,22 @@ const BottomNavigation = () => {
     { path: '/profile', icon: FaUser, label: 'Profile' },
   ];
 
+  const getSearchParams = () => {
+    try {
+      return new URLSearchParams(location.search);
+    } catch {
+      return new URLSearchParams();
+    }
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-sm border-t border-gray-200 pb-[env(safe-area-inset-bottom,0px)]">
       <div className="grid grid-cols-5 gap-1 px-2 py-2">
         {navItems.map(({ path, icon: Icon, label }) => {
           const isFilter = label === 'Filter';
+          const searchParams = getSearchParams();
           const isActive = isFilter
-            ? location.pathname === '/stories' && location.search.includes('filters=1')
+            ? location.pathname === '/stories' && searchParams.has('filters')
             : location.pathname === path;
           return (
             <button

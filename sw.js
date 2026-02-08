@@ -70,6 +70,11 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request)
       .then((response) => {
         if (response) return response;
+        // Validate URL origin before fetching
+        const url = new URL(event.request.url);
+        if (url.origin !== self.location.origin) {
+          return new Response('Forbidden', { status: 403 });
+        }
         return fetch(event.request);
       })
   );

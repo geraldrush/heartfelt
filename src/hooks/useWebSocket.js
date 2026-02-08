@@ -373,6 +373,14 @@ export const useWebSocket = ({
           return;
         }
         
+        // Sanitize string fields to prevent XSS
+        const sanitizeField = (field) => {
+          if (typeof field === 'string') {
+            return field.replace(/[<>"']/g, '');
+          }
+          return field;
+        };
+        
         // Whitelist allowed message types
         const allowedTypes = ['chat_message', 'typing_indicator', 'presence', 'delivery_confirmation', 'read_receipt', 'ping', 'pong', 'error'];
         if (!allowedTypes.includes(data.type)) {

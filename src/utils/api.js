@@ -28,12 +28,17 @@ async function request(method, path, data) {
     throw new Error('Invalid API path');
   }
   
+  // Prevent path traversal and ensure path is safe
+  if (path.includes('..') || path.includes('//') || !path.match(/^\/api\/[a-zA-Z0-9\/_-]+$/)) {
+    throw new Error('Invalid API path format');
+  }
+  
   const fullUrl = `${API_URL}${path}`;
   try {
     const url = new URL(fullUrl);
-    // Only allow requests to the configured API domain
     const apiUrl = new URL(API_URL);
-    if (url.origin !== apiUrl.origin) {
+    // Only allow requests to the configured API domain and protocol
+    if (url.origin !== apiUrl.origin || url.protocol !== apiUrl.protocol) {
       throw new Error('Invalid request destination');
     }
   } catch (error) {
@@ -44,6 +49,8 @@ async function request(method, path, data) {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
+    redirect: 'manual',
+    referrerPolicy: 'no-referrer',
   });
 
   const contentType = response.headers.get('content-type') || '';

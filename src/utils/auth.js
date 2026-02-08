@@ -69,6 +69,10 @@ export const storage = {
   },
   setToken: (token) => {
     try {
+      // Validate token format before storing
+      if (!token || typeof token !== 'string' || !token.match(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)) {
+        throw new Error('Invalid token format');
+      }
       localStorage.setItem('auth_token', token);
     } catch {}
   },
