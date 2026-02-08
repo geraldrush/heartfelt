@@ -12,14 +12,19 @@ export const useVideoCall = (userId, connectionId, recipientId) => {
 
   useEffect(() => {
     const newPeer = new Peer(userId, {
-      host: 'peerjs-server.herokuapp.com',
+      host: '0.peerjs.com',
       secure: true,
-      port: 443
+      port: 443,
+      path: '/'
     });
 
     newPeer.on('open', () => {
       console.log('Peer connected:', userId);
       setPeer(newPeer);
+    });
+
+    newPeer.on('error', (error) => {
+      console.error('Peer error:', error);
     });
 
     newPeer.on('call', (incomingCall) => {
@@ -45,6 +50,10 @@ export const useVideoCall = (userId, connectionId, recipientId) => {
 
   const startCall = async (remotePeerId) => {
     try {
+      if (!peer) {
+        throw new Error('Peer connection not ready. Please wait and try again.');
+      }
+      
       const result = await requestVideoCall(connectionId, recipientId);
       setTokenBalance(result.new_balance);
       
