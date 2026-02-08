@@ -56,106 +56,185 @@ const SignInPage = () => {
         <div className="w-full glass-card p-6 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-12">
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
-              <div className="mb-6 overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-lg backdrop-blur md:hidden">
-                <div className="relative h-56 w-full">
+              <div className="hidden md:block">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={logo}
+                    alt="AfroDate"
+                    className="h-12 w-auto"
+                  />
+                  <span className="text-3xl font-bold text-slate-900">AfroDate</span>
+                </div>
+                <p className="mt-4 text-base text-slate-600">
+                  Connect with Africans and people who love African culture. Build genuine, respectful connections with people who value community and long‑term relationships.
+                </p>
+                <p className="mt-3 text-sm text-slate-500">
+                  Today, migration and busy lives make it harder to meet people who understand your background and values. AfroDate bridges those distances, bringing people together across cultures to build relationships that feel like home.
+                </p>
+
+                <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-slate-900">
+                      Welcome back
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/signup')}
+                      className="text-sm font-semibold text-rose-600 hover:text-rose-700"
+                    >
+                      Need an account?
+                    </button>
+                  </div>
+
+                  <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Email</label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        className="mt-2 w-full premium-input"
+                        placeholder="you@example.com"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Password</label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        className="mt-2 w-full premium-input"
+                        placeholder="Enter your password"
+                        required
+                      />
+                    </div>
+
+                    {error && (
+                      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                        {error}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full premium-button"
+                    >
+                      {loading ? 'Please wait...' : 'Sign in'}
+                    </button>
+                  </form>
+
+                  <div className="mt-6 flex flex-col items-center gap-3">
+                    <span className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      Or
+                    </span>
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleFailure}
+                      type="standard"
+                      shape="pill"
+                      theme="filled_blue"
+                      text="continue_with"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 md:hidden">
+                <div className="relative overflow-hidden rounded-3xl border border-white/60 shadow-lg">
                   <img
                     src={coupleImage}
                     alt="AfroDate couple"
-                    className="absolute inset-0 h-full w-full object-cover opacity-70"
+                    className="absolute inset-0 h-full w-full object-cover opacity-75"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/25 to-black/40" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white">
-                    <img
-                      src={logo}
-                      alt="AfroDate"
-                      className="h-16 w-auto"
-                    />
-                    <span className="mt-3 text-3xl font-bold">AfroDate</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="hidden items-center gap-3 md:flex">
-                <img
-                  src={logo}
-                  alt="AfroDate"
-                  className="h-12 w-auto"
-                />
-                <span className="text-3xl font-bold text-slate-900">AfroDate</span>
-              </div>
-              <p className="mt-4 text-base text-slate-600">
-                Connect with Africans and people who love African culture. Build genuine, respectful connections with people who value community and long‑term relationships.
-              </p>
-              <p className="mt-3 text-sm text-slate-500">
-                Today, migration and busy lives make it harder to meet people who understand your background and values. AfroDate bridges those distances, bringing people together across cultures to build relationships that feel like home.
-              </p>
-
-              <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-slate-900">
-                    Welcome back
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/signup')}
-                    className="text-sm font-semibold text-rose-600 hover:text-rose-700"
-                  >
-                    Need an account?
-                  </button>
-                </div>
-
-                <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-                  <div>
-                    <label className="text-sm font-medium text-slate-700">Email</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      className="mt-2 w-full premium-input"
-                      placeholder="you@example.com"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-slate-700">Password</label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      className="mt-2 w-full premium-input"
-                      placeholder="Enter your password"
-                      required
-                    />
-                  </div>
-
-                  {error && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                      {error}
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/50" />
+                  <div className="relative px-6 py-8 text-white">
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <img
+                        src={logo}
+                        alt="AfroDate"
+                        className="h-16 w-auto"
+                      />
+                      <span className="mt-3 text-3xl font-bold">AfroDate</span>
                     </div>
-                  )}
+                    <div className="mt-6 space-y-3 text-sm text-white/90">
+                      <p>
+                        Meet Africans across the continent and the diaspora, and connect with people who love African culture.
+                      </p>
+                      <p>
+                        Migration and busy lives can make it hard to meet people who understand your background. AfroDate bridges those distances.
+                      </p>
+                    </div>
+                    <div className="mt-6 rounded-2xl bg-white/95 p-5 text-slate-900 shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-semibold text-slate-900">
+                          Welcome back
+                        </h2>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/signup')}
+                          className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                        >
+                          Need an account?
+                        </button>
+                      </div>
+                      <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+                        <div>
+                          <label className="text-sm font-medium text-slate-700">Email</label>
+                          <input
+                            type="email"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                            className="mt-2 w-full premium-input"
+                            placeholder="you@example.com"
+                            required
+                          />
+                        </div>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full premium-button"
-                  >
-                    {loading ? 'Please wait...' : 'Sign in'}
-                  </button>
-                </form>
+                        <div>
+                          <label className="text-sm font-medium text-slate-700">Password</label>
+                          <input
+                            type="password"
+                            value={password}
+                            onChange={(event) => setPassword(event.target.value)}
+                            className="mt-2 w-full premium-input"
+                            placeholder="Enter your password"
+                            required
+                          />
+                        </div>
 
-                <div className="mt-6 flex flex-col items-center gap-3">
-                  <span className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Or
-                  </span>
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleFailure}
-                    type="standard"
-                    shape="pill"
-                    theme="filled_blue"
-                    text="continue_with"
-                  />
+                        {error && (
+                          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                            {error}
+                          </div>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="w-full premium-button"
+                        >
+                          {loading ? 'Please wait...' : 'Sign in'}
+                        </button>
+                      </form>
+
+                      <div className="mt-6 flex flex-col items-center gap-3">
+                        <span className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                          Or
+                        </span>
+                        <GoogleLogin
+                          onSuccess={handleGoogleSuccess}
+                          onError={handleGoogleFailure}
+                          type="standard"
+                          shape="pill"
+                          theme="filled_blue"
+                          text="continue_with"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
