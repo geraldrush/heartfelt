@@ -12,7 +12,6 @@ export const getProfileCompletion = (user) => {
     { key: 'nationality', label: 'Nationality', valid: Boolean(user.nationality) },
     { key: 'religion', label: 'Religion', valid: Boolean(user.religion) },
     { key: 'race', label: 'Race', valid: Boolean(user.race) },
-    { key: 'education', label: 'Education', valid: Boolean(user.education) },
     { key: 'has_kids', label: 'Kids', valid: typeof user.has_kids === 'boolean' },
     {
       key: 'num_kids',

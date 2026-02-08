@@ -274,7 +274,7 @@ stories.put('/update-profile', authMiddleware, async (c) => {
   });
 
   // Validate reference data
-  const refValidation = await validateReferenceData(db, parsed.data.religion, parsed.data.race, parsed.data.education);
+  const refValidation = await validateReferenceData(db, parsed.data.religion, parsed.data.race);
   if (!refValidation.valid) {
     return c.json({ error: 'Invalid reference data', details: refValidation.errors }, 400);
   }
@@ -414,20 +414,16 @@ stories.put('/update-profile-partial', authMiddleware, async (c) => {
   const db = getDb(c);
   const userId = c.get('userId');
 
-  if (updateData.religion || updateData.race || updateData.education) {
+  if (updateData.religion || updateData.race) {
     const referenceData = await getReferenceData(db);
     const validReligions = referenceData.religions.map(r => r.name);
     const validRaces = referenceData.races.map(r => r.name);
-    const validEducation = referenceData.education_levels.map(e => e.name);
 
     if (updateData.religion && !validReligions.includes(updateData.religion)) {
       return c.json({ error: 'Invalid religion value.' }, 400);
     }
     if (updateData.race && !validRaces.includes(updateData.race)) {
       return c.json({ error: 'Invalid race value.' }, 400);
-    }
-    if (updateData.education && !validEducation.includes(updateData.education)) {
-      return c.json({ error: 'Invalid education value.' }, 400);
     }
   }
 

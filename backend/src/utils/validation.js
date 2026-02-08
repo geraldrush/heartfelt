@@ -65,7 +65,6 @@ export const updateProfilePartialSchema = z.object({
   nationality: z.string().min(1).optional(),
   religion: z.string().min(1).optional(),
   race: z.string().min(1).optional(),
-  education: z.string().min(1).optional(),
   has_kids: z.boolean().optional(),
   num_kids: z
     .number()
@@ -98,7 +97,6 @@ export const updateProfileSchema = z.object({
   nationality: z.string().min(1),
   religion: z.string().min(1),
   race: z.string().min(1),
-  education: z.string().min(1),
   has_kids: z.boolean(),
   num_kids: z.number().int().refine((value) => [0, 1, 2, 3].includes(value), {
     message: 'Number of kids must be 0, 1, 2, or 3+.',
@@ -156,7 +154,7 @@ export const paymentInitiateSchema = z.object({
   package_id: z.string().uuid(),
 });
 
-export async function validateReferenceData(db, religion, race, education) {
+export async function validateReferenceData(db, religion, race) {
   const referenceData = await getReferenceData(db);
   const errors = {};
   let valid = true;
@@ -172,13 +170,6 @@ export async function validateReferenceData(db, religion, race, education) {
   const validRaces = referenceData.races.map(r => r.name);
   if (!validRaces.includes(race)) {
     errors.race = `Invalid race value. Allowed values are: ${validRaces.join(', ')}`;
-    valid = false;
-  }
-
-  // Validate education
-  const validEducation = referenceData.education_levels.map(e => e.name);
-  if (!validEducation.includes(education)) {
-    errors.education = `Invalid education value. Allowed values are: ${validEducation.join(', ')}`;
     valid = false;
   }
 

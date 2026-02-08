@@ -512,7 +512,7 @@ const StoryFeed = () => {
         </button>
 
         <div className="flex flex-wrap gap-2">
-          {[story.religion, story.race, story.education].filter(Boolean).slice(0, 3).map((tag, index) => (
+          {[story.religion, story.race].filter(Boolean).map((tag, index) => (
             <span key={index} className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-100">
               {tag}
             </span>
@@ -1018,10 +1018,6 @@ const StoryFeed = () => {
                   <div className="flex items-center gap-2">
                     <span className="font-medium">Race:</span>
                     <span>{selectedStory.race || '—'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Education:</span>
-                    <span>{selectedStory.education || '—'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">Kids:</span>

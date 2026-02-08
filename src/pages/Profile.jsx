@@ -81,7 +81,6 @@ const Profile = () => {
     nationality: '',
     religion: '',
     race: '',
-    education: '',
     has_kids: false,
     num_kids: 0,
     smoker: false,
@@ -91,6 +90,7 @@ const Profile = () => {
     seeking_gender: 'any',
     seeking_age_min: '',
     seeking_age_max: '',
+    seeking_races: [],
   });
 
   const [storyText, setStoryText] = useState('');
@@ -122,7 +122,6 @@ const Profile = () => {
           nationality: userData.user?.nationality || '',
           religion: userData.user?.religion || '',
           race: userData.user?.race || '',
-          education: userData.user?.education || '',
           has_kids: Boolean(userData.user?.has_kids),
           num_kids: userData.user?.num_kids ?? 0,
           smoker: Boolean(userData.user?.smoker),
@@ -132,6 +131,11 @@ const Profile = () => {
           seeking_gender: userData.user?.seeking_gender || 'any',
           seeking_age_min: userData.user?.seeking_age_min ?? '',
           seeking_age_max: userData.user?.seeking_age_max ?? '',
+          seeking_races: Array.isArray(userData.user?.seeking_races)
+            ? userData.user?.seeking_races
+            : userData.user?.seeking_races
+              ? JSON.parse(userData.user?.seeking_races)
+              : [],
         }));
       } catch (err) {
         setError(err.message || 'Failed to load profile data');
@@ -187,7 +191,6 @@ const Profile = () => {
         nationality: form.nationality.trim(),
         religion: form.religion,
         race: form.race,
-        education: form.education,
         has_kids: Boolean(form.has_kids),
         num_kids: form.has_kids ? Number(form.num_kids) : 0,
         smoker: Boolean(form.smoker),
@@ -197,6 +200,7 @@ const Profile = () => {
         seeking_gender: form.seeking_gender || 'any',
         seeking_age_min: form.seeking_age_min === '' ? undefined : Number(form.seeking_age_min),
         seeking_age_max: form.seeking_age_max === '' ? undefined : Number(form.seeking_age_max),
+        seeking_races: Array.isArray(form.seeking_races) ? form.seeking_races : [],
       };
 
       const data = await updateProfile(payload);
@@ -322,7 +326,6 @@ const Profile = () => {
 
   const religions = referenceData?.religions || [];
   const races = referenceData?.races || [];
-  const educationLevels = referenceData?.education_levels || [];
 
   return (
     <div className="mobile-container pull-to-refresh bg-premium-mesh pb-[calc(110px+env(safe-area-inset-bottom,0px))] md:pb-8">
@@ -617,7 +620,7 @@ const Profile = () => {
 
           <div className="glass-card rounded-3xl p-5">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Personal details</h2>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Religion</label>
                 <select
@@ -642,20 +645,6 @@ const Profile = () => {
                 >
                   <option value="">Select race</option>
                   {races.map((option) => (
-                    <option key={option.id} value={option.name}>{option.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Education</label>
-                <select
-                  value={form.education}
-                  onChange={(e) => updateField('education', e.target.value)}
-                  className="mt-2 w-full premium-input"
-                  required
-                >
-                  <option value="">Select level</option>
-                  {educationLevels.map((option) => (
                     <option key={option.id} value={option.name}>{option.name}</option>
                   ))}
                 </select>
@@ -754,6 +743,30 @@ const Profile = () => {
                   onChange={(e) => updateField('seeking_age_max', e.target.value)}
                   className="mt-2 w-full premium-input"
                 />
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Seeking races</label>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {races.map((option) => {
+                  const checked = Array.isArray(form.seeking_races) && form.seeking_races.includes(option.name);
+                  return (
+                    <label key={option.id} className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-xs text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => {
+                          const next = checked
+                            ? form.seeking_races.filter((race) => race !== option.name)
+                            : [...form.seeking_races, option.name];
+                          updateField('seeking_races', next);
+                        }}
+                        className="h-4 w-4 accent-[var(--color-primary)]"
+                      />
+                      <span>{option.name}</span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           </div>

@@ -84,7 +84,7 @@ const ConnectionProfile = () => {
 
           <div className="p-5 space-y-4">
             <div className="flex flex-wrap gap-2">
-              {[profile.religion, profile.race, profile.education].filter(Boolean).map((tag) => (
+              {[profile.religion, profile.race].filter(Boolean).map((tag) => (
                 <span key={tag} className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 border border-emerald-100">
                   {tag}
                 </span>

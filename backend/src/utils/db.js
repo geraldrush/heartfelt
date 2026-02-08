@@ -594,15 +594,11 @@ export async function getReferenceData(db) {
     .prepare('SELECT id, name FROM religions WHERE is_active = 1')
     .all();
   const races = await db.prepare('SELECT id, name FROM races WHERE is_active = 1').all();
-  const education_levels = await db
-    .prepare('SELECT id, name FROM education_levels WHERE is_active = 1')
-    .all();
   const cities = await db.prepare('SELECT id, name, province FROM cities').all();
 
   return {
     religions: religions.results,
     races: races.results,
-    education_levels: education_levels.results,
     cities: cities.results,
   };
 }
@@ -612,7 +608,7 @@ export async function updateUserProfile(db, userId, profileData) {
   console.log(`[DB] ${timestamp} Updating profile for user: ${userId}`);
   
   const {
-    age, gender, nationality, religion, race, education,
+    age, gender, nationality, religion, race,
     has_kids, num_kids, smoker, drinks_alcohol,
     location_city, location_province,
     seeking_gender, seeking_age_min, seeking_age_max, seeking_races
@@ -620,7 +616,7 @@ export async function updateUserProfile(db, userId, profileData) {
 
   // Log sanitized profile data
   console.log(`[DB] ${timestamp} Profile data:`, {
-    age, gender, nationality, religion, race, education,
+    age, gender, nationality, religion, race,
     has_kids, num_kids, smoker, drinks_alcohol,
     location_city, location_province, seeking_gender,
     seeking_age_min, seeking_age_max, seeking_races
@@ -638,7 +634,6 @@ export async function updateUserProfile(db, userId, profileData) {
           nationality = ?,
           religion = ?,
           race = ?,
-          education = ?,
           has_kids = ?,
           num_kids = ?,
           smoker = ?,
@@ -659,7 +654,6 @@ export async function updateUserProfile(db, userId, profileData) {
         nationality,
         religion,
         race,
-        education,
         has_kids ? 1 : 0,
         num_kids,
         smoker ? 1 : 0,
@@ -681,7 +675,6 @@ export async function updateUserProfile(db, userId, profileData) {
       let field = 'unknown';
       if (error.message.includes('religion')) field = 'religion';
       else if (error.message.includes('race')) field = 'race';
-      else if (error.message.includes('education')) field = 'education';
       else if (error.message.includes('gender')) field = 'gender';
       
       throw {
