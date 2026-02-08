@@ -10,8 +10,9 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
   const [dragState, setDragState] = React.useState({ x: 0, y: 0, rot: 0, scale: 1 });
   const [isAnimating, setIsAnimating] = React.useState(false);
 
-  const bind = useDrag(({ down, movement: [mx, my], cancel }) => {
+  const bind = useDrag(({ down, movement, cancel }) => {
     if (disabled || isAnimating) return;
+    const [mx, my] = Array.isArray(movement) ? movement : [0, 0];
     
     if (down) {
       setDragState({ x: mx, y: my, rot: mx / 15, scale: 1.02 });
