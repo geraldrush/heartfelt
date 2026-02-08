@@ -665,6 +665,12 @@ const StoryFeed = () => {
                 onRemoveFilter={removeFilter}
                 onClearAll={clearFilters}
                 count={activeFilterCount}
+                floating
+                topOffsetClass={
+                  showCompletionBanner
+                    ? 'top-[calc(env(safe-area-inset-top,0px)+6.5rem)]'
+                    : 'top-[calc(env(safe-area-inset-top,0px)+0.75rem)]'
+                }
               />
 
               {/* Stories Content */}
@@ -754,6 +760,12 @@ const StoryFeed = () => {
               onRemoveFilter={removeFilter}
               onClearAll={clearFilters}
               count={activeFilterCount}
+              floating
+              topOffsetClass={
+                showCompletionBanner
+                  ? 'top-[calc(env(safe-area-inset-top,0px)+6.5rem)]'
+                  : 'top-[calc(env(safe-area-inset-top,0px)+0.75rem)]'
+              }
             />
 
             {/* Mobile Filter Drawer */}

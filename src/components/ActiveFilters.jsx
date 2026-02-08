@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import FilterChip from './FilterChip';
 
-const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, count }) => {
+const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, count, floating = false, topOffsetClass = '' }) => {
   if (count === 0) return null;
 
   const getFilterChips = () => {
@@ -72,15 +72,19 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, count }) => {
 
   const chips = getFilterChips();
 
+  const containerClass = floating
+    ? `fixed left-0 right-0 z-40 px-4 ${topOffsetClass} pointer-events-none md:static md:mt-0 md:mb-4 md:px-0 md:pointer-events-auto`
+    : 'relative mt-20 md:mt-0 mb-4';
+
   return (
-    <div 
-      className="relative mt-20 md:mt-0 mb-4"
+    <div
+      className={containerClass}
       aria-live="polite"
       aria-label={`${count} filters active`}
     >
-      <div 
-        className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
-        style={{ 
+      <div
+        className={`mx-auto flex gap-2 overflow-x-auto pb-2 scrollbar-hide ${floating ? 'max-w-md pointer-events-auto md:max-w-none' : ''}`}
+        style={{
           scrollBehavior: 'smooth',
           WebkitOverflowScrolling: 'touch',
           overscrollBehaviorX: 'contain'

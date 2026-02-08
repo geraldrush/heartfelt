@@ -12,10 +12,10 @@ const Button = ({
   const baseClasses = 'font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
   
   const variants = {
-    primary: 'premium-button focus:ring-rose-500',
-    secondary: 'glass-card text-gray-700 hover:bg-white/90 focus:ring-gray-500',
-    outline: 'border-2 border-rose-500 text-rose-600 hover:bg-rose-50 focus:ring-rose-500',
-    ghost: 'text-gray-600 hover:bg-gray-100 focus:ring-gray-500'
+    primary: 'premium-button focus:ring-[#B5523F]',
+    secondary: 'premium-button premium-button--secondary focus:ring-[#B5523F]',
+    outline: 'premium-button premium-button--outline focus:ring-[#B5523F]',
+    ghost: 'premium-button premium-button--ghost focus:ring-[#B5523F]'
   };
   
   const sizes = {
