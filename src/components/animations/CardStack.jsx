@@ -10,25 +10,6 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
   const [dragState, setDragState] = React.useState({ x: 0, y: 0, rot: 0, scale: 1 });
   const [isAnimating, setIsAnimating] = React.useState(false);
 
-  const handleSwipeComplete = useCallback((direction, topItem) => {
-    if (isAnimating) return;
-    
-    setIsAnimating(true);
-    
-    if (direction === 'left' && onSwipeLeft) {
-      onSwipeLeft(topItem);
-    } else if (direction === 'right' && onSwipeRight) {
-      onSwipeRight(topItem);
-    } else if (direction === 'up' && onSwipeUp) {
-      onSwipeUp(topItem);
-    }
-    
-    window.setTimeout(() => {
-      setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
-      setIsAnimating(false);
-    }, 180);
-  }, [isAnimating, onSwipeLeft, onSwipeRight, onSwipeUp]);
-
   const bind = useDrag(({ down, movement: [mx, my], cancel }) => {
     if (disabled || isAnimating) return;
     
@@ -50,17 +31,27 @@ const CardStack = ({ items, onSwipeLeft, onSwipeRight, onSwipeUp, renderCard, on
     }
 
     if (swipeRight || swipeLeft || swipeUp) {
+      if (isAnimating) return;
+      setIsAnimating(true);
       const toX = swipeLeft ? -500 : swipeRight ? 500 : 0;
       const toY = swipeUp ? -500 : 0;
       setDragState({ x: toX, y: toY, rot: mx / 10, scale: 1 });
-      
+
       const topItem = items[0];
-      if (topItem) {
-        const direction = swipeLeft ? 'left' : swipeRight ? 'right' : 'up';
-        window.setTimeout(() => {
-          handleSwipeComplete(direction, topItem);
-        }, 140);
-      }
+      const direction = swipeLeft ? 'left' : swipeRight ? 'right' : 'up';
+      window.setTimeout(() => {
+        if (topItem) {
+          if (direction === 'left' && onSwipeLeft) {
+            onSwipeLeft(topItem);
+          } else if (direction === 'right' && onSwipeRight) {
+            onSwipeRight(topItem);
+          } else if (direction === 'up' && onSwipeUp) {
+            onSwipeUp(topItem);
+          }
+        }
+        setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
+        setIsAnimating(false);
+      }, 220);
     } else {
       setDragState({ x: 0, y: 0, rot: 0, scale: 1 });
     }
