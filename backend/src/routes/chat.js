@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
 import { verifyUserInConnection, getMessagesByConnection, createTokenRequest, getPendingTokenRequests, generateId } from '../utils/db.js';
+import { createNotification } from './notifications.js';
 
 const chat = new Hono();
 
@@ -142,6 +143,54 @@ chat.post('/token-requests', authMiddleware, async (c) => {
   } catch (error) {
     console.error('[Chat] Create token request error:', error);
     return c.json({ error: 'Failed to create token request' }, 500);
+  }
+});
+
+chat.post('/video-call-request', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => null);
+  
+  if (!body || !body.connection_id || !body.recipient_id) {
+    return c.json({ error: 'Missing required fields' }, 400);
+  }
+  
+  const cost = 10;
+  const db = c.env.DB;
+  
+  try {
+    const user = await db.prepare('SELECT token_balance, full_name FROM users WHERE id = ?').bind(userId).first();
+    if (!user || user.token_balance < cost) {
+      return c.json({ error: 'Insufficient tokens' }, 402);
+    }
+    
+    const requestId = generateId();
+    const transactionId = generateId();
+    
+    await db.batch([
+      db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ?').bind(cost, userId),
+      db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, description, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(
+        transactionId, userId, -cost, 'video_call_request', 'Video call request', new Date().toISOString()
+      )
+    ]);
+    
+    const updatedUser = await db.prepare('SELECT token_balance FROM users WHERE id = ?').bind(userId).first();
+    
+    await createNotification(db, {
+      user_id: body.recipient_id,
+      type: 'video_call_request',
+      title: 'Incoming Video Call',
+      message: `${user.full_name} is calling you`,
+      data: { connection_id: body.connection_id, caller_id: userId }
+    });
+    
+    return c.json({ 
+      success: true, 
+      request_id: requestId,
+      new_balance: updatedUser.token_balance 
+    });
+  } catch (error) {
+    console.error('[Chat] Video call request error:', error);
+    return c.json({ error: 'Failed to create video call request' }, 500);
   }
 });
 

@@ -221,3 +221,5 @@ export const markNotificationAsRead = (notificationId) =>
   apiClient.post(`/api/notifications/${notificationId}/read`);
 export const getUnreadNotificationCount = () =>
   apiClient.get('/api/notifications/unread-count');
+export const requestVideoCall = (connectionId, recipientId) =>
+  apiClient.post('/api/chat/video-call-request', { connection_id: connectionId, recipient_id: recipientId });

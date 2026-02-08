@@ -7,12 +7,14 @@ import {
   getConnections,
   getMessages,
   getTokenRequests,
+  getTokenBalance,
   refreshToken,
 } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useWebSocket } from '../hooks/useWebSocket.js';
 import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import VideoCall from '../components/VideoCall.jsx';
 import { isTokenExpiringSoon } from '../utils/auth.js';
 
 // Connection Status Banner Component
@@ -188,6 +190,9 @@ const Chat = () => {
   const [requestReason, setRequestReason] = useState('');
   const [tokenRequests, setTokenRequests] = useState([]);
   const [tokenWarning, setTokenWarning] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [tokenBalance, setTokenBalance] = useState(0);
+  const [videoCallInvitation, setVideoCallInvitation] = useState(null);
 
   const listRef = useRef(null);
   const topSentinelRef = useRef(null);
@@ -327,6 +332,11 @@ const Chat = () => {
     onConnectionError: (errorInfo) => {
       setConnectionError(errorInfo);
     },
+    onNotification: (data) => {
+      if (data.type === 'video_call_request') {
+        setVideoCallInvitation(data);
+      }
+    },
   });
 
   const loadConnection = async () => {
@@ -416,6 +426,7 @@ const Chat = () => {
     loadConnection();
     loadMessages({ reset: true });
     loadTokenRequests();
+    getTokenBalance().then(data => setTokenBalance(data.balance));
   }, [connectionId]);
 
   // Cleanup on unmount
@@ -679,13 +690,29 @@ const Chat = () => {
                 <p className="text-xs text-gray-500">{getConnectionText()}</p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowTokenRequest((prev) => !prev)}
-              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition"
-            >
-              {showTokenRequest ? 'Close' : 'Request'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowTokenRequest((prev) => !prev)}
+                className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition"
+              >
+                {showTokenRequest ? 'Close' : 'Request'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (tokenBalance < 10) {
+                    alert('You need at least 10 tokens to start a video call');
+                    return;
+                  }
+                  setShowVideoCall(true);
+                }}
+                disabled={tokenBalance < 10}
+                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg transition"
+              >
+                📹 Call
+              </button>
+            </div>
           </div>
         </div>
 
@@ -870,6 +897,47 @@ const Chat = () => {
           </div>
         </div>
       </div>
+
+      {/* Video Call Invitation Modal */}
+      {videoCallInvitation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-semibold mb-2">Incoming Video Call</h3>
+            <p className="text-gray-600 mb-4">{otherUserName} is calling you</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setVideoCallInvitation(null);
+                  setShowVideoCall(true);
+                }}
+                className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-semibold"
+              >
+                Accept (Free)
+              </button>
+              <button
+                onClick={() => setVideoCallInvitation(null)}
+                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg font-semibold"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Call Component */}
+      {showVideoCall && (
+        <VideoCall
+          userId={user?.id}
+          connectionId={connectionId}
+          remotePeerId={otherUserId}
+          tokenBalance={tokenBalance}
+          onClose={() => {
+            setShowVideoCall(false);
+            getTokenBalance().then(data => setTokenBalance(data.balance));
+          }}
+        />
+      )}
     </ChatErrorBoundary>
   );
 };
