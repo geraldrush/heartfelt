@@ -241,7 +241,7 @@ const SignInPage = () => {
 
             <div className="flex flex-col justify-between rounded-2xl bg-slate-900 p-6 sm:p-10 text-white">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-amber-300">
+                <p className="text-xs uppercase tracking-[0.3em] text-rose-300">
                   Pan‑African connections
                 </p>
                 <h3 className="mt-4 text-3xl font-semibold">
