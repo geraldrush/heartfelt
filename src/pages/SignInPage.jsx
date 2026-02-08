@@ -142,7 +142,7 @@ const SignInPage = () => {
                 </div>
               </div>
 
-              <div className="mt-8 md:hidden -mx-6 -mt-6 sm:-mx-12 sm:-mt-12">
+              <div className="mt-8 md:hidden -mx-6 -mt-8 sm:-mx-12 sm:-mt-14">
                 <div className="relative overflow-hidden shadow-lg rounded-none">
                   <img
                     src={coupleImage}
@@ -150,7 +150,7 @@ const SignInPage = () => {
                     className="absolute inset-0 h-full w-full object-cover opacity-55"
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/55 to-black/70" />
-                  <div className="relative px-6 py-8 text-white">
+                  <div className="relative px-6 py-7 text-white">
                     <div className="flex flex-col items-center justify-center text-center">
                       <img
                         src={logo}
