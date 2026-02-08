@@ -490,7 +490,7 @@ const StoryFeed = () => {
         </span>
       </div>
 
-      <div className="absolute bottom-4 left-4 right-4 space-y-2">
+      <div className="absolute bottom-24 left-4 right-4 space-y-2">
         <h3 className="text-xl font-semibold text-white mb-1 drop-shadow-lg">
           {story.age} • {story.gender}
         </h3>
@@ -516,7 +516,7 @@ const StoryFeed = () => {
           </span>
         </div>
         {story.connection_status !== 'none' && (
-          <div>
+          <div className="flex">
             <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
               story.connection_status === 'connected'
                 ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
@@ -702,7 +702,7 @@ const StoryFeed = () => {
                           onClick={() => setSelectedStory(currentStory)}
                           className="px-6 py-3 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform bg-[#C55A4B] hover:bg-[#A7473B]"
                         >
-                          Read Story
+                          View
                         </button>
                         <button
                           type="button"
@@ -745,32 +745,7 @@ const StoryFeed = () => {
 
           {/* Mobile Layout */}
           <div className="md:hidden">
-            <div className="sticky top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-30 mb-4">
-              <div className="flex items-center justify-between rounded-3xl bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Stories</p>
-                  <p className="text-lg font-semibold text-slate-900">Discover</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowFilters((prev) => !prev)}
-                    className="relative flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm"
-                  >
-                    <FaFilter className="text-emerald-500" />
-                    Filters
-                    {activeFilterCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-rose-500 text-[10px] font-semibold text-white flex items-center justify-center">
-                        {activeFilterCount}
-                      </span>
-                    )}
-                  </button>
-                  <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
-                    🪙 {tokenBalance === null ? '...' : tokenBalance}
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Header removed to allow full-bleed card */}
             {/* Active Filters */}
             <ActiveFilters
               filters={filtersApplied}
@@ -813,7 +788,7 @@ const StoryFeed = () => {
             )}
 
             {/* Stories Content - Mobile Only */}
-            <div className="flex flex-col items-center h-[calc(100dvh-220px)] sm:h-[calc(100dvh-240px)] pt-4 stories-container">
+            <div className="flex flex-col items-center h-[calc(100dvh-140px)] sm:h-[calc(100dvh-160px)] pt-2 stories-container">
               {loading ? (
                 <div className="flex items-center justify-center h-full w-full max-w-md">
                   <div className="grid gap-8">
@@ -924,7 +899,7 @@ const StoryFeed = () => {
                     onClick={() => setSelectedStory(currentStory)}
                     className="flex-1 min-w-0 rounded-2xl px-3 py-3 text-sm font-semibold text-white shadow-lg bg-[#C55A4B] hover:bg-[#A7473B]"
                   >
-                    Read
+                    View
                   </button>
                   {currentStory.connection_status === 'pending_received' ? (
                     <button
