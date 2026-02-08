@@ -492,20 +492,6 @@ const Profile = () => {
             </button>
           </div>
 
-          <div className="glass-card rounded-3xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Token balance</h2>
-                <p className="text-sm text-slate-500">Use tokens to connect faster.</p>
-              </div>
-              <Button onClick={() => navigate('/tokens')} size="sm">
-                Buy Tokens
-              </Button>
-            </div>
-            <div className="text-3xl font-semibold text-rose-500">
-              {tokenBalance === null ? '...' : tokenBalance}
-            </div>
-          </div>
 
           <div className="glass-card rounded-3xl p-5">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Basic information</h2>
@@ -784,6 +770,20 @@ const Profile = () => {
             </p>
           </div>
         </form>
+
+        <div className="glass-card rounded-3xl p-5 mt-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-2">Tokens & payments</h2>
+          <p className="text-sm text-slate-500">
+            Manage token purchases and requests from your wallet.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/tokens')}
+            className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Open Wallet
+          </button>
+        </div>
 
         <div className="glass-card rounded-3xl p-5 border border-red-100 mt-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-2">Delete account</h2>

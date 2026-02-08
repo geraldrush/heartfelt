@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { faUserCheck, faUserFriends, faUsers, faCoins } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getConnectionCounts, getTokenBalance } from '../utils/api.js';
+import { getConnectionCounts, getTokenBalance, getTokenRequests, getUnreadCounts } from '../utils/api.js';
 import TokenSparkle from '../components/animations/TokenSparkle.jsx';
 
 const MotionLink = motion.create(Link);
@@ -19,6 +19,8 @@ const LandingPage = () => {
     received_requests: 0,
     total_connections: 0,
   });
+  const [unreadChats, setUnreadChats] = useState(0);
+  const [pendingTokenRequests, setPendingTokenRequests] = useState(0);
   const [error, setError] = useState('');
 
   const fetchBalance = async () => {
@@ -47,9 +49,26 @@ const LandingPage = () => {
     }
   };
 
+  const fetchNotifications = async () => {
+    try {
+      const [unread, tokenReqs] = await Promise.all([
+        getUnreadCounts(),
+        getTokenRequests(),
+      ]);
+      const unreadTotal = (unread.counts || []).reduce((sum, item) => sum + (item.unread_count || 0), 0);
+      const pendingTokens = (tokenReqs.requests || []).filter((req) => req.status === 'pending').length;
+      setUnreadChats(unreadTotal);
+      setPendingTokenRequests(pendingTokens);
+    } catch (err) {
+      setUnreadChats(0);
+      setPendingTokenRequests(0);
+    }
+  };
+
   useEffect(() => {
     fetchBalance();
     fetchCounts();
+    fetchNotifications();
   }, []);
 
   useEffect(() => {
@@ -57,6 +76,7 @@ const LandingPage = () => {
       if (document.visibilityState === 'visible') {
         fetchBalance();
         fetchCounts();
+        fetchNotifications();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
@@ -69,8 +89,8 @@ const LandingPage = () => {
   const displayName = user?.full_name || 'there';
 
   return (
-    <div className="app-shell pb-[calc(120px+env(safe-area-inset-bottom,0px))] md:pb-0">
-      <main className="app-content flex w-full flex-col items-center gap-6 py-10 text-slate-900">
+    <div className="app-shell pb-[calc(120px+env(safe-area-inset-bottom,0px))] md:pb-0 overflow-y-auto">
+      <main className="app-content flex w-full flex-col items-center gap-6 py-10 text-slate-900 min-h-screen">
         <div className="w-full rounded-[28px] border border-white/60 bg-white/90 p-6 shadow-xl backdrop-blur">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">Dashboard</p>
           <h1 className="mt-3 text-3xl font-semibold text-slate-900 md:text-4xl">
@@ -122,10 +142,26 @@ const LandingPage = () => {
               to={to}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
-              className="rounded-2xl border border-slate-100 bg-white/90 px-5 py-4 shadow-md transition hover:shadow-lg"
+              className="relative rounded-2xl border border-slate-100 bg-white/90 px-5 py-4 shadow-md transition hover:shadow-lg"
             >
+              {label === 'Received Requests' && Number(receivedRequests) > 0 && (
+                <span className="absolute right-3 top-3 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-semibold text-white">
+                  {receivedRequests}
+                </span>
+              )}
+              {label === 'Connections' && unreadChats > 0 && (
+                <span className="absolute right-3 top-3 rounded-full bg-rose-500 px-2 py-1 text-[10px] font-semibold text-white">
+                  {unreadChats} new
+                </span>
+              )}
+              {label === 'Tokens' && pendingTokenRequests > 0 && (
+                <span className="absolute right-3 top-3 rounded-full bg-amber-500 px-2 py-1 text-[10px] font-semibold text-white">
+                  {pendingTokenRequests} req
+                </span>
+              )}
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">{label}</p>
               <div className="mt-3 text-2xl font-semibold text-slate-900">{value}</div>
+              <p className="mt-2 text-[11px] text-slate-500">Tap to open</p>
             </MotionLink>
           ))}
         </div>
@@ -141,6 +177,7 @@ const LandingPage = () => {
           onClick={() => {
             fetchBalance();
             fetchCounts();
+            fetchNotifications();
           }}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
