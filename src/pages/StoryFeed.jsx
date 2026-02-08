@@ -1,6 +1,6 @@
 // src/pages/StoryFeed.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaFilter } from 'react-icons/fa';
 import {
@@ -42,6 +42,7 @@ const StoryCardSkeleton = () => (
 
 const StoryFeed = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -156,6 +157,14 @@ const StoryFeed = () => {
     
     loadPreferences();
   }, [preferencesLoaded, user?.gender]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('filters') === '1') {
+      setShowFilters(true);
+      navigate('/stories', { replace: true });
+    }
+  }, [location.search, navigate]);
 
   useEffect(() => {
     const fetchMeta = async () => {
@@ -424,8 +433,8 @@ const StoryFeed = () => {
   );
 
   const renderCard = (story) => (
-    <div className="relative h-full flex flex-col overflow-hidden rounded-[32px] bg-white/95 border border-slate-100 shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
-      <div className="relative h-[62%] sm:h-[58%] md:h-80">
+    <div className="relative h-full overflow-hidden rounded-[32px] bg-white/95 border border-slate-100 shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
+      <div className="absolute inset-0">
         {story.blurred_image_url ? (
           <img
             src={story.blurred_image_url}
@@ -447,78 +456,65 @@ const StoryFeed = () => {
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-purple-200 to-pink-200 animate-pulse" />
         )}
-        
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/75 via-slate-900/20 to-transparent" />
-        
-        {/* Nationality flag / Connection status */}
-        <div className="absolute left-4 top-4">
-          {story.connection_status === 'pending_received' ? (
-            <span className="rounded-full bg-emerald-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-md">
-              New request
-            </span>
-          ) : (
-            <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-700 backdrop-blur-md">
-              {story.nationality === 'South Africa' ? '🇿🇦' : 
-               story.nationality === 'Zimbabwe' ? '🇿🇼' : 
-               story.nationality === 'Namibia' ? '🇳🇦' : 
-               story.nationality === 'Botswana' ? '🇧🇼' : 
-               story.nationality === 'Mozambique' ? '🇲🇿' : '🌍'}
-            </span>
-          )}
-        </div>
-        
-        {/* Online status */}
-        <div className="absolute right-4 top-4">
-          <span className={`rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-2 backdrop-blur-md ${
-            story.is_online === true ? 'bg-emerald-500/90 text-white' : 'bg-white/80 text-slate-500'
-          }`}>
-            <span className={`w-2 h-2 rounded-full ${
-              story.is_online === true ? 'bg-white animate-pulse' : 'bg-slate-400'
-            }`} />
-            {story.is_online === true ? 'Online' : 'Offline'}
-          </span>
-        </div>
-
-        {/* Name, location, and lifestyle overlay */}
-        <div className="absolute bottom-4 left-4 right-4 space-y-2">
-          <h3 className="text-xl font-semibold text-white mb-1 drop-shadow-lg">
-            {story.age} • {story.gender}
-          </h3>
-          <p className="text-white/90 text-xs drop-shadow-md">
-            {story.location_city}, {story.location_province}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
-              👶 {story.has_kids ? `${story.num_kids} kids` : 'No kids'}
-            </span>
-            <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
-              {story.smoker ? '🚬 Smoker' : '🚭 Non-smoker'}
-            </span>
-            <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
-              {story.drinks_alcohol ? '🍷 Drinks' : '🚫 No alcohol'}
-            </span>
-          </div>
-        </div>
       </div>
-      
-      <div className="flex-1 p-4 bg-white flex flex-col justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => setSelectedStory(story)}
-          className="w-full rounded-2xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-600"
-        >
-          Read story
-        </button>
 
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/25 to-transparent" />
+
+      <div className="absolute left-4 top-4">
+        {story.connection_status === 'pending_received' ? (
+          <span className="rounded-full bg-emerald-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-md">
+            New request
+          </span>
+        ) : (
+          <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-700 backdrop-blur-md">
+            {story.nationality === 'South Africa' ? '🇿🇦' : 
+             story.nationality === 'Zimbabwe' ? '🇿🇼' : 
+             story.nationality === 'Namibia' ? '🇳🇦' : 
+             story.nationality === 'Botswana' ? '🇧🇼' : 
+             story.nationality === 'Mozambique' ? '🇲🇿' : '🌍'}
+          </span>
+        )}
+      </div>
+
+      <div className="absolute right-4 top-4 flex flex-col items-end gap-2">
+        <span className={`rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-2 backdrop-blur-md ${
+          story.is_online === true ? 'bg-emerald-500/90 text-white' : 'bg-white/80 text-slate-500'
+        }`}>
+          <span className={`w-2 h-2 rounded-full ${
+            story.is_online === true ? 'bg-white animate-pulse' : 'bg-slate-400'
+          }`} />
+          {story.is_online === true ? 'Online' : 'Offline'}
+        </span>
+        <span className="rounded-full bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 backdrop-blur-md">
+          🪙 {tokenBalance === null ? '...' : tokenBalance}
+        </span>
+      </div>
+
+      <div className="absolute bottom-4 left-4 right-4 space-y-2">
+        <h3 className="text-xl font-semibold text-white mb-1 drop-shadow-lg">
+          {story.age} • {story.gender}
+        </h3>
+        <p className="text-white/90 text-xs drop-shadow-md">
+          {story.location_city}, {story.location_province}
+        </p>
         <div className="flex flex-wrap gap-2">
           {[story.religion, story.race].filter(Boolean).map((tag, index) => (
-            <span key={index} className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-100">
+            <span key={index} className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
               {tag}
             </span>
           ))}
         </div>
-
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
+            👶 {story.has_kids ? `${story.num_kids} kids` : 'No kids'}
+          </span>
+          <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
+            {story.smoker ? '🚬 Smoker' : '🚭 Non-smoker'}
+          </span>
+          <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
+            {story.drinks_alcohol ? '🍷 Drinks' : '🚫 No alcohol'}
+          </span>
+        </div>
         {story.connection_status !== 'none' && (
           <div>
             <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
@@ -693,13 +689,20 @@ const StoryFeed = () => {
                     
                     {/* Action Buttons Below Card */}
                     {currentStory && (
-                      <div className="flex gap-4 mt-6">
+                      <div className="flex gap-3 mt-6">
                         <button
                           type="button"
                           onClick={() => handlePass(currentStory)}
-                          className="px-8 py-3 bg-red-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+                          className="px-6 py-3 bg-red-600 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
                         >
-                          Skip
+                          Pass
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStory(currentStory)}
+                          className="px-6 py-3 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform bg-[#C55A4B] hover:bg-[#A7473B]"
+                        >
+                          Read Story
                         </button>
                         <button
                           type="button"
@@ -707,7 +710,7 @@ const StoryFeed = () => {
                             setConnectingStory(currentStory);
                             setShowMessageModal(true);
                           }}
-                          className="px-8 py-3 bg-green-500 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+                          className="px-6 py-3 bg-emerald-600 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
                         >
                           Connect
                         </button>
@@ -908,19 +911,26 @@ const StoryFeed = () => {
             </div>
             {currentStory && (
               <div className="fixed bottom-[calc(90px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 px-5">
-                <div className="mx-auto flex max-w-md flex-nowrap items-center gap-3 rounded-3xl bg-white/95 p-3 shadow-2xl backdrop-blur">
+                <div className="mx-auto flex max-w-md flex-nowrap items-center gap-2 rounded-3xl bg-white/95 p-3 shadow-2xl backdrop-blur">
                   <button
                     type="button"
                     onClick={() => handlePass(currentStory)}
-                    className="flex-1 min-w-0 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
+                    className="flex-1 min-w-0 rounded-2xl bg-red-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
                   >
                     Pass
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStory(currentStory)}
+                    className="flex-1 min-w-0 rounded-2xl px-3 py-3 text-sm font-semibold text-white shadow-lg bg-[#C55A4B] hover:bg-[#A7473B]"
+                  >
+                    Read
                   </button>
                   {currentStory.connection_status === 'pending_received' ? (
                     <button
                       type="button"
                       onClick={() => handleAccept(currentStory)}
-                      className="flex-1 min-w-0 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
+                      className="flex-1 min-w-0 rounded-2xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
                     >
                       Accept
                     </button>
@@ -928,7 +938,7 @@ const StoryFeed = () => {
                     <button
                       type="button"
                       disabled
-                      className="flex-1 min-w-0 rounded-2xl bg-emerald-100 px-4 py-3 text-sm font-semibold text-emerald-600"
+                      className="flex-1 min-w-0 rounded-2xl bg-emerald-100 px-3 py-3 text-sm font-semibold text-emerald-600"
                     >
                       Connected
                     </button>
@@ -936,7 +946,7 @@ const StoryFeed = () => {
                     <button
                       type="button"
                       disabled
-                      className="flex-1 min-w-0 rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700"
+                      className="flex-1 min-w-0 rounded-2xl bg-amber-100 px-3 py-3 text-sm font-semibold text-amber-700"
                     >
                       Requested
                     </button>
@@ -947,7 +957,7 @@ const StoryFeed = () => {
                         setConnectingStory(currentStory);
                         setShowMessageModal(true);
                       }}
-                      className="flex-1 min-w-0 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
+                      className="flex-1 min-w-0 rounded-2xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
                     >
                       Connect
                     </button>

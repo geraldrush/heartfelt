@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaHeart, FaComments, FaTachometerAlt, FaCoins, FaUser } from 'react-icons/fa';
+import { FaHeart, FaComments, FaTachometerAlt, FaSearch, FaUser } from 'react-icons/fa';
 
 const BottomNavigation = () => {
   const location = useLocation();
@@ -8,9 +8,9 @@ const BottomNavigation = () => {
 
   const navItems = [
     { path: '/stories', icon: FaHeart, label: 'Stories' },
+    { path: '/stories?filters=1', icon: FaSearch, label: 'Filter' },
     { path: '/connections', icon: FaComments, label: 'Chats' },
     { path: '/landing', icon: FaTachometerAlt, label: 'Dashboard' },
-    { path: '/tokens', icon: FaCoins, label: 'Tokens' },
     { path: '/profile', icon: FaUser, label: 'Profile' },
   ];
 
@@ -18,7 +18,10 @@ const BottomNavigation = () => {
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-sm border-t border-gray-200 pb-[env(safe-area-inset-bottom,0px)]">
       <div className="grid grid-cols-5 gap-1 px-2 py-2">
         {navItems.map(({ path, icon: Icon, label }) => {
-          const isActive = location.pathname === path;
+          const isFilter = label === 'Filter';
+          const isActive = isFilter
+            ? location.pathname === '/stories' && location.search.includes('filters=1')
+            : location.pathname === path;
           return (
             <button
               key={path}
