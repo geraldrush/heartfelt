@@ -142,8 +142,8 @@ const SignInPage = () => {
                 </div>
               </div>
 
-              <div className="mt-8 md:hidden -mx-2 sm:-mx-6">
-                <div className="relative overflow-hidden border border-white/60 shadow-lg rounded-none">
+              <div className="mt-8 md:hidden -mx-6 -mt-6 sm:-mx-12 sm:-mt-12">
+                <div className="relative overflow-hidden shadow-lg rounded-none">
                   <img
                     src={coupleImage}
                     alt="AfroDate couple"
