@@ -76,7 +76,8 @@ const ImageGalleryViewer = ({ storyId, initialImageUrl, onClose, isOpen = true }
     }
   };
 
-  const bind = useDrag(({ down, movement: [mx], tap }) => {
+  const bind = useDrag(({ down, movement, tap }) => {
+    const [mx] = Array.isArray(movement) ? movement : [0];
     if (tap) return;
     
     if (down) {

@@ -58,75 +58,85 @@ tokens.post('/transfer', authMiddleware, async (c) => {
   const senderDescription = parsed.data.message || 'Token transfer sent';
   const recipientDescription = parsed.data.message || 'Token transfer received';
 
-  const transferResult = await db
+  const senderUpdate = await db
     .prepare(
-      `WITH updated_sender AS (
-        UPDATE users
-        SET token_balance = token_balance - ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ? AND token_balance >= ? AND EXISTS (SELECT 1 FROM users WHERE id = ?)
-        RETURNING id, token_balance
-      ),
-      updated_recipient AS (
-        UPDATE users
-        SET token_balance = token_balance + ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ? AND EXISTS (SELECT 1 FROM updated_sender)
-        RETURNING id, token_balance
-      ),
-      insert_sender AS (
-        INSERT INTO token_transactions (
-          id,
-          user_id,
-          amount,
-          transaction_type,
-          related_user_id,
-          related_entity_id,
-          balance_after,
-          description,
-          created_at
-        )
-        SELECT ?, id, ?, 'transfer_sent', ?, NULL, token_balance, ?, ?
-        FROM updated_sender
-      ),
-      insert_recipient AS (
-        INSERT INTO token_transactions (
-          id,
-          user_id,
-          amount,
-          transaction_type,
-          related_user_id,
-          related_entity_id,
-          balance_after,
-          description,
-          created_at
-        )
-        SELECT ?, id, ?, 'transfer_received', ?, NULL, token_balance, ?, ?
-        FROM updated_recipient
+      `UPDATE users
+       SET token_balance = token_balance - ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ? AND token_balance >= ?
+       RETURNING token_balance`
+    )
+    .bind(amount, senderId, amount)
+    .first();
+
+  if (!senderUpdate || senderUpdate.token_balance == null) {
+    return c.json({ error: 'Insufficient balance.' }, 402);
+  }
+
+  const recipientUpdate = await db
+    .prepare(
+      `UPDATE users
+       SET token_balance = token_balance + ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?
+       RETURNING token_balance`
+    )
+    .bind(amount, parsed.data.recipient_id)
+    .first();
+
+  if (!recipientUpdate || recipientUpdate.token_balance == null) {
+    return c.json({ error: 'Recipient update failed.' }, 500);
+  }
+
+  await db
+    .prepare(
+      `INSERT INTO token_transactions (
+        id,
+        user_id,
+        amount,
+        transaction_type,
+        related_user_id,
+        related_entity_id,
+        balance_after,
+        description,
+        created_at
       )
-      SELECT token_balance AS sender_balance FROM updated_sender`
+      VALUES (?, ?, ?, 'transfer_sent', ?, NULL, ?, ?, ?)`
     )
     .bind(
-      amount,
-      senderId,
-      amount,
-      parsed.data.recipient_id,
-      amount,
-      parsed.data.recipient_id,
       senderTxId,
+      senderId,
       -amount,
       parsed.data.recipient_id,
+      senderUpdate.token_balance,
       senderDescription,
-      timestamp,
+      timestamp
+    )
+    .run();
+
+  await db
+    .prepare(
+      `INSERT INTO token_transactions (
+        id,
+        user_id,
+        amount,
+        transaction_type,
+        related_user_id,
+        related_entity_id,
+        balance_after,
+        description,
+        created_at
+      )
+      VALUES (?, ?, ?, 'transfer_received', ?, NULL, ?, ?, ?)`
+    )
+    .bind(
       recipientTxId,
+      parsed.data.recipient_id,
       amount,
       senderId,
+      recipientUpdate.token_balance,
       recipientDescription,
       timestamp
     )
-    .first();
-
-  if (!transferResult) {
-    return c.json({ error: 'Insufficient balance.' }, 402);
-  }
+    .run();
 
   // Send notification to recipient
   try {
@@ -143,7 +153,7 @@ tokens.post('/transfer', authMiddleware, async (c) => {
 
   return c.json({
     success: true,
-    new_balance: transferResult.sender_balance,
+    new_balance: senderUpdate.token_balance,
     transferred_amount: amount,
     recipient_id: parsed.data.recipient_id,
   });

@@ -6,7 +6,9 @@ import { triggerHaptic } from '../utils/haptics';
 const FilterDrawer = ({ isOpen, onClose, children, title, onApply, onClear }) => {
   const [dragY, setDragY] = React.useState(0);
 
-  const bind = useDrag(({ down, movement: [, my], velocity: [, vy] }) => {
+  const bind = useDrag(({ down, movement, velocity }) => {
+    const [, my] = Array.isArray(movement) ? movement : [0, 0];
+    const [, vy] = Array.isArray(velocity) ? velocity : [0, 0];
     if (window.innerWidth >= 768) return; // Only on mobile
     if (my > 0) {
       setDragY(down ? my : 0);
