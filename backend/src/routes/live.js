@@ -111,7 +111,6 @@ live.post('/create', authMiddleware, async (c) => {
 live.post('/join', authMiddleware, async (c) => {
   const db = getDb(c);
   const userId = c.get('userId');
-  const user = await getUserById(db, userId);
   const body = await c.req.json().catch(() => ({}));
   const roomId = body.room_id;
 
@@ -155,22 +154,25 @@ live.post('/join', authMiddleware, async (c) => {
     return c.json({ success: true, status: existing?.status || 'pending' });
   }
 
-  // Try to create notification for host (ignore if table doesn't exist)
+  // Try to create notification for host
   try {
-    await db
-      .prepare(
-        `INSERT INTO notifications (id, user_id, type, title, message, data, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
-      )
-      .bind(
-        generateId(),
-        room.host_id,
-        'live_join_request',
-        'Live Room Join Request',
-        `${user.full_name} wants to join your live room`,
-        JSON.stringify({ request_id: requestId, room_id: roomId, user_id: userId })
-      )
-      .run();
+    const user = await getUserById(db, userId);
+    if (user) {
+      await db
+        .prepare(
+          `INSERT INTO notifications (id, user_id, type, title, message, data, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
+        )
+        .bind(
+          generateId(),
+          room.host_id,
+          'live_join_request',
+          'Live Room Join Request',
+          `${user.full_name} wants to join your live room`,
+          JSON.stringify({ request_id: requestId, room_id: roomId, user_id: userId })
+        )
+        .run();
+    }
   } catch (notifErr) {
     console.log('Failed to create notification:', notifErr.message);
   }
