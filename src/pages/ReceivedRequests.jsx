@@ -9,6 +9,7 @@ import {
 } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import StickyNav from '../components/StickyNav.jsx';
 
 const ReceivedRequests = () => {
   const { user, updateUser } = useAuth();
@@ -16,6 +17,7 @@ const ReceivedRequests = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [processingId, setProcessingId] = useState(null);
+  const [tokenBalance, setTokenBalance] = useState(null);
 
   const loadRequests = async () => {
     setLoading(true);
@@ -33,6 +35,7 @@ const ReceivedRequests = () => {
   const refreshBalance = async () => {
     try {
       const data = await getTokenBalance();
+      setTokenBalance(data.balance);
       if (user) {
         updateUser({ ...user, token_balance: data.balance });
       }
@@ -43,6 +46,7 @@ const ReceivedRequests = () => {
 
   useEffect(() => {
     loadRequests();
+    refreshBalance();
   }, []);
 
   const handleAccept = async (requestId) => {
@@ -77,9 +81,10 @@ const ReceivedRequests = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-50 to-peach-100 p-4 pb-28 text-slate-900">
-      <div className="mx-auto w-full max-w-3xl rounded-2xl bg-white p-6 shadow">
-        <h1 className="text-2xl font-bold text-slate-900">Received Requests</h1>
+    <div className="min-h-screen p-4 pb-28 text-slate-900" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
+      <StickyNav title="Received Requests" tokenBalance={tokenBalance} />
+      
+      <div className="mx-auto w-full max-w-3xl bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-6 shadow-xl mt-6">
         <p className="mt-2 text-sm text-slate-500">Accepting a request costs 5 tokens.</p>
 
         {error && (
@@ -125,7 +130,7 @@ const ReceivedRequests = () => {
                     type="button"
                     onClick={() => handleAccept(request.id)}
                     disabled={processingId === request.id}
-                    className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
+                    className="rounded-full px-4 py-2 text-sm font-semibold text-white hover:scale-105 transition-transform disabled:opacity-60" style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
                   >
                     Accept (5 tokens)
                   </button>
@@ -133,7 +138,7 @@ const ReceivedRequests = () => {
                     type="button"
                     onClick={() => handleReject(request.id)}
                     disabled={processingId === request.id}
-                    className="rounded-xl bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-60"
+                    className="rounded-full bg-white border border-gray-200 px-4 py-2 text-sm font-semibold hover:scale-105 transition-transform disabled:opacity-60" style={{ color: '#E74C3C' }}
                   >
                     Reject
                   </button>

@@ -3,6 +3,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
+import StickyNav from '../components/StickyNav';
 
 const NotificationsPage = () => {
   const { notifications, loading, markAsRead } = useNotifications();
@@ -38,9 +39,10 @@ const NotificationsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="max-w-2xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-6">Notifications</h1>
+    <div className="min-h-screen pb-20" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
+      <StickyNav title="Notifications" showTokens={false} />
+      
+      <div className="max-w-2xl mx-auto p-4 pt-6">
         
         {notifications.length === 0 ? (
           <div className="text-center py-12">
@@ -55,8 +57,8 @@ const NotificationsPage = () => {
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
-                className={`bg-white rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow ${
-                  !notification.read_at ? 'border-l-4 border-blue-500' : ''
+                className={`bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-4 cursor-pointer hover:shadow-xl transition-shadow ${
+                  !notification.read_at ? 'border-l-4 border-[#E74C3C]' : ''
                 }`}
               >
                 <div className="flex items-start justify-between">
@@ -68,7 +70,7 @@ const NotificationsPage = () => {
                     </p>
                   </div>
                   {!notification.read_at && (
-                    <div className="w-2 h-2 bg-blue-600 rounded-full ml-4 mt-2" />
+                    <div className="w-2 h-2 rounded-full ml-4 mt-2" style={{ background: '#E74C3C' }} />
                   )}
                 </div>
               </div>

@@ -3,12 +3,14 @@ import React, { useEffect, useState } from 'react';
 import { cancelConnectionRequest, getSentRequests, getTokenBalance } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import StickyNav from '../components/StickyNav.jsx';
 
 const SentRequests = () => {
   const { user, updateUser } = useAuth();
   const [sentRequests, setSentRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tokenBalance, setTokenBalance] = useState(null);
 
   const loadSentRequests = async () => {
     setLoading(true);
@@ -25,11 +27,13 @@ const SentRequests = () => {
 
   useEffect(() => {
     loadSentRequests();
+    refreshBalance();
   }, []);
 
   const refreshBalance = async () => {
     try {
       const data = await getTokenBalance();
+      setTokenBalance(data.balance);
       if (user) {
         updateUser({ ...user, token_balance: data.balance });
       }
@@ -65,12 +69,11 @@ const SentRequests = () => {
   };
 
   return (
-    <div className="mobile-container bg-premium-mesh relative pt-[env(safe-area-inset-top,0px)] pb-[calc(80px+env(safe-area-inset-bottom,0px))]">
+    <div className="mobile-container relative pt-[env(safe-area-inset-top,0px)] pb-[calc(80px+env(safe-area-inset-bottom,0px))]" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
+      <StickyNav title="Sent Requests" tokenBalance={tokenBalance} />
+      
       <div className="relative z-10 px-4 py-8">
         <div className="w-full max-w-2xl mx-auto">
-          <h1 className="text-2xl font-semibold bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 bg-clip-text text-transparent mb-6">
-            Sent Requests
-          </h1>
 
           {loading && (
             <div className="flex justify-center py-8">
@@ -79,14 +82,14 @@ const SentRequests = () => {
           )}
           
           {error && (
-            <div className="glass-card rounded-2xl px-6 py-4 text-red-600 mb-6">
+            <div className="bg-white/95 backdrop-blur-lg border border-red-200 rounded-3xl px-6 py-4 text-red-600 mb-6 shadow-xl">
               {error}
             </div>
           )}
 
           {!loading && sentRequests.length === 0 && (
-            <div className="glass-card rounded-2xl p-8 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+            <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-8 text-center shadow-xl">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}>
                 <span className="text-2xl">📤</span>
               </div>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">No Sent Requests</h3>
@@ -101,7 +104,7 @@ const SentRequests = () => {
               const progress = timeData?.progress || 0;
               
               return (
-                <div key={request.id} className="glass-card rounded-2xl p-6">
+                <div key={request.id} className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-6 shadow-xl">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-800 mb-1">
@@ -140,8 +143,8 @@ const SentRequests = () => {
                         <div className="mt-3">
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className="bg-gradient-to-r from-rose-500 to-pink-500 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${progress}%` }}
+                              className="h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${progress}%`, background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}
                             />
                           </div>
                         </div>
@@ -152,7 +155,7 @@ const SentRequests = () => {
                       <button
                         type="button"
                         onClick={() => handleCancel(request)}
-                        className="ml-4 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-xl transition-colors"
+                        className="ml-4 px-4 py-2 text-white text-sm font-medium rounded-full transition-transform hover:scale-105" style={{ background: 'linear-gradient(135deg, #E74C3C, #2C3E50)' }}
                       >
                         Cancel
                       </button>
