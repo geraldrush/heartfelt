@@ -20,6 +20,7 @@ import {
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import { getProfileCompletion } from '../utils/profileCompletion.js';
+import StickyNav from '../components/StickyNav.jsx';
 
 const MAX_IMAGES = 5;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -310,7 +311,7 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="mobile-container pull-to-refresh bg-premium-mesh flex items-center justify-center">
+      <div className="mobile-container pull-to-refresh flex items-center justify-center" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
         <LoadingSpinner label="Loading profile..." />
       </div>
     );
@@ -318,7 +319,7 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="mobile-container pull-to-refresh bg-premium-mesh p-4">
+      <div className="mobile-container pull-to-refresh p-4" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
         <div className="text-center text-red-600">Failed to load profile data</div>
       </div>
     );
@@ -328,23 +329,12 @@ const Profile = () => {
   const races = referenceData?.races || [];
 
   return (
-    <div className="mobile-container pull-to-refresh bg-premium-mesh pb-[calc(110px+env(safe-area-inset-bottom,0px))] md:pb-8">
+    <div className="mobile-container pull-to-refresh pb-[calc(110px+env(safe-area-inset-bottom,0px))] md:pb-8" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
+      <StickyNav title="Profile" tokenBalance={tokenBalance} />
+      
       <div className="mx-auto max-w-3xl px-4 py-6">
         <div className="flex flex-col gap-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">My account</p>
-              <h1 className="text-3xl font-semibold text-slate-900 mt-2">Profile</h1>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <FaSignOutAlt className="w-4 h-4 mr-1" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
-
-          <div className="glass-card rounded-3xl p-5">
+          <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-5 shadow-xl">
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -372,8 +362,8 @@ const Profile = () => {
             </div>
             <div className="mt-4 h-2 w-full rounded-full bg-slate-200 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
-                style={{ width: `${completion.percent}%` }}
+                className="h-full"
+                style={{ width: `${completion.percent}%`, background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
               />
             </div>
             <p className="text-xs text-slate-500 mt-2">
@@ -397,13 +387,13 @@ const Profile = () => {
         </div>
 
         {error && (
-          <div className="glass-card rounded-2xl px-4 py-3 text-red-600 mb-6">
+          <div className="bg-white/95 backdrop-blur-lg border border-red-200 rounded-2xl px-4 py-3 text-red-600 mb-6 shadow-xl">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSaveProfile} className="grid gap-4">
-          <div className="glass-card rounded-3xl p-5">
+          <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-5 shadow-xl">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">Story & photos</h2>
@@ -486,14 +476,14 @@ const Profile = () => {
               type="button"
               onClick={handleCreateStory}
               disabled={uploadingStory}
-              className="mt-5 w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+              className="mt-5 w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white transition hover:scale-105" style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
             >
               {uploadingStory ? 'Saving...' : 'Save Story & Photos'}
             </button>
           </div>
 
 
-          <div className="glass-card rounded-3xl p-5">
+          <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-5 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Basic information</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -551,7 +541,7 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="glass-card rounded-3xl p-5">
+          <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-5 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Location</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -611,7 +601,7 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="glass-card rounded-3xl p-5">
+          <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-5 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Personal details</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -647,7 +637,7 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="glass-card rounded-3xl p-5">
+          <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-5 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Lifestyle</h2>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
@@ -704,7 +694,7 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="glass-card rounded-3xl p-5">
+          <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-5 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Preferences</h2>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
@@ -777,7 +767,7 @@ const Profile = () => {
             <button
               type="submit"
               disabled={saving}
-              className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+              className="w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white transition hover:scale-105 disabled:opacity-60" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}
             >
               {saving ? 'Saving changes...' : 'Save Profile Changes'}
             </button>
@@ -787,7 +777,7 @@ const Profile = () => {
           </div>
         </form>
 
-        <div className="glass-card rounded-3xl p-5 mt-6">
+        <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-5 mt-6 shadow-xl">
           <h2 className="text-lg font-semibold text-slate-900 mb-2">Tokens & payments</h2>
           <p className="text-sm text-slate-500">
             Manage token purchases and requests from your wallet.
@@ -801,7 +791,7 @@ const Profile = () => {
           </button>
         </div>
 
-        <div className="glass-card rounded-3xl p-5 border border-red-100 mt-6">
+        <div className="bg-white/95 backdrop-blur-lg border border-red-200 rounded-3xl p-5 mt-6 shadow-xl">
           <h2 className="text-lg font-semibold text-slate-900 mb-2">Delete account</h2>
           <p className="text-sm text-slate-500">
             This will permanently remove your profile, story, and connections.

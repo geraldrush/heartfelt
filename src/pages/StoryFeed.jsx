@@ -29,6 +29,7 @@ import Button from '../components/ui/Button.jsx';
 import { triggerHaptic } from '../utils/haptics.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getProfileCompletion } from '../utils/profileCompletion.js';
+import StickyNav from '../components/StickyNav.jsx';
 
 const PAGE_SIZE = 20;
 
@@ -618,53 +619,11 @@ const StoryFeed = () => {
   );
 
   return (
-    <div ref={containerRef} className="mobile-container bg-premium-mesh relative overflow-y-auto h-screen">
-      {/* Sticky Top Menu */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button type="button" onClick={() => setShowMenu(!showMenu)} className="p-2 rounded-lg hover:bg-gray-100">
-            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          <h1 className="text-lg font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">Heartfelt</h1>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-full px-3 py-1.5">
-              <span className="text-lg">🪙</span>
-              <span className="text-sm font-bold text-amber-700">{tokenBalance === null ? '...' : tokenBalance}</span>
-            </div>
-            <NotificationBell />
-          </div>
-        </div>
-      </div>
-
-      {/* Menu Drawer */}
-      {showMenu && (
-        <div className="fixed inset-0 z-[60] bg-black/50" onClick={() => setShowMenu(false)}>
-          <div className="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="font-bold text-lg">Menu</h2>
-              <button onClick={() => setShowMenu(false)} className="p-2 rounded-lg hover:bg-gray-100">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <nav className="p-4 space-y-2">
-              <button onClick={() => { navigate('/stories'); setShowMenu(false); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 font-medium">🏠 Home</button>
-              <button onClick={() => { navigate('/profile'); setShowMenu(false); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 font-medium">👤 Profile</button>
-              <button onClick={() => { navigate('/connections'); setShowMenu(false); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 font-medium">💬 Connections</button>
-              <button onClick={() => { navigate('/tokens'); setShowMenu(false); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 font-medium">🪙 Tokens</button>
-              <button onClick={() => { setShowFilters(true); setShowMenu(false); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 font-medium">🔍 Filters</button>
-            </nav>
-          </div>
-        </div>
-      )}
+    <div ref={containerRef} className="mobile-container relative overflow-y-auto h-screen" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
+      <StickyNav title="Heartfelt" tokenBalance={tokenBalance} />
 
       <div className="pt-16 pb-[calc(80px+env(safe-area-inset-bottom,0px))] md:pb-[env(safe-area-inset-bottom,0px)]">
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-900/10 via-pink-900/10 to-rose-900/10 pointer-events-none" />
-      <div className="absolute top-40 left-20 w-64 h-64 bg-purple-500/5 rounded-full blur-2xl md:blur-3xl animate-pulse pointer-events-none" />
-      <div className="absolute bottom-40 right-20 w-80 h-80 bg-pink-500/5 rounded-full blur-2xl md:blur-3xl animate-pulse pointer-events-none" />
+      <div className="fixed inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.05), transparent 55%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.05), transparent 55%)' }} />
       
       <div className="relative z-10 px-4 py-0 md:px-4 md:pb-28 md:pt-8">
         <div className="w-full md:max-w-6xl mx-auto">
@@ -696,7 +655,7 @@ const StoryFeed = () => {
                 <button
                   type="button"
                   onClick={() => navigate('/profile')}
-                  className="mt-3 w-full rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                  className="mt-3 w-full rounded-2xl px-4 py-2 text-xs font-semibold text-white transition hover:scale-105" style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
                 >
                   Complete profile
                 </button>

@@ -12,6 +12,7 @@ import {
   transferTokens,
 } from '../utils/api.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import StickyNav from '../components/StickyNav.jsx';
 
 const TokensPage = () => {
   const [transactions, setTransactions] = useState([]);
@@ -197,16 +198,18 @@ const TokensPage = () => {
   }, [packages]);
 
   return (
-    <div className="mobile-container pull-to-refresh bg-[radial-gradient(circle_at_top,rgba(255,235,238,0.9),rgba(248,250,252,1)_55%)] px-4 py-8 pb-[calc(100px+env(safe-area-inset-bottom,0px))] md:pb-28 text-slate-900">
-      <div className="mx-auto w-full max-w-4xl">
-        <div className="rounded-3xl border border-white/60 bg-white/80 p-5 shadow-xl backdrop-blur md:p-6">
+    <div className="mobile-container pull-to-refresh px-4 py-6 pb-[calc(100px+env(safe-area-inset-bottom,0px))] md:pb-28 text-slate-900" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
+      <StickyNav title="Tokens" tokenBalance={balance} showNotifications={false} />
+      
+      <div className="mx-auto w-full max-w-4xl mt-6">
+        <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-5 shadow-xl md:p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Wallet</p>
-              <h1 className="mt-2 text-3xl font-semibold md:text-4xl">Token Balance</h1>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: '#E74C3C' }}>Wallet</p>
+              <h2 className="mt-2 text-3xl font-semibold md:text-4xl">Token Balance</h2>
               <p className="mt-2 text-sm text-slate-500">{summary}</p>
             </div>
-            <div className="flex items-center gap-3 rounded-2xl bg-slate-900 px-5 py-4 text-white shadow-lg">
+            <div className="flex items-center gap-3 rounded-2xl px-5 py-4 text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}>
               <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/15">
                 <FontAwesomeIcon icon={faCoins} className="text-lg" />
               </div>
@@ -223,14 +226,14 @@ const TokensPage = () => {
             <button
               type="button"
               onClick={() => setShowBuyModal(true)}
-              className="rounded-full bg-rose-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-rose-700"
+              className="rounded-full px-5 py-2 text-sm font-semibold text-white shadow hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}
             >
               Buy Tokens
             </button>
             <button
               type="button"
               onClick={() => setShowTransfer(true)}
-              className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow hover:bg-slate-50"
+              className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow hover:scale-105 transition-transform"
             >
               Transfer Tokens
             </button>
@@ -256,7 +259,7 @@ const TokensPage = () => {
           </div>
         </div>
 
-        <div className="mt-4 overflow-hidden rounded-3xl border border-slate-100 bg-white text-slate-700 shadow-lg">
+        <div className="mt-4 overflow-hidden rounded-3xl border border-slate-100 bg-white/95 backdrop-blur-lg text-slate-700 shadow-xl">
           {/* Mobile Card Layout */}
           <div className="md:hidden">
             {loading ? (
@@ -403,7 +406,7 @@ const TokensPage = () => {
               )}
               <button
                 type="submit"
-                className="w-full rounded-full bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
+                className="w-full rounded-full px-4 py-3 text-sm font-semibold text-white hover:scale-105 transition-transform disabled:cursor-not-allowed disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}
               >
                 Send Tokens
               </button>
@@ -444,12 +447,12 @@ const TokensPage = () => {
                       onClick={() => setSelectedPackage(pkg)}
                       className={`relative rounded-2xl border px-4 py-5 text-left transition ${
                         isSelected
-                          ? 'border-rose-500 bg-rose-50'
-                          : 'border-slate-200 hover:border-rose-200'
+                          ? 'border-[#E74C3C] bg-orange-50'
+                          : 'border-slate-200 hover:border-orange-200'
                       }`}
                     >
                       {isBestValue && (
-                        <span className="absolute right-3 top-3 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white">
+                        <span className="absolute right-3 top-3 rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}>
                           Best Value
                         </span>
                       )}
@@ -477,7 +480,7 @@ const TokensPage = () => {
               type="button"
               onClick={handleBuyTokens}
               disabled={!selectedPackage || paymentLoading}
-              className="mt-6 w-full rounded-full bg-rose-600 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-rose-300"
+              className="mt-6 w-full rounded-full px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}
             >
               {paymentLoading ? 'Redirecting to Payfast...' : 'Proceed to Payment'}
             </button>

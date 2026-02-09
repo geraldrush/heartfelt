@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { createLiveRoom, getLiveRooms, joinLiveRoom } from '../utils/api.js';
+import { createLiveRoom, getLiveRooms, joinLiveRoom, getTokenBalance } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import StickyNav from '../components/StickyNav.jsx';
 
 const LiveRooms = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const LiveRooms = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
+  const [tokenBalance, setTokenBalance] = useState(null);
 
   const loadRooms = async () => {
     try {
@@ -29,6 +31,15 @@ const LiveRooms = () => {
 
   useEffect(() => {
     loadRooms();
+    const fetchBalance = async () => {
+      try {
+        const data = await getTokenBalance();
+        setTokenBalance(data.balance);
+      } catch (err) {
+        console.error('Failed to load token balance:', err);
+      }
+    };
+    fetchBalance();
     const interval = setInterval(loadRooms, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -69,25 +80,20 @@ const LiveRooms = () => {
   };
 
   return (
-    <div className="mobile-container min-h-screen bg-premium-mesh">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between px-4 py-4">
-          <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Live Rooms</h1>
-            <p className="text-xs text-gray-500 mt-0.5">Connect with others in real-time</p>
-          </div>
+    <div className="mobile-container min-h-screen" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
+      <StickyNav title="Live Rooms" tokenBalance={tokenBalance} />
+
+      <div className="px-4 py-6 pb-24 space-y-6">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-500">Connect with others in real-time</p>
           <button
             type="button"
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full text-sm font-semibold shadow-lg hover:scale-105 transition-transform"
+            className="px-4 py-2 bg-gradient-to-r from-[#E74C3C] to-[#F39C12] text-white rounded-full text-sm font-semibold shadow-lg hover:scale-105 transition-transform"
           >
             + Go Live
           </button>
         </div>
-      </div>
-
-      <div className="px-4 py-6 pb-24 space-y-6">
         {error && (
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
@@ -103,7 +109,7 @@ const LiveRooms = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass-card rounded-3xl p-6 shadow-xl"
+            className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-6 shadow-xl"
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-gray-900">Start Your Live Session</h2>
@@ -137,7 +143,7 @@ const LiveRooms = () => {
                 type="button"
                 onClick={handleCreate}
                 disabled={creating || !title.trim()}
-                className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl font-semibold shadow-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                className="w-full py-3 bg-gradient-to-r from-[#E74C3C] to-[#F39C12] text-white rounded-2xl font-semibold shadow-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
               >
                 {creating ? 'Starting Live...' : '🎥 Start Live Now'}
               </button>
@@ -146,9 +152,9 @@ const LiveRooms = () => {
         )}
 
         {/* Info Card */}
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-6 border border-purple-100">
+        <div className="bg-gradient-to-br from-orange-50 to-green-50 rounded-3xl p-6 border border-orange-100">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E74C3C] to-[#F39C12] flex items-center justify-center flex-shrink-0">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
@@ -172,7 +178,8 @@ const LiveRooms = () => {
             <button
               type="button"
               onClick={loadRooms}
-              className="text-sm text-purple-600 font-medium hover:text-purple-700"
+              className="text-sm font-medium hover:opacity-80 transition-opacity"
+              style={{ color: '#E74C3C' }}
             >
               Refresh
             </button>
@@ -193,7 +200,7 @@ const LiveRooms = () => {
               <p className="text-sm text-gray-500 mb-4">Be the first to start a live session!</p>
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full text-sm font-semibold shadow-lg hover:scale-105 transition-transform"
+                className="px-6 py-2 bg-gradient-to-r from-[#E74C3C] to-[#F39C12] text-white rounded-full text-sm font-semibold shadow-lg hover:scale-105 transition-transform"
               >
                 Start Live Room
               </button>
@@ -205,7 +212,7 @@ const LiveRooms = () => {
                   key={room.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="glass-card rounded-3xl p-5 shadow-xl hover:shadow-2xl transition-shadow"
+                  className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-5 shadow-xl hover:shadow-2xl transition-shadow"
                 >
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex-1">
@@ -234,7 +241,7 @@ const LiveRooms = () => {
                     <button
                       type="button"
                       onClick={() => handleJoin(room.id)}
-                      className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full text-sm font-semibold shadow-lg hover:scale-105 transition-transform"
+                      className="px-6 py-2 bg-gradient-to-r from-[#E74C3C] to-[#F39C12] text-white rounded-full text-sm font-semibold shadow-lg hover:scale-105 transition-transform"
                     >
                       Join Room
                     </button>
