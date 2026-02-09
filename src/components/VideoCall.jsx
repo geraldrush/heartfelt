@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useVideoCall } from '../hooks/useVideoCall';
 
-const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: initialBalance, peer }) => {
-  const { startCall, endCall, isCallActive, localStream, remoteStream, tokenBalance } = useVideoCall(userId, connectionId, remotePeerId, peer);
+const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: initialBalance, peer, isIncoming = false }) => {
+  const { startCall, answerCall, endCall, isCallActive, localStream, remoteStream, tokenBalance, incomingCall } = useVideoCall(userId, connectionId, remotePeerId, peer);
   const [error, setError] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [permissionError, setPermissionError] = useState(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
@@ -20,14 +21,54 @@ const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: 
     }
   }, [remoteStream]);
 
+  const requestPermissions = async () => {
+    setPermissionError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      return true;
+    } catch (err) {
+      const message =
+        err?.name === 'NotAllowedError'
+          ? 'Camera and microphone permission denied. Please allow access in your browser settings and try again.'
+          : err?.name === 'NotFoundError'
+          ? 'No camera or microphone found on this device.'
+          : err?.message || 'Unable to access camera or microphone.';
+      setPermissionError(message);
+      return false;
+    }
+  };
+
   const handleStartCall = async () => {
     setIsStarting(true);
     setError(null);
+    const granted = await requestPermissions();
+    if (!granted) {
+      setIsStarting(false);
+      return;
+    }
     
     try {
       await startCall(remotePeerId);
     } catch (err) {
       setError(err.message || 'Failed to start call');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const handleAnswerCall = async () => {
+    setIsStarting(true);
+    setError(null);
+    const granted = await requestPermissions();
+    if (!granted) {
+      setIsStarting(false);
+      return;
+    }
+    try {
+      await answerCall();
+    } catch (err) {
+      setError(err.message || 'Failed to answer call');
     } finally {
       setIsStarting(false);
     }
@@ -64,6 +105,13 @@ const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: 
         </div>
       )}
       
+      {/* Permission message */}
+      {permissionError && (
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-amber-600 text-white px-6 py-3 rounded-lg text-center max-w-sm">
+          {permissionError}
+        </div>
+      )}
+      
       {/* Error message */}
       {error && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg">
@@ -75,11 +123,11 @@ const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: 
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4">
         {!isCallActive && (
           <button
-            onClick={handleStartCall}
-            disabled={isStarting}
+            onClick={isIncoming || incomingCall ? handleAnswerCall : handleStartCall}
+            disabled={isStarting || (isIncoming && !incomingCall)}
             className="bg-green-600 text-white px-6 py-3 rounded-full font-semibold disabled:opacity-50"
           >
-            {isStarting ? 'Starting...' : 'Start Call'}
+            {isStarting ? 'Starting...' : (isIncoming || incomingCall) ? 'Answer Call' : 'Start Call'}
           </button>
         )}
         <button
@@ -89,6 +137,12 @@ const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: 
           End Call
         </button>
       </div>
+      
+      {isIncoming && !incomingCall && (
+        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-xs">
+          Waiting for caller to connect…
+        </div>
+      )}
     </div>
   );
 };

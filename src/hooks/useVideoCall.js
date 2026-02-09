@@ -5,6 +5,7 @@ import { requestVideoCall } from '../utils/api';
 export const useVideoCall = (userId, connectionId, recipientId, externalPeer = null) => {
   const [peer, setPeer] = useState(externalPeer);
   const [call, setCall] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null);
   const [isCallActive, setIsCallActive] = useState(false);
   const [remoteStream, setRemoteStream] = useState(null);
   const [tokenBalance, setTokenBalance] = useState(null);
@@ -15,18 +16,8 @@ export const useVideoCall = (userId, connectionId, recipientId, externalPeer = n
       setPeer(externalPeer);
       
       const handleIncomingCall = (incomingCall) => {
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-          .then((stream) => {
-            localStreamRef.current = stream;
-            incomingCall.answer(stream);
-            
-            incomingCall.on('stream', (remoteStream) => {
-              setRemoteStream(remoteStream);
-              setIsCallActive(true);
-            });
-            
-            setCall(incomingCall);
-          });
+        // Store incoming call; answer only after explicit user action
+        setIncomingCall(incomingCall);
       };
       
       externalPeer.on('call', handleIncomingCall);
@@ -65,20 +56,43 @@ export const useVideoCall = (userId, connectionId, recipientId, externalPeer = n
     }
   };
 
+  const answerCall = async () => {
+    if (!incomingCall) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localStreamRef.current = stream;
+      incomingCall.answer(stream);
+      
+      incomingCall.on('stream', (remoteStream) => {
+        setRemoteStream(remoteStream);
+        setIsCallActive(true);
+      });
+      
+      setCall(incomingCall);
+      setIncomingCall(null);
+    } catch (error) {
+      console.error('Failed to answer call:', error);
+      throw error;
+    }
+  };
+
   const endCall = () => {
     call?.close();
     localStreamRef.current?.getTracks().forEach(track => track.stop());
     setCall(null);
+    setIncomingCall(null);
     setRemoteStream(null);
     setIsCallActive(false);
   };
 
   return {
     startCall,
+    answerCall,
     endCall,
     isCallActive,
     localStream: localStreamRef.current,
     remoteStream,
-    tokenBalance
+    tokenBalance,
+    incomingCall
   };
 };

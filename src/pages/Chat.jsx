@@ -193,6 +193,7 @@ const Chat = () => {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [tokenBalance, setTokenBalance] = useState(0);
   const [videoCallInvitation, setVideoCallInvitation] = useState(null);
+  const [isIncomingCall, setIsIncomingCall] = useState(false);
   const [peerReady, setPeerReady] = useState(false);
   const peerRef = useRef(null);
 
@@ -726,6 +727,7 @@ const Chat = () => {
               <button
                 type="button"
                 onClick={() => {
+                  setIsIncomingCall(false);
                   setShowVideoCall(true);
                 }}
                 className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg transition"
@@ -927,6 +929,7 @@ const Chat = () => {
               <button
                 onClick={() => {
                   setVideoCallInvitation(null);
+                  setIsIncomingCall(true);
                   setShowVideoCall(true);
                 }}
                 className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-semibold"
@@ -952,12 +955,14 @@ const Chat = () => {
           remotePeerId={otherUserId}
           tokenBalance={tokenBalance}
           peer={peerRef.current}
-          onClose={() => {
-            setShowVideoCall(false);
-            getTokenBalance().then(data => setTokenBalance(data.balance));
-          }}
-        />
-      )}
+            isIncoming={isIncomingCall}
+            onClose={() => {
+              setShowVideoCall(false);
+              setIsIncomingCall(false);
+              getTokenBalance().then(data => setTokenBalance(data.balance));
+            }}
+          />
+        )}
     </ChatErrorBoundary>
   );
 };
