@@ -2,10 +2,8 @@
 import React, { Suspense } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
-import FadeIn from './components/animations/FadeIn.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
 import BottomNavigation from './components/BottomNavigation.jsx';
 const SignInPage = React.lazy(() => import('./pages/SignInPage'));
@@ -47,178 +45,32 @@ const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait">
-      <Suspense
-        fallback={
-          <div className="flex h-screen items-center justify-center">
-            <LoadingSpinner label="Loading..." />
-          </div>
-        }
-      >
-        <Routes location={location} key={location.pathname}>
-          <Route
-            path="/"
-            element={
-              <AuthRedirect>
-                <FadeIn>
-                  <SignInPage />
-                </FadeIn>
-              </AuthRedirect>
-            }
-          />
-          <Route
-            path="/landing"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <LandingPage />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <AuthRedirect>
-                <FadeIn>
-                  <SignUpPage />
-                </FadeIn>
-              </AuthRedirect>
-            }
-          />
-          <Route
-            path="/onboarding-basics"
-            element={
-              <ProtectedRoute requireIncompleteBasics>
-                <FadeIn>
-                  <OnboardingBasics />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/stories"
-            element={
-              <ProtectedRoute requireBasics>
-                <FadeIn>
-                  <StoryFeed />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/live"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <LiveRooms />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/live/:roomId"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <LiveRoom />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <Chat />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sent-requests"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <SentRequests />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/received-requests"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <ReceivedRequests />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/connections"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <Connections />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/connection/:connectionId"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <ConnectionProfile />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <Profile />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile/preview"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <ProfilePreview />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/tokens"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <TokensPage />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/notifications"
-            element={
-              <ProtectedRoute>
-                <FadeIn>
-                  <NotificationsPage />
-                </FadeIn>
-              </ProtectedRoute>
-            }
-          />
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <LoadingSpinner label="Loading..." />
+        </div>
+      }
+    >
+      <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<AuthRedirect><SignInPage /></AuthRedirect>} />
+          <Route path="/landing" element={<ProtectedRoute><LandingPage /></ProtectedRoute>} />
+          <Route path="/signup" element={<AuthRedirect><SignUpPage /></AuthRedirect>} />
+          <Route path="/onboarding-basics" element={<ProtectedRoute requireIncompleteBasics><OnboardingBasics /></ProtectedRoute>} />
+          <Route path="/stories" element={<ProtectedRoute requireBasics><StoryFeed /></ProtectedRoute>} />
+          <Route path="/live" element={<ProtectedRoute><LiveRooms /></ProtectedRoute>} />
+          <Route path="/live/:roomId" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
+          <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="/sent-requests" element={<ProtectedRoute><SentRequests /></ProtectedRoute>} />
+          <Route path="/received-requests" element={<ProtectedRoute><ReceivedRequests /></ProtectedRoute>} />
+          <Route path="/connections" element={<ProtectedRoute><Connections /></ProtectedRoute>} />
+          <Route path="/connection/:connectionId" element={<ProtectedRoute><ConnectionProfile /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/profile/preview" element={<ProtectedRoute><ProfilePreview /></ProtectedRoute>} />
+          <Route path="/tokens" element={<ProtectedRoute><TokensPage /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         </Routes>
       </Suspense>
-    </AnimatePresence>
   );
 };
 

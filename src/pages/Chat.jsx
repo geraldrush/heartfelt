@@ -715,7 +715,7 @@ const Chat = () => {
     <ChatErrorBoundary>
       <div className="flex min-h-screen flex-col" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)', height: '100vh', overflow: 'hidden' }}>
         {/* Fixed Header - Always Visible */}
-        <div className="fixed top-0 left-0 right-0 z-20 border-b bg-white/95 backdrop-blur-lg shadow-md" style={{ position: 'fixed' }}>
+        <div className="absolute top-0 left-0 right-0 z-20 border-b bg-white/95 backdrop-blur-lg shadow-md">
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3">
               <button 
@@ -940,7 +940,7 @@ const Chat = () => {
         </div>
 
         {/* Fixed Input Area */}
-        <div className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white/95 backdrop-blur-lg shadow-sm" style={{ position: 'fixed' }}>
+        <div className="absolute bottom-0 left-0 right-0 z-20 border-t bg-white/95 backdrop-blur-lg shadow-sm">
           <div className="flex gap-2 px-4 py-3 max-w-4xl mx-auto">
             <input
               value={inputText}
