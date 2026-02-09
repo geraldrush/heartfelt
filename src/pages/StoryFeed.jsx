@@ -620,7 +620,7 @@ const StoryFeed = () => {
 
   return (
     <div ref={containerRef} className="mobile-container relative overflow-y-auto h-screen" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
-      <StickyNav title="Heartfelt" tokenBalance={tokenBalance} />
+      <StickyNav title="AfroDate" tokenBalance={tokenBalance} />
 
       <div className="pt-16 pb-[calc(80px+env(safe-area-inset-bottom,0px))] md:pb-[env(safe-area-inset-bottom,0px)]">
       <div className="fixed inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.05), transparent 55%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.05), transparent 55%)' }} />
@@ -628,7 +628,7 @@ const StoryFeed = () => {
       <div className="relative z-10 px-4 py-0 md:px-4 md:pb-28 md:pt-8">
         <div className="w-full md:max-w-6xl mx-auto">
           {showCompletionBanner && (
-            <div className="fixed top-[env(safe-area-inset-top,0px)] left-0 right-0 z-[80] pointer-events-none px-4">
+            <div className="fixed left-0 right-0 z-[80] pointer-events-none px-4" style={{ top: '80px' }}>
               <div className="mx-auto w-full max-w-md rounded-3xl border border-emerald-100/70 bg-white/95 px-4 py-4 shadow-2xl backdrop-blur pointer-events-auto relative mt-2">
                 <button
                   type="button"

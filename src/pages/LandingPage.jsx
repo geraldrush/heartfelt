@@ -190,7 +190,7 @@ const LandingPage = () => {
         </motion.button>
 
         <p className="text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-400">
-          © {new Date().getFullYear()} Heartfelt Connections
+          © {new Date().getFullYear()} AfroDate
         </p>
       </main>
     </div>
