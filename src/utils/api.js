@@ -215,6 +215,12 @@ export const getTokenPackages = () => apiClient.get('/api/payments/packages');
 export const initiatePayment = (data) => apiClient.post('/api/payments/initiate', data);
 export const getPaymentStatus = (paymentId) =>
   apiClient.get(`/api/payments/status/${paymentId}`);
+
+export const getLiveRooms = () => apiClient.get('/api/live/list');
+export const getLiveRoom = (roomId) => apiClient.get(`/api/live/${roomId}`);
+export const createLiveRoom = (data) => apiClient.post('/api/live/create', data);
+export const joinLiveRoom = (roomId) => apiClient.post('/api/live/join', { room_id: roomId });
+export const leaveLiveRoom = (roomId) => apiClient.post('/api/live/leave', { room_id: roomId });
 export const getNotifications = ({ limit = 50, offset = 0 } = {}) =>
   apiClient.get(`/api/notifications?limit=${limit}&offset=${offset}`);
 export const markNotificationAsRead = (notificationId) =>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaHeart, FaComments, FaTachometerAlt, FaSearch, FaUser } from 'react-icons/fa';
+import { FaHeart, FaComments, FaTachometerAlt, FaBroadcastTower, FaUser } from 'react-icons/fa';
 
 const BottomNavigation = () => {
   const location = useLocation();
@@ -8,7 +8,7 @@ const BottomNavigation = () => {
 
   const navItems = [
     { path: '/stories', icon: FaHeart, label: 'Stories' },
-    { path: '/stories?filters=1', icon: FaSearch, label: 'Filter' },
+    { path: '/live', icon: FaBroadcastTower, label: 'Live' },
     { path: '/connections', icon: FaComments, label: 'Chats' },
     { path: '/landing', icon: FaTachometerAlt, label: 'Dashboard' },
     { path: '/profile', icon: FaUser, label: 'Profile' },
@@ -26,11 +26,8 @@ const BottomNavigation = () => {
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-sm border-t border-gray-200 pb-[env(safe-area-inset-bottom,0px)]">
       <div className="grid grid-cols-5 gap-1 px-2 py-2">
         {navItems.map(({ path, icon: Icon, label }) => {
-          const isFilter = label === 'Filter';
           const searchParams = getSearchParams();
-          const isActive = isFilter
-            ? location.pathname === '/stories' && searchParams.has('filters')
-            : location.pathname === path;
+          const isActive = location.pathname === path || (path === '/stories' && location.pathname === '/stories' && searchParams.has('filters') && label === 'Stories');
           return (
             <button
               key={path}

@@ -22,6 +22,8 @@ const TokensPage = React.lazy(() => import('./pages/TokensPage'));
 const OnboardingBasics = React.lazy(() => import('./pages/OnboardingBasics.jsx'));
 const ConnectionProfile = React.lazy(() => import('./pages/ConnectionProfile.jsx'));
 const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage.jsx'));
+const LiveRooms = React.lazy(() => import('./pages/LiveRooms.jsx'));
+const LiveRoom = React.lazy(() => import('./pages/LiveRoom.jsx'));
 
 const AuthRedirect = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -100,6 +102,26 @@ const AnimatedRoutes = () => {
               <ProtectedRoute requireBasics>
                 <FadeIn>
                   <StoryFeed />
+                </FadeIn>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/live"
+            element={
+              <ProtectedRoute>
+                <FadeIn>
+                  <LiveRooms />
+                </FadeIn>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/live/:roomId"
+            element={
+              <ProtectedRoute>
+                <FadeIn>
+                  <LiveRoom />
                 </FadeIn>
               </ProtectedRoute>
             }
@@ -203,7 +225,7 @@ const AnimatedRoutes = () => {
 const App = () => {
   const location = useLocation();
   
-  const showBottomNav = ['/stories', '/connections', '/landing', '/tokens', '/profile'].includes(location?.pathname);
+  const showBottomNav = ['/stories', '/connections', '/landing', '/tokens', '/profile', '/live'].includes(location?.pathname);
 
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>

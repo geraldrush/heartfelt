@@ -500,17 +500,17 @@ export async function verifyUserInConnection(db, connectionId, userId) {
   const timestamp = new Date().toISOString();
   console.log(`[DB] ${timestamp} Verifying user ${userId} for connection ${connectionId}`);
   
-  const query = `SELECT 
-    c.id, 
-    c.status, 
-    c.user_id_1, 
-    c.user_id_2,
-    u1.full_name as user1_name,
-    u2.full_name as user2_name
-  FROM connections c
-  LEFT JOIN users u1 ON c.user_id_1 = u1.id
-  LEFT JOIN users u2 ON c.user_id_2 = u2.id
-  WHERE c.id = ?`;
+    const query = `SELECT 
+      c.id, 
+      c.status, 
+      c.user_id_1, 
+      c.user_id_2,
+      u1.full_name as user1_name,
+      u2.full_name as user2_name
+    FROM connections c
+    LEFT JOIN users u1 ON c.user_id_1 = u1.id
+    LEFT JOIN users u2 ON c.user_id_2 = u2.id
+    WHERE c.id = ?`;
   
   console.log(`[DB] ${timestamp} Executing query: ${query}`);
   console.log(`[DB] ${timestamp} Query parameters: [${connectionId}]`);
@@ -518,14 +518,60 @@ export async function verifyUserInConnection(db, connectionId, userId) {
   try {
     const connection = await db.prepare(query).bind(connectionId).first();
     
-    if (!connection) {
-      console.log(`[DB] ${timestamp} Connection not found: ${connectionId}`);
-      return { 
-        valid: false, 
-        reason: 'CONNECTION_NOT_FOUND',
-        message: 'Connection does not exist in database'
-      };
-    }
+      if (!connection) {
+        // Check live rooms as a fallback (used for live chat streams)
+        const liveRoom = await db
+          .prepare(
+            `SELECT
+              lr.id,
+              lr.host_id,
+              lr.status,
+              u.full_name as host_name
+            FROM live_rooms lr
+            LEFT JOIN users u ON u.id = lr.host_id
+            WHERE lr.id = ?`
+          )
+          .bind(connectionId)
+          .first();
+
+        if (!liveRoom || liveRoom.status !== 'live') {
+          console.log(`[DB] ${timestamp} Connection not found: ${connectionId}`);
+          return { 
+            valid: false, 
+            reason: 'CONNECTION_NOT_FOUND',
+            message: 'Connection does not exist in database'
+          };
+        }
+
+        const participant = await db
+          .prepare(
+            `SELECT 1 FROM live_room_participants
+             WHERE room_id = ? AND user_id = ? AND left_at IS NULL`
+          )
+          .bind(connectionId, userId)
+          .first();
+
+        if (!participant && liveRoom.host_id !== userId) {
+          console.log(`[DB] ${timestamp} User ${userId} not in live room ${connectionId}`);
+          return {
+            valid: false,
+            reason: 'USER_NOT_IN_CONNECTION',
+            message: 'User is not a participant in this live room'
+          };
+        }
+
+        console.log(`[DB] ${timestamp} Live room verification successful`);
+        return {
+          valid: true,
+          connection: {
+            id: liveRoom.id,
+            user_id_1: liveRoom.host_id,
+            user_id_2: userId,
+            user1_name: liveRoom.host_name,
+            user2_name: 'Viewer'
+          }
+        };
+      }
     
     if (connection.status !== 'active') {
       console.log(`[DB] ${timestamp} Connection inactive: ${connectionId}, status: ${connection.status}`);
