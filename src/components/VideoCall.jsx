@@ -153,16 +153,20 @@ const VideoCall = ({
           <button
             onClick={isIncoming || incomingCall ? handleAnswerCall : handleStartCall}
             disabled={isStarting || (isIncoming && !incomingCall)}
-            className="text-white px-4 py-2 rounded-full font-semibold disabled:opacity-50 text-xs hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
+            className="p-3 rounded-full disabled:opacity-50 hover:scale-110 transition-transform" style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
           >
-            {isStarting ? 'Starting...' : (isIncoming || incomingCall) ? 'Answer' : 'Start'}
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/>
+            </svg>
           </button>
         )}
         <button
           onClick={handleEndCall}
-          className="text-white px-4 py-2 rounded-full font-semibold text-xs hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #E74C3C, #2C3E50)' }}
+          className="p-3 rounded-full hover:scale-110 transition-transform" style={{ background: 'linear-gradient(135deg, #E74C3C, #2C3E50)' }}
         >
-          End
+          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/>
+          </svg>
         </button>
       </div>
       
@@ -184,26 +188,26 @@ const VideoCall = ({
       </div>
 
       {showChat && (
-        <div className="absolute right-4 bottom-28 top-16 z-20 w-[min(320px,80vw)] rounded-2xl bg-white/95 backdrop-blur-lg border border-gray-200 p-3 shadow-xl">
+        <div className="absolute left-4 right-4 bottom-28 z-20 h-[33vh] rounded-2xl bg-black/40 backdrop-blur-sm p-3 shadow-xl">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+            <p className="text-xs font-semibold uppercase tracking-wide text-white">
               Live Chat
             </p>
-            <span className="text-[11px] text-gray-500">with {otherUserName}</span>
+            <span className="text-[11px] text-white/80">with {otherUserName}</span>
           </div>
           <div
             ref={chatListRef}
-            className="h-[45vh] overflow-y-auto space-y-2 pr-1 text-sm"
+            className="h-[calc(100%-80px)] overflow-y-auto space-y-2 pr-1 text-sm"
           >
             {messages.length === 0 ? (
-              <p className="text-gray-500 text-xs">No messages yet.</p>
+              <p className="text-white/60 text-xs">No messages yet.</p>
             ) : (
               messages.slice(-50).map((msg) => {
                 const isSender = msg.sender_id === userId;
                 return (
                   <div key={msg.id} className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs shadow-md ${
-                      isSender ? 'text-white' : 'bg-white text-gray-800 border border-gray-200'
+                      isSender ? 'text-white' : 'bg-white/20 text-white backdrop-blur-sm'
                     }`}
                     style={isSender ? { background: 'linear-gradient(135deg, #E74C3C, #F39C12)' } : {}}
                     >
@@ -220,8 +224,7 @@ const VideoCall = ({
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Type a message..."
-              className="flex-1 rounded-full bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-800 placeholder:text-gray-400 outline-none focus:ring-2"
-              style={{ focusRingColor: '#E74C3C' }}
+              className="flex-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 px-3 py-2 text-xs text-white placeholder:text-white/60 outline-none"
               onKeyPress={(e) => e.key === 'Enter' && handleChatSend()}
             />
             <button
@@ -234,8 +237,8 @@ const VideoCall = ({
           </div>
 
           {giftOptions.length > 0 && (
-            <div className="mt-3">
-              <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-2">
+            <div className="mt-2">
+              <p className="text-[11px] uppercase tracking-wide text-white/80 mb-1">
                 Send a gift
               </p>
               <div className="flex flex-wrap gap-2">
