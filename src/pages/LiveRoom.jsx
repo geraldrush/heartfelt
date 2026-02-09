@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Peer from 'peerjs';
 import { getLiveRoom, joinLiveRoom, leaveLiveRoom, getMessages, transferTokens } from '../utils/api.js';
@@ -23,6 +23,9 @@ const LiveRoom = () => {
   const [remoteStream, setRemoteStream] = useState(null);
   const [viewerCount, setViewerCount] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
+  const [joinRequested, setJoinRequested] = useState(false);
+  const [joinInProgress, setJoinInProgress] = useState(false);
+  const [peerReady, setPeerReady] = useState(false);
 
   const peerRef = useRef(null);
   const localVideoRef = useRef(null);
@@ -107,6 +110,7 @@ const LiveRoom = () => {
 
     peer.on('open', () => {
       peerRef.current = peer;
+      setPeerReady(true);
     });
 
     if (isHost) {
@@ -135,6 +139,7 @@ const LiveRoom = () => {
     return () => {
       peer.destroy();
       peerRef.current = null;
+      setPeerReady(false);
     };
   }, [user?.id, isHost, localStream]);
 
@@ -148,33 +153,50 @@ const LiveRoom = () => {
     }
   };
 
-  const handleJoinLive = () => {
-    console.log('=== JOIN LIVE BUTTON CLICKED ===');
-    console.log('Current state - hasJoined:', hasJoined);
-    console.log('Current state - isHost:', isHost);
-    console.log('hostPeerId:', hostPeerId);
-    console.log('peerRef.current:', peerRef.current);
-    
-    setHasJoined(true);
-    console.log('Set hasJoined to true');
-    
-    if (!hostPeerId || !peerRef.current) {
-      console.log('No peer connection available, showing chat only');
+  const attemptJoinHost = useCallback(() => {
+    if (isHost || joinInProgress) return;
+    if (!hostPeerId) {
+      setError('Host is not ready yet.');
       return;
     }
-    
+    if (!peerReady || !peerRef.current) {
+      return;
+    }
     try {
-      console.log('Attempting to call host:', hostPeerId);
+      setJoinInProgress(true);
+      setHasJoined(true);
       const emptyStream = new MediaStream();
       const call = peerRef.current.call(hostPeerId, emptyStream);
       call.on('stream', (stream) => {
-        console.log('Received remote stream');
         setRemoteStream(stream);
+        setJoinInProgress(false);
+      });
+      call.on('error', (err) => {
+        console.error('Join live error:', err);
+        setError(err?.message || 'Unable to join live stream.');
+        setHasJoined(false);
+        setJoinInProgress(false);
+      });
+      call.on('close', () => {
+        setJoinInProgress(false);
       });
     } catch (err) {
       console.error('Join live error:', err);
       setError(err.message || 'Unable to join live stream.');
+      setHasJoined(false);
+      setJoinInProgress(false);
     }
+  }, [hostPeerId, isHost, joinInProgress, peerReady]);
+
+  useEffect(() => {
+    if (joinRequested && peerReady) {
+      attemptJoinHost();
+    }
+  }, [joinRequested, peerReady, attemptJoinHost]);
+
+  const handleJoinLive = () => {
+    setJoinRequested(true);
+    attemptJoinHost();
   };
 
   const handleSendChat = () => {
