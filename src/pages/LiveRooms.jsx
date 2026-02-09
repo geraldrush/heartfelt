@@ -56,8 +56,13 @@ const LiveRooms = () => {
 
   const handleJoin = async (roomId) => {
     try {
-      await joinLiveRoom(roomId);
-      navigate(`/live/${roomId}`);
+      const response = await joinLiveRoom(roomId);
+      if (response.status === 'pending') {
+        setError('Join request sent! Waiting for host approval...');
+        setTimeout(() => setError(''), 3000);
+      } else if (response.status === 'approved' || response.status === 'host') {
+        navigate(`/live/${roomId}`);
+      }
     } catch (err) {
       setError(err.message || 'Failed to join live room.');
     }

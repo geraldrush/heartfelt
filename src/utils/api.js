@@ -221,6 +221,9 @@ export const getLiveRoom = (roomId) => apiClient.get(`/api/live/${roomId}`);
 export const createLiveRoom = (data) => apiClient.post('/api/live/create', data);
 export const joinLiveRoom = (roomId) => apiClient.post('/api/live/join', { room_id: roomId });
 export const leaveLiveRoom = (roomId) => apiClient.post('/api/live/leave', { room_id: roomId });
+export const approveLiveJoin = (requestId) => apiClient.post('/api/live/approve-join', { request_id: requestId });
+export const rejectLiveJoin = (requestId) => apiClient.post('/api/live/reject-join', { request_id: requestId });
+export const getLiveJoinRequests = (roomId) => apiClient.get(`/api/live/join-requests/${roomId}`);
 export const getNotifications = ({ limit = 50, offset = 0 } = {}) =>
   apiClient.get(`/api/notifications?limit=${limit}&offset=${offset}`);
 export const markNotificationAsRead = (notificationId) =>
