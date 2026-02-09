@@ -8,6 +8,7 @@ import {
   getMessages,
   getTokenRequests,
   getTokenBalance,
+  transferTokens,
   refreshToken,
 } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -196,6 +197,7 @@ const Chat = () => {
   const [isIncomingCall, setIsIncomingCall] = useState(false);
   const [peerReady, setPeerReady] = useState(false);
   const peerRef = useRef(null);
+  const giftOptions = [5, 10, 20, 50];
 
   const listRef = useRef(null);
   const topSentinelRef = useRef(null);
@@ -584,6 +586,42 @@ const Chat = () => {
     }, 50);
   };
 
+  const sendQuickMessage = (content) => {
+    if (!content?.trim()) return;
+    const tempId = crypto.randomUUID();
+    const outgoing = {
+      id: tempId,
+      sender_id: user?.id,
+      content,
+      status: 'sending',
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, outgoing]);
+    sendMessage(content, tempId);
+  };
+
+  const handleSendGift = async (amount) => {
+    if (!otherUserId) {
+      setError('No recipient selected for gifts.');
+      return;
+    }
+    if (tokenBalance < amount) {
+      setError(`You need at least ${amount} tokens to send this gift.`);
+      return;
+    }
+    try {
+      const result = await transferTokens({
+        recipient_id: otherUserId,
+        amount,
+        message: `Video gift`,
+      });
+      setTokenBalance(result.new_balance ?? tokenBalance - amount);
+      sendQuickMessage(`🎁 Sent ${amount} tokens to ${otherUserName}`);
+    } catch (err) {
+      setError(err.message || 'Failed to send gift.');
+    }
+  };
+
   const handleTyping = (value) => {
     setInputText(value);
     sendTypingIndicator(true);
@@ -956,6 +994,11 @@ const Chat = () => {
           tokenBalance={tokenBalance}
           peer={peerRef.current}
             isIncoming={isIncomingCall}
+            messages={messages}
+            onSendMessage={sendQuickMessage}
+            onSendGift={handleSendGift}
+            giftOptions={giftOptions}
+            otherUserName={otherUserName}
             onClose={() => {
               setShowVideoCall(false);
               setIsIncomingCall(false);

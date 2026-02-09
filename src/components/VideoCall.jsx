@@ -1,11 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { useVideoCall } from '../hooks/useVideoCall';
 
-const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: initialBalance, peer, isIncoming = false }) => {
+const VideoCall = ({
+  userId,
+  connectionId,
+  remotePeerId,
+  onClose,
+  tokenBalance: initialBalance,
+  peer,
+  isIncoming = false,
+  messages = [],
+  onSendMessage,
+  onSendGift,
+  giftOptions = [],
+  otherUserName = 'Host'
+}) => {
   const { startCall, answerCall, endCall, isCallActive, localStream, remoteStream, tokenBalance, incomingCall } = useVideoCall(userId, connectionId, remotePeerId, peer);
   const [error, setError] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
   const [permissionError, setPermissionError] = useState(null);
+  const [showChat, setShowChat] = useState(true);
+  const [chatInput, setChatInput] = useState('');
+  const chatListRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
@@ -20,6 +36,12 @@ const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: 
       remoteVideoRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
+
+  useEffect(() => {
+    if (showChat && chatListRef.current) {
+      chatListRef.current.scrollTop = chatListRef.current.scrollHeight;
+    }
+  }, [messages, showChat]);
 
   const requestPermissions = async () => {
     setPermissionError(null);
@@ -77,6 +99,12 @@ const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: 
   const handleEndCall = () => {
     endCall();
     onClose?.();
+  };
+
+  const handleChatSend = () => {
+    if (!chatInput.trim()) return;
+    onSendMessage?.(chatInput.trim());
+    setChatInput('');
   };
 
   return (
@@ -141,6 +169,86 @@ const VideoCall = ({ userId, connectionId, remotePeerId, onClose, tokenBalance: 
       {isIncoming && !incomingCall && (
         <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-xs">
           Waiting for caller to connect…
+        </div>
+      )}
+
+      {/* Live Chat Overlay */}
+      <div className="absolute right-4 top-4 z-20">
+        <button
+          type="button"
+          onClick={() => setShowChat((prev) => !prev)}
+          className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow"
+        >
+          {showChat ? 'Hide Chat' : 'Show Chat'}
+        </button>
+      </div>
+
+      {showChat && (
+        <div className="absolute right-4 bottom-28 top-16 z-20 w-[min(320px,80vw)] rounded-2xl bg-black/60 p-3 text-white backdrop-blur">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-white/80">
+              Live Chat
+            </p>
+            <span className="text-[11px] text-white/60">with {otherUserName}</span>
+          </div>
+          <div
+            ref={chatListRef}
+            className="h-[45vh] overflow-y-auto space-y-2 pr-1 text-sm"
+          >
+            {messages.length === 0 ? (
+              <p className="text-white/60 text-xs">No messages yet.</p>
+            ) : (
+              messages.slice(-50).map((msg) => {
+                const isSender = msg.sender_id === userId;
+                return (
+                  <div key={msg.id} className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs ${
+                      isSender ? 'bg-emerald-500/90' : 'bg-white/10'
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Type a message..."
+              className="flex-1 rounded-full bg-white/10 px-3 py-2 text-xs text-white placeholder:text-white/60 outline-none"
+              onKeyPress={(e) => e.key === 'Enter' && handleChatSend()}
+            />
+            <button
+              type="button"
+              onClick={handleChatSend}
+              className="rounded-full bg-white/90 px-3 py-2 text-xs font-semibold text-slate-800"
+            >
+              Send
+            </button>
+          </div>
+
+          {giftOptions.length > 0 && (
+            <div className="mt-3">
+              <p className="text-[11px] uppercase tracking-wide text-white/60 mb-2">
+                Send a gift
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {giftOptions.map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => onSendGift?.(amount)}
+                    className="rounded-full bg-amber-400/90 px-3 py-1.5 text-[11px] font-semibold text-slate-900"
+                  >
+                    🎁 {amount}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
