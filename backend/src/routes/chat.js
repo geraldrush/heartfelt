@@ -161,6 +161,14 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
     if (!user) {
       return c.json({ error: 'User not found' }, 404);
     }
+
+    await createNotification(db, {
+      user_id: body.recipient_id,
+      type: 'video_call_request',
+      title: 'Incoming video call',
+      message: `${user.full_name} wants to start a video call`,
+      data: { connection_id: body.connection_id, sender_id: userId }
+    });
     
     const requestId = generateId();
     

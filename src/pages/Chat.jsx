@@ -8,6 +8,7 @@ import {
   getMessages,
   getTokenRequests,
   getTokenBalance,
+  requestVideoCall,
   transferTokens,
   refreshToken,
 } from '../utils/api.js';
@@ -15,6 +16,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useWebSocket } from '../hooks/useWebSocket.js';
 import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import Toast from '../components/Toast.jsx';
 import VideoCall from '../components/VideoCall.jsx';
 import { isTokenExpiringSoon } from '../utils/auth.js';
 
@@ -195,6 +197,7 @@ const Chat = () => {
   const [tokenBalance, setTokenBalance] = useState(0);
   const [videoCallInvitation, setVideoCallInvitation] = useState(null);
   const [isIncomingCall, setIsIncomingCall] = useState(false);
+  const [toast, setToast] = useState(null);
   const [peerReady, setPeerReady] = useState(false);
   const peerRef = useRef(null);
   const giftOptions = [5, 10, 20, 50];
@@ -299,6 +302,7 @@ const Chat = () => {
     sendTypingIndicator,
     sendReadReceipt,
     sendDeliveryConfirmation,
+    sendNotification,
     connectionState,
     reconnect,
     isPolling,
@@ -338,8 +342,9 @@ const Chat = () => {
       setConnectionError(errorInfo);
     },
     onNotification: (data) => {
-      if (data.type === 'video_call_request') {
+      if (data.notification_type === 'video_call_request') {
         setVideoCallInvitation(data);
+        setToast({ message: 'Incoming video call request', type: 'info' });
       }
     },
   });
@@ -423,6 +428,30 @@ const Chat = () => {
       setTokenRequests([]);
     }
   };
+
+  const showToast = useCallback((message, type = 'error') => {
+    setToast({ message, type });
+  }, []);
+
+  const hideToast = useCallback(() => {
+    setToast(null);
+  }, []);
+
+  const handleRequestVideoCall = useCallback(async () => {
+    if (!connectionId || !connection?.other_user_id) {
+      showToast('Unable to start video call.', 'error');
+      return;
+    }
+    try {
+      await requestVideoCall(connectionId, connection.other_user_id);
+      sendNotification('video_call_request');
+      setIsIncomingCall(false);
+      setShowVideoCall(true);
+      showToast('Video call request sent', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to request video call.');
+    }
+  }, [connectionId, connection?.other_user_id, sendNotification, showToast]);
 
   useEffect(() => {
     setMessages([]);
@@ -764,10 +793,7 @@ const Chat = () => {
             </div>
               <button
                 type="button"
-                onClick={() => {
-                  setIsIncomingCall(false);
-                  setShowVideoCall(true);
-                }}
+                onClick={handleRequestVideoCall}
                 className="p-2 rounded-full transition-transform hover:scale-110" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}
               >
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -793,6 +819,14 @@ const Chat = () => {
           <div className="mx-4 mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 border border-red-200">
             {error}
           </div>
+        )}
+
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={hideToast}
+          />
         )}
 
         {connectionError && typeof connectionError === 'object' && (

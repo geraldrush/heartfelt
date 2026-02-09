@@ -724,6 +724,16 @@ export const useWebSocket = ({
     },
     [sendPayload]
   );
+  const sendNotification = useCallback(
+    (notificationType, data = {}) => {
+      if (!notificationType) {
+        return;
+      }
+      lastActivityTime.current = Date.now();
+      return sendPayload({ type: 'notification', notification_type: notificationType, ...data });
+    },
+    [sendPayload]
+  );
 
   const disconnect = useCallback(() => {
     isManualCloseRef.current = true;
@@ -735,6 +745,7 @@ export const useWebSocket = ({
     sendTypingIndicator,
     sendReadReceipt,
     sendDeliveryConfirmation,
+    sendNotification,
     connectionState,
     disconnect,
     reconnect,

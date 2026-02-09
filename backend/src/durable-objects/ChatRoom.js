@@ -240,7 +240,7 @@ export class ChatRoom {
         }
         
         // Whitelist allowed message types
-        const allowedTypes = ['chat_message', 'typing_indicator', 'delivery_confirmation', 'read_receipt', 'pong'];
+        const allowedTypes = ['chat_message', 'typing_indicator', 'delivery_confirmation', 'read_receipt', 'notification', 'pong'];
         if (!allowedTypes.includes(payload.type)) {
           server.send(JSON.stringify({ type: 'error', message: 'Invalid message type.' }));
           return;
@@ -395,6 +395,26 @@ export class ChatRoom {
       }
       case 'pong': {
         this.startHeartbeat(senderId);
+        break;
+      }
+      case 'notification': {
+        const notificationType = typeof payload.notification_type === 'string'
+          ? sanitizeContent(payload.notification_type)
+          : null;
+        if (notificationType !== 'video_call_request') {
+          this.sendToUser(senderId, { type: 'error', message: 'Invalid notification type.' });
+          return;
+        }
+        this.broadcast(
+          {
+            type: 'notification',
+            notification_type: notificationType,
+            from_user_id: senderId,
+            connection_id: connectionId,
+            created_at: new Date().toISOString(),
+          },
+          senderId
+        );
         break;
       }
       default:
