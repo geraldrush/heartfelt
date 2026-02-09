@@ -28,6 +28,7 @@ const LiveRoom = () => {
   const [peerReady, setPeerReady] = useState(false);
 
   const peerRef = useRef(null);
+  const peerRoleRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const chatListRef = useRef(null);
@@ -98,8 +99,18 @@ const LiveRoom = () => {
   }, [remoteStream]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    if (peerRef.current) return;
+    if (!user?.id || !room?.host_id) return;
+
+    const desiredRole = isHost ? 'host' : 'viewer';
+    if (peerRef.current && peerRoleRef.current === desiredRole) {
+      return;
+    }
+
+    if (peerRef.current) {
+      peerRef.current.destroy();
+      peerRef.current = null;
+      setPeerReady(false);
+    }
 
     const peer = new Peer(isHost ? user.id : undefined, {
       host: '0.peerjs.com',
@@ -110,6 +121,7 @@ const LiveRoom = () => {
 
     peer.on('open', () => {
       peerRef.current = peer;
+      peerRoleRef.current = desiredRole;
       setPeerReady(true);
     });
 
@@ -141,7 +153,7 @@ const LiveRoom = () => {
       peerRef.current = null;
       setPeerReady(false);
     };
-  }, [user?.id, isHost, localStream]);
+  }, [user?.id, room?.host_id, isHost, localStream]);
 
   const handleStartLive = async () => {
     try {
