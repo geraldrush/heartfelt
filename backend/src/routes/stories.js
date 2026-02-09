@@ -494,9 +494,10 @@ stories.get('/feed', authMiddleware, async (c) => {
     return null;
   };
 
-  const ageMin = Number(c.req.query('age_min'));
-  const ageMax = Number(c.req.query('age_max'));
-  const gender = c.req.query('gender');
+  // Get query filters or use user preferences as defaults
+  const ageMin = Number(c.req.query('age_min')) || (user.seeking_age_min || undefined);
+  const ageMax = Number(c.req.query('age_max')) || (user.seeking_age_max || undefined);
+  const gender = c.req.query('gender') || (user.seeking_gender !== 'any' ? user.seeking_gender : undefined);
   const religion = c.req.query('religion');
   const race = c.req.query('race');
   const education = c.req.query('education');
@@ -522,8 +523,7 @@ stories.get('/feed', authMiddleware, async (c) => {
     // 'users.profile_complete = 1', // Disabled to show all stories
     'stories.user_id != ?',
     'c.id IS NULL',
-    'blocked.id IS NULL',
-    'blocker.id IS NULL',
+    '(blocked.id IS NULL AND blocker.id IS NULL)',
   ];
   const params = [userId];
 
