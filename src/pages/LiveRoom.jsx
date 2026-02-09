@@ -95,6 +95,12 @@ const LiveRoom = () => {
   useEffect(() => {
     if (remoteStream && remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
+      const playAttempt = remoteVideoRef.current.play();
+      if (playAttempt?.catch) {
+        playAttempt.catch((err) => {
+          console.warn('[Live] Remote video autoplay blocked:', err);
+        });
+      }
     }
   }, [remoteStream]);
 
@@ -116,17 +122,32 @@ const LiveRoom = () => {
       host: '0.peerjs.com',
       secure: true,
       port: 443,
-      path: '/'
+      path: '/',
+      debug: 2
     });
 
     peer.on('open', () => {
       peerRef.current = peer;
       peerRoleRef.current = desiredRole;
       setPeerReady(true);
+      console.log('[Live] Peer open:', peer.id, 'role:', desiredRole);
+    });
+    peer.on('error', (err) => {
+      console.error('[Live] Peer error:', err);
+      setError(err?.message || 'Peer connection error.');
+    });
+    peer.on('disconnected', () => {
+      console.warn('[Live] Peer disconnected');
+      setPeerReady(false);
+    });
+    peer.on('close', () => {
+      console.warn('[Live] Peer closed');
+      setPeerReady(false);
     });
 
     if (isHost) {
       peer.on('call', async (incoming) => {
+        console.log('[Live] Incoming call from:', incoming.peer);
         try {
           if (!localStream) {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -141,9 +162,14 @@ const LiveRoom = () => {
       });
     } else {
       peer.on('call', (incoming) => {
+        console.log('[Live] Incoming host stream');
         incoming.answer(new MediaStream());
         incoming.on('stream', (stream) => {
           setRemoteStream(stream);
+        });
+        incoming.on('error', (err) => {
+          console.error('[Live] Incoming call error:', err);
+          setError(err?.message || 'Live stream error.');
         });
       });
     }
@@ -192,13 +218,24 @@ const LiveRoom = () => {
       call.on('close', () => {
         setJoinInProgress(false);
       });
+      window.setTimeout(() => {
+        if (!remoteStream && joinRequested && peerRef.current) {
+          try {
+            console.warn('[Live] Retrying peer call...');
+            const retryCall = peerRef.current.call(hostPeerId, new MediaStream());
+            retryCall.on('stream', (stream) => setRemoteStream(stream));
+          } catch (err) {
+            console.error('[Live] Retry call failed:', err);
+          }
+        }
+      }, 4000);
     } catch (err) {
       console.error('Join live error:', err);
       setError(err.message || 'Unable to join live stream.');
       setHasJoined(false);
       setJoinInProgress(false);
     }
-  }, [hostPeerId, isHost, joinInProgress, peerReady]);
+  }, [hostPeerId, isHost, joinInProgress, peerReady, remoteStream, joinRequested]);
 
   useEffect(() => {
     if (joinRequested && peerReady) {
