@@ -22,6 +22,7 @@ const LiveRoom = () => {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [viewerCount, setViewerCount] = useState(0);
+  const [hasJoined, setHasJoined] = useState(false);
 
   const peerRef = useRef(null);
   const localVideoRef = useRef(null);
@@ -45,7 +46,10 @@ const LiveRoom = () => {
         setRoom(data.room);
         setViewerCount(data.room?.viewer_count ?? 0);
         if (data.room?.host_id !== user?.id) {
-          await joinLiveRoom(roomId);
+          const joinResult = await joinLiveRoom(roomId);
+          if (joinResult.success) {
+            setHasJoined(true);
+          }
         }
       } catch (err) {
         setError(err.message || 'Unable to load live room.');
@@ -145,15 +149,20 @@ const LiveRoom = () => {
   };
 
   const handleJoinLive = async () => {
-    if (!hostPeerId || !peerRef.current) return;
+    if (!hostPeerId || !peerRef.current) {
+      setHasJoined(true);
+      return;
+    }
     try {
       const emptyStream = new MediaStream();
       const call = peerRef.current.call(hostPeerId, emptyStream);
       call.on('stream', (stream) => {
         setRemoteStream(stream);
       });
+      setHasJoined(true);
     } catch (err) {
       setError(err.message || 'Unable to join live stream.');
+      setHasJoined(true);
     }
   };
 
@@ -258,7 +267,7 @@ const LiveRoom = () => {
         </div>
       )}
 
-      {!isHost && !remoteStream && (
+      {!isHost && !hasJoined && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
           <button
             type="button"
