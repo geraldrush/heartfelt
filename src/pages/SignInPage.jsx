@@ -243,22 +243,20 @@ const SignInPage = () => {
               </div>
             </div>
 
-            <div className="flex flex-col justify-between rounded-2xl bg-slate-900 p-6 sm:p-10 text-white">
+            <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-br from-orange-600 via-red-600 to-yellow-600 p-6 sm:p-10 text-white shadow-2xl">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-rose-300">
-                  Pan‑African connections
+                <p className="text-xs uppercase tracking-[0.3em] text-yellow-200 font-bold">
+                  🌍 Pan-African Connections
                 </p>
-                <h3 className="mt-4 text-3xl font-semibold">
-                  Connect with Africans everywhere.
+                <h3 className="mt-4 text-3xl font-bold leading-tight">
+                  Find Love Across Africa
                 </h3>
-                <p className="mt-4 text-sm text-slate-300">
-                  AfroDate brings together diverse people across Africa and beyond,
-                  making it easier to meet, connect, and build relationships grounded
-                  in shared values and real conversation.
+                <p className="mt-4 text-sm text-white/90 leading-relaxed">
+                  Join thousands of Africans and diaspora members building meaningful relationships. Whether you're in Lagos, Nairobi, Johannesburg, or London - find your match here.
                 </p>
-                <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                <div className="mt-6 overflow-hidden rounded-2xl border-2 border-white/20 bg-white/10 backdrop-blur">
                   <div className="relative h-48 w-full">
-                    <div className="absolute inset-0 bg-gradient-to-br from-rose-500/30 via-amber-400/20 to-emerald-400/20" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/30 via-orange-400/20 to-red-400/20" />
                     <svg
                       viewBox="0 0 480 280"
                       className="absolute inset-0 h-full w-full"
@@ -266,34 +264,47 @@ const SignInPage = () => {
                     >
                       <defs>
                         <linearGradient id="afroGlowSignIn" x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stopColor="#F97316" stopOpacity="0.7" />
-                          <stop offset="50%" stopColor="#EC4899" stopOpacity="0.6" />
-                          <stop offset="100%" stopColor="#10B981" stopOpacity="0.6" />
+                          <stop offset="0%" stopColor="#FCD34D" stopOpacity="0.9" />
+                          <stop offset="50%" stopColor="#F97316" stopOpacity="0.8" />
+                          <stop offset="100%" stopColor="#DC2626" stopOpacity="0.8" />
                         </linearGradient>
                       </defs>
                       <path
                         d="M40 210 C120 120, 220 80, 300 110 C380 140, 420 210, 460 230"
                         stroke="url(#afroGlowSignIn)"
-                        strokeWidth="6"
+                        strokeWidth="8"
                         fill="none"
-                        opacity="0.8"
+                        opacity="0.9"
                       />
-                      <circle cx="120" cy="130" r="26" fill="#F97316" opacity="0.8" />
-                      <circle cx="240" cy="90" r="18" fill="#EC4899" opacity="0.8" />
-                      <circle cx="360" cy="150" r="22" fill="#10B981" opacity="0.8" />
+                      <circle cx="120" cy="130" r="28" fill="#FCD34D" opacity="0.9" />
+                      <circle cx="240" cy="90" r="20" fill="#F97316" opacity="0.9" />
+                      <circle cx="360" cy="150" r="24" fill="#DC2626" opacity="0.9" />
                     </svg>
-                    <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-black/30 px-4 py-3 text-xs text-white/90 backdrop-blur">
-                      Discover new perspectives. Build lasting bonds.
+                    <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-black/40 px-4 py-3 text-sm font-semibold text-white backdrop-blur">
+                      ❤️ Real connections. Real love. Real Africa.
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="mt-10 rounded-2xl bg-white/10 p-6 text-sm text-slate-200">
-                <p className="font-semibold text-white">What you get</p>
-                <ul className="mt-3 space-y-2">
-                  <li>Respectful, diverse community across the continent.</li>
-                  <li>Discover people from different cultures and cities.</li>
-                  <li>Legal‑age members (18+) for safe, mature connections.</li>
+              <div className="mt-10 rounded-2xl bg-black/20 border-2 border-white/20 p-6 text-sm text-white backdrop-blur">
+                <p className="font-bold text-lg text-yellow-200 mb-3">✨ Why AfroDate?</p>
+                <ul className="space-y-2.5">
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-300 text-lg">🌍</span>
+                    <span>Connect with Africans across 54 countries</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-300 text-lg">💬</span>
+                    <span>Chat in real-time with verified members</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-300 text-lg">🔒</span>
+                    <span>Safe, secure, and respectful community</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-300 text-lg">❤️</span>
+                    <span>Build lasting relationships, not just dates</span>
+                  </li>
                 </ul>
               </div>
             </div>

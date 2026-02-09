@@ -1,13 +1,13 @@
 -- Sample seed data for development
-INSERT OR IGNORE INTO users (id, email, full_name, age, gender, location_city_id, religion, race, education, nationality, has_kids, num_kids, smoker, drinks_alcohol, created_at, token_balance) VALUES
-  ('user1', 'sarah@example.com', 'Sarah Johnson', 28, 'female', 'cpt', 'christian', 'white', 'bachelor', 'South Africa', false, 0, false, true, datetime('now'), 50),
-  ('user2', 'mike@example.com', 'Michael Chen', 32, 'male', 'jhb', 'buddhist', 'indian_asian', 'masters', 'South Africa', false, 0, false, false, datetime('now'), 75),
-  ('user3', 'priya@example.com', 'Priya Patel', 26, 'female', 'dbn', 'hindu', 'indian_asian', 'bachelor', 'South Africa', false, 0, false, true, datetime('now'), 30),
-  ('user4', 'james@example.com', 'James Williams', 35, 'male', 'cpt', 'christian', 'black_african', 'diploma', 'South Africa', true, 2, false, true, datetime('now'), 40),
-  ('user5', 'zara@example.com', 'Zara Ndlovu', 29, 'female', 'jhb', 'christian', 'black_african', 'honours', 'South Africa', false, 0, false, false, datetime('now'), 60),
-  ('user6', 'david@example.com', 'David Smith', 31, 'male', 'pe', 'atheist', 'white', 'masters', 'South Africa', false, 0, true, true, datetime('now'), 45),
-  ('user7', 'amara@example.com', 'Amara Okafor', 27, 'female', 'dbn', 'christian', 'black_african', 'bachelor', 'Nigeria', false, 0, false, true, datetime('now'), 55),
-  ('user8', 'ryan@example.com', 'Ryan Thompson', 33, 'male', 'cpt', 'agnostic', 'coloured', 'diploma', 'South Africa', true, 1, false, true, datetime('now'), 35);
+INSERT OR IGNORE INTO users (id, email, full_name, age, gender, location_city, location_province, religion, race, education, nationality, has_kids, num_kids, smoker, drinks_alcohol, created_at, token_balance) VALUES
+  ('user1', 'sarah@example.com', 'Sarah Johnson', 28, 'female', 'Cape Town', 'Western Cape', 'christian', 'white', 'bachelor', 'South Africa', 0, 0, 0, 1, datetime('now'), 50),
+  ('user2', 'mike@example.com', 'Michael Chen', 32, 'male', 'Johannesburg', 'Gauteng', 'buddhist', 'indian_asian', 'masters', 'South Africa', 0, 0, 0, 0, datetime('now'), 75),
+  ('user3', 'priya@example.com', 'Priya Patel', 26, 'female', 'Durban', 'KwaZulu-Natal', 'hindu', 'indian_asian', 'bachelor', 'South Africa', 0, 0, 0, 1, datetime('now'), 30),
+  ('user4', 'james@example.com', 'James Williams', 35, 'male', 'Cape Town', 'Western Cape', 'christian', 'black_african', 'diploma', 'South Africa', 1, 2, 0, 1, datetime('now'), 40),
+  ('user5', 'zara@example.com', 'Zara Ndlovu', 29, 'female', 'Johannesburg', 'Gauteng', 'christian', 'black_african', 'honours', 'South Africa', 0, 0, 0, 0, datetime('now'), 60),
+  ('user6', 'david@example.com', 'David Smith', 31, 'male', 'Port Elizabeth', 'Eastern Cape', 'atheist', 'white', 'masters', 'South Africa', 0, 0, 1, 1, datetime('now'), 45),
+  ('user7', 'amara@example.com', 'Amara Okafor', 27, 'female', 'Durban', 'KwaZulu-Natal', 'christian', 'black_african', 'bachelor', 'Nigeria', 0, 0, 0, 1, datetime('now'), 55),
+  ('user8', 'ryan@example.com', 'Ryan Thompson', 33, 'male', 'Cape Town', 'Western Cape', 'agnostic', 'coloured', 'diploma', 'South Africa', 1, 1, 0, 1, datetime('now'), 35);
 
 INSERT OR IGNORE INTO stories (id, user_id, story_text, image_url, blurred_image_url, created_at, is_active) VALUES
   ('story1', 'user1', 'Love hiking Table Mountain at sunrise! Looking for someone who shares my passion for adventure and early mornings. I believe the best conversations happen over coffee with a view. What''s your favorite way to start the day?', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&blur=20', datetime('now', '-2 hours'), true),

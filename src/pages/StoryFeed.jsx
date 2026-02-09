@@ -628,7 +628,13 @@ const StoryFeed = () => {
             </svg>
           </button>
           <h1 className="text-lg font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">Heartfelt</h1>
-          <NotificationBell />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-full px-3 py-1.5">
+              <span className="text-lg">🪙</span>
+              <span className="text-sm font-bold text-amber-700">{tokenBalance === null ? '...' : tokenBalance}</span>
+            </div>
+            <NotificationBell />
+          </div>
         </div>
       </div>
 
