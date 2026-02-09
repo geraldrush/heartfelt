@@ -12,8 +12,7 @@ import {
   getUserPreferences,
   sendConnectionRequest,
 } from '../utils/api.js';
-import CardStack from '../components/animations/CardStack.jsx';
-import HeartAnimation from '../components/animations/HeartAnimation.jsx';
+
 import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ImageGalleryViewer from '../components/ImageGalleryViewer.jsx';
@@ -21,7 +20,7 @@ import Toast from '../components/Toast.jsx';
 import FilterDrawer from '../components/FilterDrawer.jsx';
 import FilterForm from '../components/FilterForm.jsx';
 import ActiveFilters from '../components/ActiveFilters.jsx';
-import { usePullToRefresh } from '../hooks/usePullToRefresh.js';
+
 import Button from '../components/ui/Button.jsx';
 import { triggerHaptic } from '../utils/haptics.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -54,9 +53,7 @@ const StoryFeed = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [tokenBalance, setTokenBalance] = useState(null);
   const [referenceData, setReferenceData] = useState(null);
-  const [heartTrigger, setHeartTrigger] = useState(0);
   const [selectedStory, setSelectedStory] = useState(null);
-  const [swipeHistory, setSwipeHistory] = useState([]);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [viewerStoryId, setViewerStoryId] = useState(null);
   const [viewerImageUrl, setViewerImageUrl] = useState(null);
@@ -80,10 +77,7 @@ const StoryFeed = () => {
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
   const sentinelRef = useRef(null);
-
-  const { containerRef, isRefreshing, pullDistance } = usePullToRefresh(
-    () => fetchStories({ reset: true })
-  );
+  const containerRef = useRef(null);
 
   const completion = useMemo(() => getProfileCompletion(user), [user]);
   const showCompletionBanner = completion.percent < 100 && Date.now() > bannerDismissedUntil;
@@ -303,26 +297,19 @@ const StoryFeed = () => {
     setToast(null);
   };
 
-  const removeStory = (story, action) => {
-    if (isAnimating) return;
-    setStories((prev) => prev.filter((item) => item.story_id !== story.story_id));
-    setSwipeHistory((prev) => [{ story, action }, ...prev].slice(0, 5));
-  };
-
-  const restoreStory = (story) => {
-    setStories((prev) => [story, ...prev]);
+  const removeStory = (storyId) => {
+    setStories((prev) => prev.filter((item) => item.story_id !== storyId));
   };
 
   const handleConnect = async (story, message = '') => {
     if (tokenBalance !== null && tokenBalance < 5) {
       triggerHaptic('error');
-      setError('You need at least 5 tokens to send a connection request.');
+      showToast('You need at least 5 tokens to send a connection request.');
       return;
     }
 
     triggerHaptic('success');
-    setHeartTrigger((prev) => prev + 1);
-    removeStory(story, 'connect');
+    removeStory(story.story_id);
     setTokenBalance((prev) => (prev !== null ? prev - 5 : prev));
 
     try {
@@ -330,25 +317,21 @@ const StoryFeed = () => {
       showToast('Connection request sent!', 'success');
     } catch (err) {
       console.error('Connection request failed:', err);
-      console.error('Error details:', { message: err.message, status: err.status, details: err.details });
       showToast(`Failed to send connection request: ${err.message}`);
-      restoreStory(story);
-      setSwipeHistory((prev) =>
-        prev.filter((entry) => entry.story.story_id !== story.story_id)
-      );
       setTokenBalance((prev) => (prev !== null ? prev + 5 : prev));
+      fetchStories({ reset: true });
     }
   };
 
   const handleAccept = async (story) => {
     if (tokenBalance !== null && tokenBalance < 5) {
       triggerHaptic('error');
-      setError('You need at least 5 tokens to accept a connection request.');
+      showToast('You need at least 5 tokens to accept a connection request.');
       return;
     }
 
     triggerHaptic('success');
-    removeStory(story, 'accept');
+    removeStory(story.story_id);
     setTokenBalance((prev) => (prev !== null ? prev - 5 : prev));
 
     try {
@@ -356,30 +339,15 @@ const StoryFeed = () => {
       showToast('Connection request accepted!', 'success');
     } catch (err) {
       console.error('Accept connection failed:', err);
-      console.error('Accept error details:', { message: err.message, status: err.status, details: err.details });
       showToast(`Failed to accept connection request: ${err.message}`);
-      restoreStory(story);
-      setSwipeHistory((prev) =>
-        prev.filter((entry) => entry.story.story_id !== story.story_id)
-      );
       setTokenBalance((prev) => (prev !== null ? prev + 5 : prev));
+      fetchStories({ reset: true });
     }
   };
 
-  const handlePass = (story, { silent = false } = {}) => {
-    if (isAnimating) return; // Prevent multiple rapid passes
-    if (!silent) {
-      triggerHaptic('light');
-    }
-    removeStory(story, 'pass');
-  };
-
-  const handleSwipeLeft = (story) => {
-    handlePass(story, { silent: true });
-  };
-
-  const handleSwipeRight = () => {
-    handleUndo({ silent: true });
+  const handlePass = (story) => {
+    triggerHaptic('light');
+    removeStory(story.story_id);
   };
 
   const handleSendMessage = async () => {
@@ -397,17 +365,7 @@ const StoryFeed = () => {
     setConnectingStory(null);
   };
 
-  const handleUndo = ({ silent = false } = {}) => {
-    const [last] = swipeHistory;
-    if (!last) {
-      return;
-    }
-    if (!silent) {
-      triggerHaptic('medium');
-    }
-    setSwipeHistory((prev) => prev.slice(1));
-    restoreStory(last.story);
-  };
+
 
   const handleCloseImageViewer = () => {
     setShowImageViewer(false);
@@ -422,10 +380,7 @@ const StoryFeed = () => {
     setViewerImageUrl(story.blurred_image_url);
   };
 
-  const truncateText = (text) =>
-    text.length > 150 ? `${text.slice(0, 150)}...` : text;
 
-  const currentStory = stories[0];
 
   const emptyIcon = (
     <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
@@ -435,121 +390,168 @@ const StoryFeed = () => {
     </div>
   );
 
-  const renderCard = (story) => (
-    <div className="relative h-full overflow-hidden rounded-[32px] bg-white/95 border border-slate-100 shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
-      <div className="absolute inset-0">
-        {story.blurred_image_url ? (
-          <img
-            src={story.blurred_image_url}
-            alt="Story"
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition-opacity duration-300"
-            style={{
-              backgroundImage: 'linear-gradient(to bottom right, rgb(255, 238, 230), rgb(231, 250, 244))',
-              backgroundSize: 'cover',
-            }}
-            onLoad={(e) => {
-              e.target.style.opacity = '1';
-            }}
-            onError={(e) => {
-              e.target.style.opacity = '0.5';
-            }}
-          />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-purple-200 to-pink-200 animate-pulse" />
-        )}
-      </div>
+  const renderStoryCard = (story) => (
+    <div key={story.story_id} className="mb-6 w-full max-w-md mx-auto">
+      <div className="relative h-[calc(100dvh-200px)] md:h-[600px] overflow-hidden rounded-[32px] bg-white/95 border border-slate-100 shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
+        <div className="absolute inset-0">
+          {story.blurred_image_url ? (
+            <img
+              src={story.blurred_image_url}
+              alt="Story"
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover transition-opacity duration-300"
+              style={{
+                backgroundImage: 'linear-gradient(to bottom right, rgb(255, 238, 230), rgb(231, 250, 244))',
+                backgroundSize: 'cover',
+              }}
+              onLoad={(e) => {
+                e.target.style.opacity = '1';
+              }}
+              onError={(e) => {
+                e.target.style.opacity = '0.5';
+              }}
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-purple-200 to-pink-200 animate-pulse" />
+          )}
+        </div>
 
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/25 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/25 to-transparent" />
 
-      <div className="absolute left-4 top-4">
-        {story.connection_status === 'pending_received' ? (
-          <span className="rounded-full bg-emerald-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-md">
-            New request
-          </span>
-        ) : (
-          <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-700 backdrop-blur-md">
-            {story.nationality === 'South Africa' ? '🇿🇦' : 
-             story.nationality === 'Zimbabwe' ? '🇿🇼' : 
-             story.nationality === 'Namibia' ? '🇳🇦' : 
-             story.nationality === 'Botswana' ? '🇧🇼' : 
-             story.nationality === 'Mozambique' ? '🇲🇿' : '🌍'}
-          </span>
-        )}
-      </div>
-
-      <div className="absolute right-4 top-4 flex flex-col items-end gap-2">
-        <span className={`rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-2 backdrop-blur-md ${
-          story.is_online === true ? 'bg-emerald-500/90 text-white' : 'bg-white/80 text-slate-500'
-        }`}>
-          <span className={`w-2 h-2 rounded-full ${
-            story.is_online === true ? 'bg-white animate-pulse' : 'bg-slate-400'
-          }`} />
-          {story.is_online === true ? 'Online' : 'Offline'}
-        </span>
-        <span className="rounded-full bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 backdrop-blur-md">
-          🪙 {tokenBalance === null ? '...' : tokenBalance}
-        </span>
-      </div>
-
-      <div className="absolute bottom-24 left-4 right-4 space-y-2">
-        <h3 className="text-xl font-semibold text-white mb-1 drop-shadow-lg">
-          {story.age} • {story.gender}
-        </h3>
-        <p className="text-white/90 text-xs drop-shadow-md">
-          {story.location_city}, {story.location_province}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {[story.religion, story.race].filter(Boolean).map((tag, index) => (
-            <span key={index} className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
-              {tag}
+        <div className="absolute left-4 top-4">
+          {story.connection_status === 'pending_received' ? (
+            <span className="rounded-full bg-emerald-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-md">
+              New request
             </span>
-          ))}
+          ) : (
+            <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-700 backdrop-blur-md">
+              {story.nationality === 'South Africa' ? '🇿🇦' : 
+               story.nationality === 'Zimbabwe' ? '🇿🇼' : 
+               story.nationality === 'Namibia' ? '🇳🇦' : 
+               story.nationality === 'Botswana' ? '🇧🇼' : 
+               story.nationality === 'Mozambique' ? '🇲🇿' : '🌍'}
+            </span>
+          )}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
-            👶 {story.has_kids ? `${story.num_kids} kids` : 'No kids'}
-          </span>
-          <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
-            {story.smoker ? '🚬 Smoker' : '🚭 Non-smoker'}
-          </span>
-          <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
-            {story.drinks_alcohol ? '🍷 Drinks' : '🚫 No alcohol'}
+
+        <div className="absolute right-4 top-4 flex flex-col items-end gap-2">
+          <span className={`rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-2 backdrop-blur-md ${
+            story.is_online === true ? 'bg-emerald-500/90 text-white' : 'bg-white/80 text-slate-500'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${
+              story.is_online === true ? 'bg-white animate-pulse' : 'bg-slate-400'
+            }`} />
+            {story.is_online === true ? 'Online' : 'Offline'}
           </span>
         </div>
-        {story.connection_status !== 'none' && (
-          <div className="flex">
-            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
-              story.connection_status === 'connected'
-                ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                : story.connection_status === 'pending_sent'
-                ? 'bg-amber-100 text-amber-700 border border-amber-200'
-                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-            }`}>
-              {story.connection_status === 'connected'
-                ? '✨ Connected'
-                : story.connection_status === 'pending_sent'
-                ? '⏳ Request Sent'
-                : 'New request'}
+
+        <div className="absolute bottom-24 left-4 right-4 space-y-2">
+          <h3 className="text-xl font-semibold text-white mb-1 drop-shadow-lg">
+            {story.age} • {story.gender}
+          </h3>
+          <p className="text-white/90 text-xs drop-shadow-md">
+            {story.location_city}, {story.location_province}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {[story.religion, story.race].filter(Boolean).map((tag, index) => (
+              <span key={index} className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
+                {tag}
+              </span>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
+              👶 {story.has_kids ? `${story.num_kids} kids` : 'No kids'}
+            </span>
+            <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
+              {story.smoker ? '🚬 Smoker' : '🚭 Non-smoker'}
+            </span>
+            <span className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
+              {story.drinks_alcohol ? '🍷 Drinks' : '🚫 No alcohol'}
             </span>
           </div>
-        )}
+          {story.connection_status !== 'none' && (
+            <div className="flex">
+              <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
+                story.connection_status === 'connected'
+                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                  : story.connection_status === 'pending_sent'
+                  ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              }`}>
+                {story.connection_status === 'connected'
+                  ? '✨ Connected'
+                  : story.connection_status === 'pending_sent'
+                  ? '⏳ Request Sent'
+                  : 'New request'}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className="flex gap-2 bg-white/95 p-3 rounded-3xl shadow-2xl backdrop-blur">
+            <button
+              type="button"
+              onClick={() => handlePass(story)}
+              className="flex-1 rounded-2xl bg-red-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
+            >
+              Pass
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedStory(story)}
+              className="flex-1 rounded-2xl px-3 py-3 text-sm font-semibold text-white shadow-lg bg-[#C55A4B] hover:bg-[#A7473B]"
+            >
+              View
+            </button>
+            {story.connection_status === 'pending_received' ? (
+              <button
+                type="button"
+                onClick={() => handleAccept(story)}
+                className="flex-1 rounded-2xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
+              >
+                Accept
+              </button>
+            ) : story.connection_status === 'connected' ? (
+              <button
+                type="button"
+                disabled
+                className="flex-1 rounded-2xl bg-emerald-100 px-3 py-3 text-sm font-semibold text-emerald-600"
+              >
+                Connected
+              </button>
+            ) : story.connection_status === 'pending_sent' ? (
+              <button
+                type="button"
+                disabled
+                className="flex-1 rounded-2xl bg-amber-100 px-3 py-3 text-sm font-semibold text-amber-700"
+              >
+                Requested
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setConnectingStory(story);
+                  setShowMessageModal(true);
+                }}
+                className="flex-1 rounded-2xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
+              >
+                Connect
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div ref={containerRef} className="mobile-container pull-to-refresh bg-premium-mesh relative pt-[env(safe-area-inset-top,0px)] pb-[calc(80px+env(safe-area-inset-bottom,0px))] md:pb-[env(safe-area-inset-bottom,0px)]">
-      {/* Pull to refresh indicator */}
-      {pullDistance > 0 && (
-        <div 
-          className="fixed top-[env(safe-area-inset-top,0px)] left-1/2 transform -translate-x-1/2 z-50 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium text-gray-600 transition-all duration-200"
-          style={{ transform: `translateX(-50%) translateY(${Math.min(pullDistance / 2, 40)}px)` }}
-        >
-          {isRefreshing ? '🔄 Refreshing...' : pullDistance > 80 ? '↓ Release to refresh' : '↓ Pull to refresh'}
-        </div>
-      )}
+    <div ref={containerRef} className="mobile-container bg-premium-mesh relative pt-[env(safe-area-inset-top,0px)] pb-[calc(80px+env(safe-area-inset-bottom,0px))] md:pb-[env(safe-area-inset-bottom,0px)] overflow-y-auto">
+
       {/* Background Elements */}
       <div className="fixed inset-0 bg-gradient-to-br from-purple-900/10 via-pink-900/10 to-rose-900/10" />
       <div className="absolute top-40 left-20 w-64 h-64 bg-purple-500/5 rounded-full blur-2xl md:blur-3xl animate-pulse" />
@@ -688,48 +690,13 @@ const StoryFeed = () => {
                     </div>
                   </div>
                 ) : stories.length > 0 ? (
-                  <div className="relative w-full max-w-md mx-auto h-full flex flex-col items-center justify-center">
-                    <CardStack
-                      items={stories}
-                      onSwipeLeft={handleSwipeLeft}
-                      onSwipeRight={handleSwipeRight}
-                      onSwipeUp={(story) => setSelectedStory(story)}
-                      onCardClick={(story) => setSelectedStory(story)}
-                      renderCard={renderCard}
-                      disabled={showImageViewer}
-                    />
-                    
-                    {/* Action Buttons Below Card */}
-                    {currentStory && (
-                      <div className="flex gap-3 mt-6">
-                        <button
-                          type="button"
-                          onClick={() => handlePass(currentStory)}
-                          className="px-6 py-3 bg-red-600 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
-                        >
-                          Pass
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedStory(currentStory)}
-                          className="px-6 py-3 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform bg-[#C55A4B] hover:bg-[#A7473B]"
-                        >
-                          View
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setConnectingStory(currentStory);
-                            setShowMessageModal(true);
-                          }}
-                          className="px-6 py-3 bg-emerald-600 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
-                        >
-                          Connect
-                        </button>
+                  <div className="w-full">
+                    {stories.map((story) => renderStoryCard(story))}
+                    {hasMore && (
+                      <div ref={sentinelRef} className="py-8 text-center">
+                        {loadingMore && <LoadingSpinner />}
                       </div>
                     )}
-                    
-                    <HeartAnimation trigger={heartTrigger} />
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full w-full max-w-md">
@@ -757,6 +724,28 @@ const StoryFeed = () => {
 
           {/* Mobile Layout */}
           <div className="md:hidden">
+            {/* Floating Token Balance & Filter Button */}
+            <div className="fixed top-[calc(env(safe-area-inset-top,0px)+1rem)] right-4 z-50 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setShowFilters(true)}
+                className="rounded-full bg-white/95 p-3 shadow-lg backdrop-blur border border-slate-200"
+              >
+                <FaFilter className="w-5 h-5 text-slate-700" />
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+              <div className="rounded-2xl bg-white/95 px-4 py-2 shadow-lg backdrop-blur border border-slate-200 text-center">
+                <p className="text-[10px] uppercase tracking-wider text-slate-500">Tokens</p>
+                <p className="text-lg font-bold text-emerald-600">
+                  {tokenBalance === null ? '...' : tokenBalance}
+                </p>
+              </div>
+            </div>
+
             {/* Header removed to allow full-bleed card */}
             {/* Active Filters */}
             <ActiveFilters
@@ -806,7 +795,7 @@ const StoryFeed = () => {
             )}
 
             {/* Stories Content - Mobile Only */}
-            <div className="flex flex-col items-center h-[calc(100dvh-140px)] sm:h-[calc(100dvh-160px)] pt-2 stories-container">
+            <div className="flex flex-col items-center">
               {loading ? (
                 <div className="flex items-center justify-center h-full w-full max-w-md">
                   <div className="grid gap-8">
@@ -816,18 +805,13 @@ const StoryFeed = () => {
                   </div>
                 </div>
               ) : stories.length > 0 ? (
-                <div className="relative w-full max-w-md mx-auto h-full flex flex-col items-center justify-center">
-                  <CardStack
-                    items={stories}
-                    onSwipeLeft={handleSwipeLeft}
-                    onSwipeRight={handleSwipeRight}
-                    onSwipeUp={(story) => setSelectedStory(story)}
-                    onCardClick={(story) => setSelectedStory(story)}
-                    renderCard={renderCard}
-                    disabled={showImageViewer}
-                  />
-                  
-                  <HeartAnimation trigger={heartTrigger} />
+                <div className="w-full">
+                  {stories.map((story) => renderStoryCard(story))}
+                  {hasMore && (
+                    <div ref={sentinelRef} className="py-8 text-center">
+                      {loadingMore && <LoadingSpinner />}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-full w-full max-w-md">
@@ -849,115 +833,7 @@ const StoryFeed = () => {
                   />
                 </div>
               )}
-
-              {/* Action Buttons */}
-              {currentStory && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-8 hidden w-full max-w-md items-center justify-between gap-4 md:flex"
-                >
-                  <motion.button
-                    type="button"
-                    onClick={() => handlePass(currentStory)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex-1 glass-card rounded-2xl py-3 font-semibold text-gray-600 hover:text-gray-700 transition-colors"
-                  >
-                    Pass
-                  </motion.button>
-                  
-                  {currentStory.connection_status === 'pending_received' ? (
-                    <motion.button
-                      type="button"
-                      onClick={() => handleAccept(currentStory)}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-3 rounded-2xl shadow-lg"
-                    >
-                      Accept (5 tokens)
-                    </motion.button>
-                  ) : currentStory.connection_status === 'none' ? (
-                    <motion.button
-                      type="button"
-                      onClick={() => {
-                        setConnectingStory(currentStory);
-                        setShowMessageModal(true);
-                      }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex-1 premium-button"
-                    >
-                      Connect (5 tokens)
-                    </motion.button>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled
-                      className="flex-1 glass-card rounded-2xl py-3 font-semibold text-gray-400"
-                    >
-                      {currentStory.connection_status === 'connected' ? 'Connected' : 'Request Sent'}
-                    </button>
-                  )}
-                </motion.div>
-              )}
             </div>
-            {currentStory && (
-              <div className="fixed bottom-[calc(90px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 px-5">
-                <div className="mx-auto flex max-w-md flex-nowrap items-center gap-2 rounded-3xl bg-white/95 p-3 shadow-2xl backdrop-blur">
-                  <button
-                    type="button"
-                    onClick={() => handlePass(currentStory)}
-                    className="flex-1 min-w-0 rounded-2xl bg-red-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
-                  >
-                    Pass
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedStory(currentStory)}
-                    className="flex-1 min-w-0 rounded-2xl px-3 py-3 text-sm font-semibold text-white shadow-lg bg-[#C55A4B] hover:bg-[#A7473B]"
-                  >
-                    View
-                  </button>
-                  {currentStory.connection_status === 'pending_received' ? (
-                    <button
-                      type="button"
-                      onClick={() => handleAccept(currentStory)}
-                      className="flex-1 min-w-0 rounded-2xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
-                    >
-                      Accept
-                    </button>
-                  ) : currentStory.connection_status === 'connected' ? (
-                    <button
-                      type="button"
-                      disabled
-                      className="flex-1 min-w-0 rounded-2xl bg-emerald-100 px-3 py-3 text-sm font-semibold text-emerald-600"
-                    >
-                      Connected
-                    </button>
-                  ) : currentStory.connection_status === 'pending_sent' ? (
-                    <button
-                      type="button"
-                      disabled
-                      className="flex-1 min-w-0 rounded-2xl bg-amber-100 px-3 py-3 text-sm font-semibold text-amber-700"
-                    >
-                      Requested
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setConnectingStory(currentStory);
-                        setShowMessageModal(true);
-                      }}
-                      className="flex-1 min-w-0 rounded-2xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
-                    >
-                      Connect
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

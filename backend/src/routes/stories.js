@@ -522,6 +522,8 @@ stories.get('/feed', authMiddleware, async (c) => {
     // 'users.profile_complete = 1', // Disabled to show all stories
     'stories.user_id != ?',
     'c.id IS NULL',
+    'blocked.id IS NULL',
+    'blocker.id IS NULL',
   ];
   const params = [userId];
 
@@ -588,9 +590,13 @@ stories.get('/feed', authMiddleware, async (c) => {
       ON cr_sent.sender_id = ? AND cr_sent.receiver_id = stories.user_id AND cr_sent.status = 'pending'
     LEFT JOIN connection_requests cr_received
       ON cr_received.sender_id = stories.user_id AND cr_received.receiver_id = ? AND cr_received.status = 'pending'
+    LEFT JOIN blocked_users blocked
+      ON blocked.blocker_id = ? AND blocked.blocked_id = stories.user_id
+    LEFT JOIN blocked_users blocker
+      ON blocker.blocker_id = stories.user_id AND blocker.blocked_id = ?
   `;
 
-  const joinParams = [userId, userId, userId, userId];
+  const joinParams = [userId, userId, userId, userId, userId, userId];
 
   const countQuery = `
     SELECT COUNT(*) as total
