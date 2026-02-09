@@ -792,28 +792,6 @@ const StoryFeed = () => {
 
           {/* Mobile Layout */}
           <div className="md:hidden">
-            {/* Floating Token Balance & Filter Button */}
-            <div className="fixed top-[calc(env(safe-area-inset-top,0px)+1rem)] right-4 z-50 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setShowFilters(true)}
-                className="rounded-full bg-white/95 p-3 shadow-lg backdrop-blur border border-slate-200"
-              >
-                <FaFilter className="w-5 h-5 text-slate-700" />
-                {activeFilterCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
-              <div className="rounded-2xl bg-white/95 px-4 py-2 shadow-lg backdrop-blur border border-slate-200 text-center">
-                <p className="text-[10px] uppercase tracking-wider text-slate-500">Tokens</p>
-                <p className="text-lg font-bold text-emerald-600">
-                  {tokenBalance === null ? '...' : tokenBalance}
-                </p>
-              </div>
-            </div>
-
             {/* Header removed to allow full-bleed card */}
             {/* Active Filters */}
             <ActiveFilters
