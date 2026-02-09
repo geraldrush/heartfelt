@@ -149,20 +149,28 @@ const LiveRoom = () => {
   };
 
   const handleJoinLive = async () => {
+    console.log('Join Live clicked');
+    console.log('hostPeerId:', hostPeerId);
+    console.log('peerRef.current:', peerRef.current);
+    
+    setHasJoined(true);
+    
     if (!hostPeerId || !peerRef.current) {
-      setHasJoined(true);
+      console.log('No peer connection available, showing chat only');
       return;
     }
+    
     try {
+      console.log('Attempting to call host:', hostPeerId);
       const emptyStream = new MediaStream();
       const call = peerRef.current.call(hostPeerId, emptyStream);
       call.on('stream', (stream) => {
+        console.log('Received remote stream');
         setRemoteStream(stream);
       });
-      setHasJoined(true);
     } catch (err) {
+      console.error('Join live error:', err);
       setError(err.message || 'Unable to join live stream.');
-      setHasJoined(true);
     }
   };
 
@@ -268,11 +276,12 @@ const LiveRoom = () => {
       )}
 
       {!isHost && !hasJoined && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-40">
           <button
             type="button"
             onClick={handleJoinLive}
-            className="premium-button"
+            className="rounded-full text-white px-8 py-4 text-lg font-bold hover:scale-105 transition-transform cursor-pointer"
+            style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
           >
             Join Live
           </button>
