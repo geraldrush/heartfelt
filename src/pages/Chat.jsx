@@ -713,9 +713,9 @@ const Chat = () => {
 
   return (
     <ChatErrorBoundary>
-      <div className="flex min-h-screen flex-col relative" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)', minHeight: '100vh' }}>
-        {/* Fixed Header - Always Visible */}
-        <div className="fixed top-0 left-0 right-0 z-20 border-b bg-white/95 backdrop-blur-lg shadow-md">
+      <div className="fixed inset-0 flex flex-col" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
+        {/* Header */}
+        <div className="flex-shrink-0 border-b bg-white/95 backdrop-blur-lg shadow-md z-20">
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3">
               <button 
@@ -876,11 +876,11 @@ const Chat = () => {
           </div>
         )}
 
-        {/* Messages Area */}
+        {/* Messages Area - Scrollable */}
         <div
           ref={listRef}
-          className="flex-1 overflow-y-auto px-4 py-3 pb-20"
-          style={{ overscrollBehavior: 'contain', paddingTop: '80px' }}
+          className="flex-1 overflow-y-auto px-4 py-3"
+          style={{ overscrollBehavior: 'contain' }}
         >
           {loading && <LoadingSpinner label="Loading messages..." className="justify-start" />}
 
@@ -939,8 +939,8 @@ const Chat = () => {
           )}
         </div>
 
-        {/* Fixed Input Area */}
-        <div className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white/95 backdrop-blur-lg shadow-sm">
+        {/* Input Area */}
+        <div className="flex-shrink-0 border-t bg-white/95 backdrop-blur-lg shadow-sm z-20">
           <div className="flex gap-2 px-4 py-3 max-w-4xl mx-auto">
             <input
               value={inputText}
