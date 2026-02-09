@@ -229,3 +229,8 @@ export const getUnreadNotificationCount = () =>
   apiClient.get('/api/notifications/unread-count');
 export const requestVideoCall = (connectionId, recipientId) =>
   apiClient.post('/api/chat/video-call-request', { connection_id: connectionId, recipient_id: recipientId });
+
+export const likeUser = (userId) => apiClient.post('/api/social/like', { user_id: userId });
+export const unlikeUser = (userId) => apiClient.post('/api/social/unlike', { user_id: userId });
+export const followUser = (userId) => apiClient.post('/api/social/follow', { user_id: userId });
+export const unfollowUser = (userId) => apiClient.post('/api/social/unfollow', { user_id: userId });

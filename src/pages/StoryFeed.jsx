@@ -11,6 +11,10 @@ import {
   getTokenBalance,
   getUserPreferences,
   sendConnectionRequest,
+  likeUser,
+  unlikeUser,
+  followUser,
+  unfollowUser,
 } from '../utils/api.js';
 
 import EmptyState from '../components/EmptyState.jsx';
@@ -297,9 +301,7 @@ const StoryFeed = () => {
     setToast(null);
   };
 
-  const removeStory = (storyId) => {
-    setStories((prev) => prev.filter((item) => item.story_id !== storyId));
-  };
+
 
   const handleConnect = async (story, message = '') => {
     if (tokenBalance !== null && tokenBalance < 5) {
@@ -309,17 +311,19 @@ const StoryFeed = () => {
     }
 
     triggerHaptic('success');
-    removeStory(story.story_id);
     setTokenBalance((prev) => (prev !== null ? prev - 5 : prev));
 
     try {
       await sendConnectionRequest({ receiver_id: story.user_id, message });
       showToast('Connection request sent!', 'success');
+      // Update story status
+      setStories(prev => prev.map(s => 
+        s.story_id === story.story_id ? { ...s, connection_status: 'pending_sent' } : s
+      ));
     } catch (err) {
       console.error('Connection request failed:', err);
       showToast(`Failed to send connection request: ${err.message}`);
       setTokenBalance((prev) => (prev !== null ? prev + 5 : prev));
-      fetchStories({ reset: true });
     }
   };
 
@@ -331,23 +335,58 @@ const StoryFeed = () => {
     }
 
     triggerHaptic('success');
-    removeStory(story.story_id);
     setTokenBalance((prev) => (prev !== null ? prev - 5 : prev));
 
     try {
       await acceptConnectionRequest(story.request_id);
       showToast('Connection request accepted!', 'success');
+      // Update story status
+      setStories(prev => prev.map(s => 
+        s.story_id === story.story_id ? { ...s, connection_status: 'connected' } : s
+      ));
     } catch (err) {
       console.error('Accept connection failed:', err);
       showToast(`Failed to accept connection request: ${err.message}`);
       setTokenBalance((prev) => (prev !== null ? prev + 5 : prev));
-      fetchStories({ reset: true });
     }
   };
 
-  const handlePass = (story) => {
+  const handleLike = async (story) => {
     triggerHaptic('light');
-    removeStory(story.story_id);
+    try {
+      if (story.is_liked) {
+        await unlikeUser(story.user_id);
+        showToast('Unliked', 'success');
+      } else {
+        await likeUser(story.user_id);
+        showToast('Liked!', 'success');
+      }
+      // Update story in list
+      setStories(prev => prev.map(s => 
+        s.story_id === story.story_id ? { ...s, is_liked: !s.is_liked } : s
+      ));
+    } catch (err) {
+      showToast(err.message);
+    }
+  };
+
+  const handleFollow = async (story) => {
+    triggerHaptic('light');
+    try {
+      if (story.is_following) {
+        await unfollowUser(story.user_id);
+        showToast('Unfollowed', 'success');
+      } else {
+        await followUser(story.user_id);
+        showToast('Following!', 'success');
+      }
+      // Update story in list
+      setStories(prev => prev.map(s => 
+        s.story_id === story.story_id ? { ...s, is_following: !s.is_following } : s
+      ));
+    } catch (err) {
+      showToast(err.message);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -492,44 +531,70 @@ const StoryFeed = () => {
 
         {/* Action Buttons */}
         <div className="absolute bottom-4 left-4 right-4">
-          <div className="flex gap-2 bg-white/95 p-3 rounded-3xl shadow-2xl backdrop-blur">
+          <div className="flex gap-3 justify-center">
+            {/* Like Button */}
             <button
               type="button"
-              onClick={() => handlePass(story)}
-              className="flex-1 rounded-2xl bg-red-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
+              onClick={() => handleLike(story)}
+              className={`w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all ${
+                story.is_liked 
+                  ? 'bg-gradient-to-br from-pink-500 to-rose-500 text-white scale-110' 
+                  : 'bg-white/95 backdrop-blur text-gray-700 hover:scale-105'
+              }`}
             >
-              Pass
+              <svg className="w-7 h-7" fill={story.is_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={story.is_liked ? 0 : 2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
             </button>
+
+            {/* Follow Button */}
             <button
               type="button"
-              onClick={() => setSelectedStory(story)}
-              className="flex-1 rounded-2xl px-3 py-3 text-sm font-semibold text-white shadow-lg bg-[#C55A4B] hover:bg-[#A7473B]"
+              onClick={() => handleFollow(story)}
+              className={`w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all ${
+                story.is_following
+                  ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white scale-110'
+                  : 'bg-white/95 backdrop-blur text-gray-700 hover:scale-105'
+              }`}
             >
-              View
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                {!story.is_following && (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                )}
+              </svg>
             </button>
+
+            {/* Message/Connect Button */}
             {story.connection_status === 'pending_received' ? (
               <button
                 type="button"
                 onClick={() => handleAccept(story)}
-                className="flex-1 rounded-2xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg flex items-center justify-center hover:scale-105 transition-all"
               >
-                Accept
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
               </button>
             ) : story.connection_status === 'connected' ? (
               <button
                 type="button"
-                disabled
-                className="flex-1 rounded-2xl bg-emerald-100 px-3 py-3 text-sm font-semibold text-emerald-600"
+                onClick={() => navigate(`/chat/${story.user_id}`)}
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg flex items-center justify-center hover:scale-105 transition-all"
               >
-                Connected
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
               </button>
             ) : story.connection_status === 'pending_sent' ? (
               <button
                 type="button"
                 disabled
-                className="flex-1 rounded-2xl bg-amber-100 px-3 py-3 text-sm font-semibold text-amber-700"
+                className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 shadow-lg flex items-center justify-center opacity-60"
               >
-                Requested
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </button>
             ) : (
               <button
@@ -538,9 +603,11 @@ const StoryFeed = () => {
                   setConnectingStory(story);
                   setShowMessageModal(true);
                 }}
-                className="flex-1 rounded-2xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-lg"
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg flex items-center justify-center hover:scale-105 transition-all"
               >
-                Connect
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
               </button>
             )}
           </div>

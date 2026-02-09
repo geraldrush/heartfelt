@@ -594,9 +594,13 @@ stories.get('/feed', authMiddleware, async (c) => {
       ON blocked.blocker_id = ? AND blocked.blocked_id = stories.user_id
     LEFT JOIN blocked_users blocker
       ON blocker.blocker_id = stories.user_id AND blocker.blocked_id = ?
+    LEFT JOIN likes l
+      ON l.liker_id = ? AND l.liked_user_id = stories.user_id
+    LEFT JOIN follows f
+      ON f.follower_id = ? AND f.following_id = stories.user_id
   `;
 
-  const joinParams = [userId, userId, userId, userId, userId, userId];
+  const joinParams = [userId, userId, userId, userId, userId, userId, userId, userId];
 
   const countQuery = `
     SELECT COUNT(*) as total
@@ -636,6 +640,8 @@ stories.get('/feed', authMiddleware, async (c) => {
       stories.created_at,
       si.blurred_url AS blurred_image_url,
       cr_received.id AS request_id,
+      CASE WHEN l.id IS NOT NULL THEN 1 ELSE 0 END AS is_liked,
+      CASE WHEN f.id IS NOT NULL THEN 1 ELSE 0 END AS is_following,
       CASE
         WHEN c.id IS NOT NULL THEN 'connected'
         WHEN cr_sent.id IS NOT NULL THEN 'pending_sent'
