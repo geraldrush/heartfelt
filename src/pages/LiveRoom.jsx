@@ -38,7 +38,7 @@ const LiveRoom = () => {
   const hostPeerId = room?.host_id;
 
   const { sendMessage } = useWebSocket({
-    connectionId: roomId,
+    connectionId: (isHost || hasJoined) ? roomId : null,
     onMessage: (data) => {
       setMessages((prev) => [...prev, data]);
     }
@@ -65,6 +65,19 @@ const LiveRoom = () => {
 
     loadRoom();
   }, [roomId, user?.id]);
+
+  useEffect(() => {
+    if (!roomId) return;
+    const interval = setInterval(async () => {
+      try {
+        const data = await getLiveRoom(roomId);
+        setViewerCount(data.room?.viewer_count ?? 0);
+      } catch {
+        // ignore refresh errors
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [roomId]);
 
   useEffect(() => {
     const loadMessages = async () => {
