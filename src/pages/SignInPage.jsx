@@ -145,11 +145,11 @@ const SignInPage = () => {
               </div>
 
               <div className="mt-8 md:hidden -mx-6 -mt-8 sm:-mx-12 sm:-mt-14">
-                <div className="relative overflow-hidden shadow-lg rounded-none">
+                <div className="relative overflow-hidden shadow-lg rounded-none" style={{ minHeight: '100vh' }}>
                   <img
                     src={coupleImage}
                     alt="AfroDate couple"
-                    className="absolute inset-0 h-full w-full object-cover opacity-55"
+                    className="absolute inset-0 h-full w-full object-cover object-top opacity-55"
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/55 to-black/70" />
                   <div className="relative px-6 py-7 text-white">
