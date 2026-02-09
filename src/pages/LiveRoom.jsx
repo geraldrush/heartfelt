@@ -148,12 +148,15 @@ const LiveRoom = () => {
     }
   };
 
-  const handleJoinLive = async () => {
-    console.log('Join Live clicked');
+  const handleJoinLive = () => {
+    console.log('=== JOIN LIVE BUTTON CLICKED ===');
+    console.log('Current state - hasJoined:', hasJoined);
+    console.log('Current state - isHost:', isHost);
     console.log('hostPeerId:', hostPeerId);
     console.log('peerRef.current:', peerRef.current);
     
     setHasJoined(true);
+    console.log('Set hasJoined to true');
     
     if (!hostPeerId || !peerRef.current) {
       console.log('No peer connection available, showing chat only');
