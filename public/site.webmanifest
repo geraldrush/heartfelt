@@ -1,18 +1,19 @@
 {
-  "name": "AfroDate",
-  "short_name": "AfroDate",
+  "name": "Heartfelt",
+  "short_name": "Heartfelt",
+  "description": "Find meaningful connections through authentic stories",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8f4f0",
-  "theme_color": "#f43f5e",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
   "icons": [
     {
-      "src": "/android-chrome-192x192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/android-chrome-512x512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
