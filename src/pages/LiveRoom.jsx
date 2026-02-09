@@ -160,7 +160,19 @@ const LiveRoom = () => {
   const handleSendChat = () => {
     if (!chatInput.trim()) return;
     const content = chatInput.trim();
-    sendMessage(content);
+    const tempId = crypto.randomUUID();
+    
+    // Add message to UI immediately
+    const newMessage = {
+      id: tempId,
+      sender_id: user?.id,
+      content,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, newMessage]);
+    
+    // Send via WebSocket
+    sendMessage(content, tempId);
     setChatInput('');
   };
 
@@ -168,7 +180,9 @@ const LiveRoom = () => {
     if (!room?.host_id) return;
     try {
       await transferTokens({ recipient_id: room.host_id, amount, message: 'Live gift' });
-      sendMessage(`🎁 ${user?.full_name || 'Viewer'} sent ${amount} tokens`);
+      const tempId = crypto.randomUUID();
+      const giftMessage = `🎁 ${user?.full_name || 'Viewer'} sent ${amount} tokens`;
+      sendMessage(giftMessage, tempId);
     } catch (err) {
       setError(err.message || 'Failed to send gift.');
     }
