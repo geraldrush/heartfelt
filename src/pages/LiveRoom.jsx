@@ -257,10 +257,16 @@ const LiveRoom = () => {
       )}
 
       {showChat && (
-        <div className="absolute right-4 bottom-24 top-20 z-20 w-[min(320px,80vw)] rounded-2xl bg-black/60 p-3 backdrop-blur">
+        <div className="absolute left-4 right-4 bottom-8 z-20 h-[33vh] rounded-2xl bg-black/40 backdrop-blur-sm p-3 shadow-xl">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-white">
+              Live Chat
+            </p>
+            <span className="text-[11px] text-white/80">{room?.title}</span>
+          </div>
           <div
             ref={chatListRef}
-            className="h-[45vh] overflow-y-auto space-y-2 pr-1 text-sm"
+            className="h-[calc(100%-80px)] overflow-y-auto space-y-2 pr-1 text-sm"
           >
             {messages.length === 0 ? (
               <p className="text-white/60 text-xs">Be the first to say hi.</p>
@@ -269,9 +275,11 @@ const LiveRoom = () => {
                 const isSender = msg.sender_id === user?.id;
                 return (
                   <div key={msg.id} className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs ${
-                      isSender ? 'bg-emerald-500/90' : 'bg-white/10'
-                    }`}>
+                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs shadow-md ${
+                      isSender ? 'text-white' : 'bg-white/20 text-white backdrop-blur-sm'
+                    }`}
+                    style={isSender ? { background: 'linear-gradient(135deg, #E74C3C, #F39C12)' } : {}}
+                    >
                       {msg.content}
                     </div>
                   </div>
@@ -285,21 +293,21 @@ const LiveRoom = () => {
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Type a message..."
-              className="flex-1 rounded-full bg-white/10 px-3 py-2 text-xs text-white placeholder:text-white/60 outline-none"
+              className="flex-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 px-3 py-2 text-xs text-white placeholder:text-white/60 outline-none"
               onKeyPress={(e) => e.key === 'Enter' && handleSendChat()}
             />
             <button
               type="button"
               onClick={handleSendChat}
-              className="rounded-full bg-white/90 px-3 py-2 text-xs font-semibold text-slate-800"
+              className="rounded-full text-white px-3 py-2 text-xs font-semibold hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}
             >
               Send
             </button>
           </div>
 
           {!isHost && (
-            <div className="mt-3">
-              <p className="text-[11px] uppercase tracking-wide text-white/60 mb-2">
+            <div className="mt-2">
+              <p className="text-[11px] uppercase tracking-wide text-white/80 mb-1">
                 Send a gift
               </p>
               <div className="flex flex-wrap gap-2">
@@ -308,7 +316,7 @@ const LiveRoom = () => {
                     key={amount}
                     type="button"
                     onClick={() => handleSendGift(amount)}
-                    className="rounded-full bg-amber-400/90 px-3 py-1.5 text-[11px] font-semibold text-slate-900"
+                    className="rounded-full text-white px-3 py-1.5 text-[11px] font-semibold hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #F39C12, #E74C3C)' }}
                   >
                     🎁 {amount}
                   </button>
