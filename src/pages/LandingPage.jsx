@@ -90,11 +90,11 @@ const LandingPage = () => {
   const displayName = user?.full_name || 'there';
 
   return (
-    <div className="app-shell overflow-y-auto" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
+    <div className="app-shell" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <StickyNav title="Dashboard" tokenBalance={tokenBalance} />
       
-      <main className="app-content flex w-full flex-col items-center gap-6 py-10 pt-20 text-slate-900 min-h-screen pb-[calc(120px+env(safe-area-inset-bottom,0px))] md:pb-8">
-        <div className="w-full bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-6 shadow-xl">
+      <main className="flex w-full flex-col items-center gap-6 py-6 pt-6 text-slate-900" style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(120px + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="w-full bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-6 shadow-xl max-w-[1200px] mx-auto" style={{ marginLeft: '1rem', marginRight: '1rem' }}>
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">Dashboard</p>
           <h1 className="mt-3 text-3xl font-semibold text-slate-900 md:text-4xl">
             Welcome back, {displayName}.
@@ -122,7 +122,7 @@ const LandingPage = () => {
           </div>
         </div>
 
-        <div className="w-full grid gap-3 sm:grid-cols-2">
+        <div className="w-full grid gap-3 sm:grid-cols-2 max-w-[1200px] mx-auto" style={{ marginLeft: '1rem', marginRight: '1rem' }}>
           {[[
             'Sent Requests',
             sentRequests,
