@@ -713,9 +713,9 @@ const Chat = () => {
 
   return (
     <ChatErrorBoundary>
-      <div className="flex min-h-screen flex-col bg-gray-50">
+      <div className="flex min-h-screen flex-col" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
         {/* Fixed Header - Always Visible */}
-        <div className="fixed top-0 left-0 right-0 z-20 border-b bg-white shadow-md">
+        <div className="fixed top-0 left-0 right-0 z-20 border-b bg-white/95 backdrop-blur-lg shadow-md">
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3">
               <button 
@@ -768,9 +768,11 @@ const Chat = () => {
                   setIsIncomingCall(false);
                   setShowVideoCall(true);
                 }}
-                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg transition"
+                className="p-2 rounded-full transition-transform hover:scale-110" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}
               >
-                📹 Call
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
               </button>
           </div>
         </div>
@@ -877,7 +879,7 @@ const Chat = () => {
         {/* Messages Area */}
         <div
           ref={listRef}
-          className="flex-1 overflow-y-auto px-4 py-3 pt-20"
+          className="flex-1 overflow-y-auto px-4 py-3 pt-20 max-w-4xl mx-auto w-full"
         >
           {loading && <LoadingSpinner label="Loading messages..." className="justify-start" />}
 
@@ -894,7 +896,7 @@ const Chat = () => {
             </div>
           )}
           
-          <div className="space-y-2">
+          <div className="space-y-3">
             {messages.map((msg) => {
               const isSender = msg.sender_id === user?.id;
               return (
@@ -911,15 +913,16 @@ const Chat = () => {
                       messageRefs.current.set(msg.id, node);
                     }}
                     data-message-id={msg.id}
-                    className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+                    className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-md ${
                       isSender 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-white text-gray-800 border border-gray-200'
+                        ? 'text-white' 
+                        : 'bg-white/95 backdrop-blur-lg text-gray-800 border border-gray-200'
                     }`}
+                    style={isSender ? { background: 'linear-gradient(135deg, #E74C3C, #F39C12)' } : {}}
                   >
                     <p className="leading-relaxed">{msg.content}</p>
                     <div className={`mt-1 flex items-center justify-end gap-1 text-xs ${
-                      isSender ? 'text-blue-100' : 'text-gray-500'
+                      isSender ? 'text-white/80' : 'text-gray-500'
                     }`}>
                       <span>{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                       {isSender && <span>{statusIcon(msg.status)}</span>}
@@ -936,20 +939,21 @@ const Chat = () => {
         </div>
 
         {/* Fixed Input Area */}
-        <div className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white shadow-sm">
-          <div className="flex gap-2 px-4 py-3">
+        <div className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white/95 backdrop-blur-lg shadow-sm">
+          <div className="flex gap-2 px-4 py-3 max-w-4xl mx-auto">
             <input
               value={inputText}
               onChange={(event) => handleTyping(event.target.value)}
               placeholder="Type a message..."
-              className="flex-1 rounded-full border border-gray-200 px-4 py-2.5 text-sm focus:border-blue-400 focus:outline-none bg-gray-50"
+              className="flex-1 rounded-full border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 bg-gray-50"
+              style={{ focusRingColor: '#E74C3C' }}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             />
             <button
               type="button"
               onClick={handleSend}
               disabled={!inputText.trim()}
-              className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white text-sm font-medium rounded-full transition"
+              className="px-5 py-2.5 text-white text-sm font-medium rounded-full transition hover:scale-105 disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}
             >
               Send
             </button>
@@ -960,7 +964,7 @@ const Chat = () => {
       {/* Video Call Invitation Modal */}
       {videoCallInvitation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
+          <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-6 max-w-sm mx-4 shadow-xl">
             <h3 className="text-lg font-semibold mb-2">Incoming Video Call</h3>
             <p className="text-gray-600 mb-4">{otherUserName} is calling you</p>
             <div className="flex gap-3">
@@ -970,13 +974,13 @@ const Chat = () => {
                   setIsIncomingCall(true);
                   setShowVideoCall(true);
                 }}
-                className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-semibold"
+                className="flex-1 text-white px-3 py-2 rounded-full font-semibold text-sm hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
               >
-                Accept (Free)
+                Accept
               </button>
               <button
                 onClick={() => setVideoCallInvitation(null)}
-                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg font-semibold"
+                className="flex-1 text-white px-3 py-2 rounded-full font-semibold text-sm hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #E74C3C, #2C3E50)' }}
               >
                 Decline
               </button>

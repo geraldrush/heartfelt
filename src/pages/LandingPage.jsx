@@ -6,6 +6,7 @@ import { faUserCheck, faUserFriends, faUsers, faCoins } from '@fortawesome/free-
 import { useAuth } from '../context/AuthContext.jsx';
 import { getConnectionCounts, getTokenBalance, getTokenRequests, getUnreadCounts } from '../utils/api.js';
 import TokenSparkle from '../components/animations/TokenSparkle.jsx';
+import StickyNav from '../components/StickyNav.jsx';
 
 const MotionLink = motion.create(Link);
 
@@ -89,9 +90,11 @@ const LandingPage = () => {
   const displayName = user?.full_name || 'there';
 
   return (
-    <div className="app-shell pb-[calc(120px+env(safe-area-inset-bottom,0px))] md:pb-0 overflow-y-auto">
-      <main className="app-content flex w-full flex-col items-center gap-6 py-10 text-slate-900 min-h-screen">
-        <div className="w-full rounded-[28px] border border-white/60 bg-white/90 p-6 shadow-xl backdrop-blur">
+    <div className="app-shell pb-[calc(120px+env(safe-area-inset-bottom,0px))] md:pb-0 overflow-y-auto" style={{ background: 'radial-gradient(circle at top, rgba(231, 76, 60, 0.08), transparent 55%), radial-gradient(circle at 20% 20%, rgba(243, 156, 18, 0.08), transparent 50%), radial-gradient(circle at 80% 30%, rgba(39, 174, 96, 0.08), transparent 55%), linear-gradient(135deg, #FFF9F5, #F5FFF9)' }}>
+      <StickyNav title="Dashboard" tokenBalance={tokenBalance} />
+      
+      <main className="app-content flex w-full flex-col items-center gap-6 py-10 pt-20 text-slate-900 min-h-screen">
+        <div className="w-full bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-6 shadow-xl">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">Dashboard</p>
           <h1 className="mt-3 text-3xl font-semibold text-slate-900 md:text-4xl">
             Welcome back, {displayName}.
@@ -104,7 +107,7 @@ const LandingPage = () => {
               to="/stories"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
-              className="flex-1 rounded-2xl bg-emerald-600 px-5 py-3 text-center text-sm font-semibold text-white shadow-lg transition hover:bg-emerald-700"
+              className="flex-1 rounded-full px-5 py-3 text-center text-sm font-semibold text-white shadow-lg transition" style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
             >
               Discover Stories
             </MotionLink>
@@ -112,7 +115,7 @@ const LandingPage = () => {
               to="/profile"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
-              className="flex-1 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-900 shadow-sm transition hover:border-emerald-200"
+              className="flex-1 rounded-full border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-900 shadow-sm transition hover:border-orange-200"
             >
               View Profile
             </MotionLink>
@@ -142,20 +145,20 @@ const LandingPage = () => {
               to={to}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
-              className="relative rounded-2xl border border-slate-100 bg-white/90 px-5 py-4 shadow-md transition hover:shadow-lg"
+              className="relative bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl px-5 py-4 shadow-xl transition hover:shadow-2xl"
             >
               {label === 'Received Requests' && Number(receivedRequests) > 0 && (
-                <span className="absolute right-3 top-3 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-semibold text-white">
+                <span className="absolute right-3 top-3 rounded-full px-2 py-1 text-[10px] font-semibold text-white" style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}>
                   {receivedRequests}
                 </span>
               )}
               {label === 'Connections' && unreadChats > 0 && (
-                <span className="absolute right-3 top-3 rounded-full bg-rose-500 px-2 py-1 text-[10px] font-semibold text-white">
+                <span className="absolute right-3 top-3 rounded-full px-2 py-1 text-[10px] font-semibold text-white" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}>
                   {unreadChats} new
                 </span>
               )}
               {label === 'Tokens' && pendingTokenRequests > 0 && (
-                <span className="absolute right-3 top-3 rounded-full bg-amber-500 px-2 py-1 text-[10px] font-semibold text-white">
+                <span className="absolute right-3 top-3 rounded-full px-2 py-1 text-[10px] font-semibold text-white" style={{ background: 'linear-gradient(135deg, #F39C12, #E74C3C)' }}>
                   {pendingTokenRequests} req
                 </span>
               )}
@@ -167,7 +170,7 @@ const LandingPage = () => {
         </div>
 
         {error && (
-          <div className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="w-full bg-white/95 backdrop-blur-lg border border-red-200 rounded-3xl px-4 py-3 text-sm text-red-700 shadow-xl">
             {error}
           </div>
         )}
@@ -181,7 +184,7 @@ const LandingPage = () => {
           }}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
-          className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50"
+          className="rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50 hover:scale-105 transition-transform"
         >
           Refresh dashboard
         </motion.button>
