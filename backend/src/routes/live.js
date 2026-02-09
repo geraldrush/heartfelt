@@ -131,53 +131,32 @@ live.post('/join', authMiddleware, async (c) => {
     return c.json({ success: true, status: 'host' });
   }
 
-  // Create join request
-  const requestId = generateId();
+  // Check if already a participant
+  const existing = await db
+    .prepare('SELECT role FROM live_room_participants WHERE room_id = ? AND user_id = ? AND left_at IS NULL')
+    .bind(roomId, userId)
+    .first();
+
+  if (existing) {
+    return c.json({ success: true, status: 'joined', role: existing.role });
+  }
+
+  // Add as participant immediately (no approval needed for now)
+  const participantId = generateId();
   try {
     await db
       .prepare(
-        `INSERT INTO live_room_join_requests (id, room_id, user_id, status)
-         VALUES (?, ?, ?, 'pending')`
+        `INSERT INTO live_room_participants (id, room_id, user_id, role)
+         VALUES (?, ?, ?, 'viewer')`
       )
-      .bind(requestId, roomId, userId)
+      .bind(participantId, roomId, userId)
       .run();
+
+    return c.json({ success: true, status: 'joined', role: 'viewer' });
   } catch (err) {
-    // Check if already has a request
-    const existing = await db
-      .prepare('SELECT status FROM live_room_join_requests WHERE room_id = ? AND user_id = ?')
-      .bind(roomId, userId)
-      .first();
-    
-    if (existing?.status === 'approved') {
-      return c.json({ success: true, status: 'approved' });
-    }
-    return c.json({ success: true, status: existing?.status || 'pending' });
+    console.error('Failed to add participant:', err.message);
+    return c.json({ error: 'Failed to join room.' }, 500);
   }
-
-  // Try to create notification for host
-  try {
-    const user = await getUserById(db, userId);
-    if (user) {
-      await db
-        .prepare(
-          `INSERT INTO notifications (id, user_id, type, title, message, data, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
-        )
-        .bind(
-          generateId(),
-          room.host_id,
-          'live_join_request',
-          'Live Room Join Request',
-          `${user.full_name} wants to join your live room`,
-          JSON.stringify({ request_id: requestId, room_id: roomId, user_id: userId })
-        )
-        .run();
-    }
-  } catch (notifErr) {
-    console.log('Failed to create notification:', notifErr.message);
-  }
-
-  return c.json({ success: true, status: 'pending', request_id: requestId });
 });
 
 live.post('/leave', authMiddleware, async (c) => {
