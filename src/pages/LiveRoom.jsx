@@ -29,6 +29,7 @@ const LiveRoom = () => {
 
   const peerRef = useRef(null);
   const peerRoleRef = useRef(null);
+  const localStreamRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const chatListRef = useRef(null);
@@ -90,6 +91,9 @@ const LiveRoom = () => {
     if (localStream && localVideoRef.current) {
       localVideoRef.current.srcObject = localStream;
     }
+    if (localStream) {
+      localStreamRef.current = localStream;
+    }
   }, [localStream]);
 
   useEffect(() => {
@@ -149,11 +153,12 @@ const LiveRoom = () => {
       peer.on('call', async (incoming) => {
         console.log('[Live] Incoming call from:', incoming.peer);
         try {
-          if (!localStream) {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          let stream = localStreamRef.current;
+          if (!stream) {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             setLocalStream(stream);
+            localStreamRef.current = stream;
           }
-          const stream = localStream || await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
           incoming.answer(stream);
           setIsLive(true);
         } catch (err) {
@@ -179,7 +184,7 @@ const LiveRoom = () => {
       peerRef.current = null;
       setPeerReady(false);
     };
-  }, [user?.id, room?.host_id, isHost, localStream]);
+  }, [user?.id, room?.host_id, isHost]);
 
   const handleStartLive = async () => {
     try {
