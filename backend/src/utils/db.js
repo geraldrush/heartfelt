@@ -782,3 +782,48 @@ export async function updateUserPartial(db, userId, updates) {
     .bind(...values, userId)
     .run();
 }
+
+export async function savePushSubscription(db, userId, subscription, userAgent = null) {
+  const id = generateId();
+  await db
+    .prepare(
+      `INSERT INTO push_subscriptions
+        (id, user_id, endpoint, p256dh, auth, expiration_time, user_agent, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       ON CONFLICT(user_id, endpoint) DO UPDATE SET
+         p256dh = excluded.p256dh,
+         auth = excluded.auth,
+         expiration_time = excluded.expiration_time,
+         user_agent = excluded.user_agent,
+         updated_at = CURRENT_TIMESTAMP`
+    )
+    .bind(
+      id,
+      userId,
+      subscription.endpoint,
+      subscription.keys.p256dh,
+      subscription.keys.auth,
+      subscription.expirationTime || null,
+      userAgent
+    )
+    .run();
+}
+
+export async function removePushSubscription(db, userId, endpoint) {
+  await db
+    .prepare('DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?')
+    .bind(userId, endpoint)
+    .run();
+}
+
+export async function getPushSubscriptionsByUser(db, userId) {
+  const { results } = await db
+    .prepare(
+      `SELECT id, endpoint, p256dh, auth, expiration_time
+       FROM push_subscriptions
+       WHERE user_id = ?`
+    )
+    .bind(userId)
+    .all();
+  return results || [];
+}

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
-import { generateId, getDb } from '../utils/db.js';
+import { getDb } from '../utils/db.js';
+import { createNotification } from '../utils/notifications.js';
 
 const notifications = new Hono();
 
@@ -62,14 +63,6 @@ notifications.get('/unread-count', authMiddleware, async (c) => {
   }
 });
 
-// Create notification (internal helper)
-export const createNotification = async (db, { user_id, type, title, message, data = null }) => {
-  const id = generateId();
-  await db
-    .prepare('INSERT INTO notifications (id, user_id, type, title, message, data) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(id, user_id, type, title, message, data ? JSON.stringify(data) : null)
-    .run();
-  return id;
-};
+export { createNotification };
 
 export default notifications;
