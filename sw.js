@@ -71,7 +71,7 @@ self.addEventListener('fetch', (event) => {
       .then((response) => {
         if (response) return response;
         return fetch(event.request, {
-          redirect: 'manual',
+          redirect: 'follow',
           referrerPolicy: 'no-referrer'
         });
       })

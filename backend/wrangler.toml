@@ -57,5 +57,5 @@ new_classes = ["ChatRoom"]
 previews_enabled = false
 
 routes = [
-  { pattern = "api.afrodate.co.za/*", zone_name = "afrodate.co.za" }
+  { pattern = "api.afrodate.co.za/*", zone_name = "afrodate.co.za", custom_domain = true }
 ]
