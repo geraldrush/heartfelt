@@ -11,6 +11,7 @@ import {
   requestVideoCall,
   transferTokens,
   refreshToken,
+  markNotificationsReadBy,
 } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useWebSocket } from '../hooks/useWebSocket.js';
@@ -1012,7 +1013,10 @@ const Chat = () => {
             <p className="text-gray-600 mb-4">{otherUserName} is calling you</p>
             <div className="flex gap-3">
               <button
-                onClick={() => {
+                onClick={async () => {
+                  try {
+                    await markNotificationsReadBy({ notification_type: 'video_call_request', connection_id: connectionId });
+                  } catch {}
                   setVideoCallInvitation(null);
                   setIsIncomingCall(true);
                   setShowVideoCall(true);
@@ -1022,7 +1026,12 @@ const Chat = () => {
                 Accept
               </button>
               <button
-                onClick={() => setVideoCallInvitation(null)}
+                onClick={async () => {
+                  try {
+                    await markNotificationsReadBy({ notification_type: 'video_call_request', connection_id: connectionId });
+                  } catch {}
+                  setVideoCallInvitation(null);
+                }}
                 className="flex-1 text-white px-3 py-2 rounded-full font-semibold text-sm hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #E74C3C, #2C3E50)' }}
               >
                 Decline

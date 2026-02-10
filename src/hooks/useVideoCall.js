@@ -11,6 +11,25 @@ export const useVideoCall = (userId, connectionId, recipientId, externalPeer = n
   const [tokenBalance, setTokenBalance] = useState(null);
   const localStreamRef = useRef(null);
 
+  const resetCallState = () => {
+    setCall(null);
+    setIncomingCall(null);
+    setRemoteStream(null);
+    setIsCallActive(false);
+  };
+
+  const attachCallHandlers = (activeCall) => {
+    if (!activeCall) return;
+    activeCall.on('close', () => {
+      localStreamRef.current?.getTracks().forEach(track => track.stop());
+      resetCallState();
+    });
+    activeCall.on('error', () => {
+      localStreamRef.current?.getTracks().forEach(track => track.stop());
+      resetCallState();
+    });
+  };
+
   useEffect(() => {
     if (externalPeer) {
       setPeer(externalPeer);
@@ -47,6 +66,7 @@ export const useVideoCall = (userId, connectionId, recipientId, externalPeer = n
         setRemoteStream(remoteStream);
         setIsCallActive(true);
       });
+      attachCallHandlers(outgoingCall);
       
       setCall(outgoingCall);
       return result;
@@ -67,6 +87,7 @@ export const useVideoCall = (userId, connectionId, recipientId, externalPeer = n
         setRemoteStream(remoteStream);
         setIsCallActive(true);
       });
+      attachCallHandlers(incomingCall);
       
       setCall(incomingCall);
       setIncomingCall(null);
@@ -79,10 +100,7 @@ export const useVideoCall = (userId, connectionId, recipientId, externalPeer = n
   const endCall = () => {
     call?.close();
     localStreamRef.current?.getTracks().forEach(track => track.stop());
-    setCall(null);
-    setIncomingCall(null);
-    setRemoteStream(null);
-    setIsCallActive(false);
+    resetCallState();
   };
 
   return {

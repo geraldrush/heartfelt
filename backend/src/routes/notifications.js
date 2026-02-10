@@ -63,6 +63,33 @@ notifications.get('/unread-count', authMiddleware, async (c) => {
   }
 });
 
+// Mark notifications as read by type and optional connection_id
+notifications.post('/mark-read-by', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => ({}));
+  const notificationType = body.notification_type;
+  const connectionId = body.connection_id || null;
+
+  if (!notificationType) {
+    return c.json({ error: 'Missing notification_type' }, 400);
+  }
+
+  await db
+    .prepare(
+      `UPDATE notifications
+       SET read_at = datetime('now')
+       WHERE user_id = ?
+         AND read_at IS NULL
+         AND json_extract(data, '$.notification_type') = ?
+         AND (json_extract(data, '$.connection_id') = ? OR ? IS NULL)`
+    )
+    .bind(userId, notificationType, connectionId, connectionId)
+    .run();
+
+  return c.json({ success: true });
+});
+
 // Get VAPID public key for push subscription
 notifications.get('/push/public-key', authMiddleware, async (c) => {
   return c.json({ publicKey: c.env.VAPID_PUBLIC_KEY || null });
