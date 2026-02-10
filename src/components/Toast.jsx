@@ -1,7 +1,16 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const Toast = ({ message, type = 'error', onClose, duration = 5000 }) => {
+const Toast = ({
+  message,
+  type = 'error',
+  onClose,
+  duration = 5000,
+  actionLabel,
+  onAction,
+  secondaryLabel,
+  onSecondary
+}) => {
   useEffect(() => {
     const timer = setTimeout(onClose, duration);
     return () => clearTimeout(timer);
@@ -27,6 +36,28 @@ const Toast = ({ message, type = 'error', onClose, duration = 5000 }) => {
           ×
         </button>
       </div>
+      {(actionLabel || secondaryLabel) && (
+        <div className="mt-3 flex items-center gap-2">
+          {secondaryLabel && (
+            <button
+              type="button"
+              onClick={onSecondary}
+              className="rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/30"
+            >
+              {secondaryLabel}
+            </button>
+          )}
+          {actionLabel && (
+            <button
+              type="button"
+              onClick={onAction}
+              className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-white"
+            >
+              {actionLabel}
+            </button>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 };

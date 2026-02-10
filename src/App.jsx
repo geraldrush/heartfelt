@@ -1,11 +1,13 @@
 // src/App.jsx
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
 import BottomNavigation from './components/BottomNavigation.jsx';
+import { useNotifications } from './hooks/useNotifications.js';
+import Toast from './components/Toast.jsx';
 const SignInPage = React.lazy(() => import('./pages/SignInPage'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 const SignUpPage = React.lazy(() => import('./pages/SignUpPage.jsx'));
@@ -74,6 +76,86 @@ const AnimatedRoutes = () => {
   );
 };
 
+const NotificationsListener = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { notifications, fetchNotifications, fetchUnreadCount, markAsRead } = useNotifications();
+  const [toast, setToast] = useState(null);
+  const seenIdsRef = useRef(new Set());
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+    fetchNotifications();
+    fetchUnreadCount();
+    const interval = setInterval(() => {
+      fetchNotifications();
+      fetchUnreadCount();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, fetchNotifications, fetchUnreadCount]);
+
+  useEffect(() => {
+    if (!notifications.length) return;
+    for (const notification of notifications) {
+      if (seenIdsRef.current.has(notification.id)) {
+        continue;
+      }
+      seenIdsRef.current.add(notification.id);
+      if (notification.read_at) {
+        continue;
+      }
+      let data = null;
+      if (notification.data) {
+        try {
+          data = typeof notification.data === 'string' ? JSON.parse(notification.data) : notification.data;
+        } catch {}
+      }
+      if (data?.notification_type === 'video_call_request') {
+        setToast({
+          id: notification.id,
+          message: notification.message || 'Incoming video call request',
+          connectionId: data.connection_id || null
+        });
+        break;
+      }
+    }
+  }, [notifications]);
+
+  const handleAnswer = () => {
+    if (!toast?.connectionId) {
+      setToast(null);
+      return;
+    }
+    markAsRead(toast.id);
+    navigate(`/chat?connectionId=${toast.connectionId}&incoming=1`);
+    setToast(null);
+  };
+
+  const handleDismiss = () => {
+    if (toast?.id) {
+      markAsRead(toast.id);
+    }
+    setToast(null);
+  };
+
+  if (!toast) return null;
+
+  return (
+    <Toast
+      message={toast.message}
+      type="info"
+      onClose={handleDismiss}
+      actionLabel="Answer"
+      onAction={handleAnswer}
+      secondaryLabel="Dismiss"
+      onSecondary={handleDismiss}
+      duration={120000}
+    />
+  );
+};
+
 const App = () => {
   const location = useLocation();
   
@@ -83,6 +165,7 @@ const App = () => {
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <AuthProvider>
         <div className="pull-to-refresh">
+          <NotificationsListener />
           <AnimatedRoutes />
           {showBottomNav && <BottomNavigation />}
         </div>

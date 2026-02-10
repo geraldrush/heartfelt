@@ -43,6 +43,19 @@ const VideoCall = ({
     }
   }, [messages, showChat]);
 
+  useEffect(() => {
+    if (isCallActive || isStarting) {
+      return;
+    }
+    if (isIncoming) {
+      if (incomingCall) {
+        handleAnswerCall();
+      }
+      return;
+    }
+    handleStartCall();
+  }, [incomingCall, isIncoming, isCallActive, isStarting]);
+
   const requestPermissions = async () => {
     setPermissionError(null);
     try {
@@ -149,17 +162,6 @@ const VideoCall = ({
       
       {/* Controls */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4">
-        {!isCallActive && (
-          <button
-            onClick={isIncoming || incomingCall ? handleAnswerCall : handleStartCall}
-            disabled={isStarting || (isIncoming && !incomingCall)}
-            className="p-3 rounded-full disabled:opacity-50 hover:scale-110 transition-transform" style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
-          >
-            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/>
-            </svg>
-          </button>
-        )}
         <button
           onClick={handleEndCall}
           className="p-3 rounded-full hover:scale-110 transition-transform" style={{ background: 'linear-gradient(135deg, #E74C3C, #2C3E50)' }}

@@ -174,9 +174,10 @@ class ChatErrorBoundary extends React.Component {
 
 const Chat = () => {
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const connectionId = searchParams.get('connectionId');
+  const incomingParam = searchParams.get('incoming');
   const [connection, setConnection] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -493,6 +494,14 @@ const Chat = () => {
       }
     };
   }, [connectionId, user?.id]);
+
+  useEffect(() => {
+    if (!connectionId || !incomingParam) {
+      return;
+    }
+    setVideoCallInvitation({ notification_type: 'video_call_request' });
+    setSearchParams({ connectionId });
+  }, [connectionId, incomingParam, setSearchParams]);
 
   // Cleanup on unmount
   useEffect(() => {
