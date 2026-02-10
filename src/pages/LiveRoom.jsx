@@ -5,6 +5,7 @@ import { getLiveRoom, joinLiveRoom, leaveLiveRoom, getMessages, transferTokens }
 import { useAuth } from '../context/AuthContext.jsx';
 import { useWebSocket } from '../hooks/useWebSocket.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import { getPeerConfig } from '../utils/peer.js';
 
 const giftOptions = [5, 10, 20, 50];
 
@@ -135,11 +136,9 @@ const LiveRoom = () => {
       setPeerReady(false);
     }
 
+    const peerConfig = getPeerConfig();
     const peer = new Peer(isHost ? user.id : undefined, {
-      host: '0.peerjs.com',
-      secure: true,
-      port: 443,
-      path: '/',
+      ...peerConfig,
       debug: 2
     });
 

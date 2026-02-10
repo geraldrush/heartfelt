@@ -19,6 +19,7 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import Toast from '../components/Toast.jsx';
 import VideoCall from '../components/VideoCall.jsx';
 import { isTokenExpiringSoon } from '../utils/auth.js';
+import { getPeerConfig } from '../utils/peer.js';
 
 // Connection Status Banner Component
 const ConnectionStatusBanner = ({ connectionState, isPolling, connectionQuality, averageLatency, retryCount, onReconnect }) => {
@@ -466,11 +467,9 @@ const Chat = () => {
     // Initialize PeerJS connection when chat opens
     if (user?.id && !peerRef.current) {
       import('peerjs').then(({ default: Peer }) => {
+        const peerConfig = getPeerConfig();
         const peer = new Peer(user.id, {
-          host: '0.peerjs.com',
-          secure: true,
-          port: 443,
-          path: '/'
+          ...peerConfig
         });
         
         peer.on('open', () => {
