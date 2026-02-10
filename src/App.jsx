@@ -80,7 +80,7 @@ const AnimatedRoutes = () => {
 const NotificationsListener = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { notifications, fetchNotifications, fetchUnreadCount, markAsRead } = useNotifications();
+  const { notifications, fetchNotifications, fetchUnreadCount, markAsRead } = useNotifications({ enabled: isAuthenticated });
   const [toast, setToast] = useState(null);
   const seenIdsRef = useRef(new Set());
 

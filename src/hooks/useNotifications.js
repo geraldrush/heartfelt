@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getNotifications, markNotificationAsRead, getUnreadNotificationCount } from '../utils/api';
 
-export const useNotifications = () => {
+export const useNotifications = ({ enabled = true } = {}) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -47,9 +47,16 @@ export const useNotifications = () => {
   }, []);
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (!token) {
+      return;
+    }
     fetchNotifications();
     fetchUnreadCount();
-  }, [fetchNotifications, fetchUnreadCount]);
+  }, [enabled, fetchNotifications, fetchUnreadCount]);
 
   return {
     notifications,
