@@ -140,13 +140,17 @@ tokens.post('/transfer', authMiddleware, async (c) => {
 
   // Send notification to recipient
   try {
-    await createNotification(db, {
-      user_id: parsed.data.recipient_id,
-      type: 'token_request',
-      title: 'Tokens Received',
-      message: `You received ${amount} tokens${parsed.data.message ? `: ${parsed.data.message}` : ''}`,
-      data: { sender_id: senderId, amount }
-    });
+    await createNotification(
+      db,
+      {
+        user_id: parsed.data.recipient_id,
+        type: 'token_request',
+        title: 'Tokens Received',
+        message: `You received ${amount} tokens${parsed.data.message ? `: ${parsed.data.message}` : ''}`,
+        data: { sender_id: senderId, amount, notification_type: 'token_received' }
+      },
+      c.env
+    );
   } catch (error) {
     console.error('Failed to create notification:', error);
   }

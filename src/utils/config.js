@@ -5,7 +5,8 @@ const requiredEnvVars = {
 
 const optionalEnvVars = {
   VITE_APP_NAME: 'Application name (defaults to "Heartfelt")',
-  VITE_DEBUG: 'Enable debug logging (defaults to false)'
+  VITE_DEBUG: 'Enable debug logging (defaults to false)',
+  VITE_VAPID_PUBLIC_KEY: 'Web Push VAPID public key'
 };
 
 export function validateEnvironment() {
@@ -40,7 +41,8 @@ export function validateEnvironment() {
 function getDefault(key) {
   const defaults = {
     VITE_APP_NAME: 'Heartfelt',
-    VITE_DEBUG: 'false'
+    VITE_DEBUG: 'false',
+    VITE_VAPID_PUBLIC_KEY: ''
   };
   return defaults[key] || '';
 }

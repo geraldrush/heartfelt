@@ -13,7 +13,9 @@ const VideoCall = ({
   onSendMessage,
   onSendGift,
   giftOptions = [],
-  otherUserName = 'Host'
+  otherUserName = 'Host',
+  autoStart = false,
+  autoAnswer = false
 }) => {
   const { startCall, answerCall, endCall, isCallActive, localStream, remoteStream, tokenBalance, incomingCall } = useVideoCall(userId, connectionId, remotePeerId, peer);
   const [error, setError] = useState(null);
@@ -48,13 +50,15 @@ const VideoCall = ({
       return;
     }
     if (isIncoming) {
-      if (incomingCall) {
+      if (autoAnswer && incomingCall) {
         handleAnswerCall();
       }
       return;
     }
-    handleStartCall();
-  }, [incomingCall, isIncoming, isCallActive, isStarting]);
+    if (autoStart) {
+      handleStartCall();
+    }
+  }, [autoAnswer, autoStart, incomingCall, isIncoming, isCallActive, isStarting]);
 
   const requestPermissions = async () => {
     setPermissionError(null);
@@ -221,23 +225,6 @@ const VideoCall = ({
             )}
           </div>
 
-          <div className="mt-2 flex items-center gap-2">
-            <input
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 px-3 py-2 text-xs text-white placeholder:text-white/60 outline-none"
-              onKeyPress={(e) => e.key === 'Enter' && handleChatSend()}
-            />
-            <button
-              type="button"
-              onClick={handleChatSend}
-              className="rounded-full text-white px-3 py-2 text-xs font-semibold hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}
-            >
-              Send
-            </button>
-          </div>
-
           {giftOptions.length > 0 && (
             <div className="mt-2">
               <p className="text-[11px] uppercase tracking-wide text-white/80 mb-1">
@@ -257,6 +244,23 @@ const VideoCall = ({
               </div>
             </div>
           )}
+
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Type a message..."
+              className="flex-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 px-3 py-2 text-xs text-white placeholder:text-white/60 outline-none"
+              onKeyPress={(e) => e.key === 'Enter' && handleChatSend()}
+            />
+            <button
+              type="button"
+              onClick={handleChatSend}
+              className="rounded-full text-white px-3 py-2 text-xs font-semibold hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}
+            >
+              Send
+            </button>
+          </div>
         </div>
       )}
     </div>

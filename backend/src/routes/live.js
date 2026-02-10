@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
 import { generateId, getDb, getUserById } from '../utils/db.js';
+import { createNotification } from './notifications.js';
 
 const live = new Hono();
 
@@ -287,6 +288,52 @@ live.get('/join-requests/:roomId', authMiddleware, async (c) => {
     .all();
 
   return c.json({ requests: results || [] });
+});
+
+live.post('/invite', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => ({}));
+  const roomId = body.room_id;
+  const recipientId = body.recipient_id;
+
+  if (!roomId || !recipientId) {
+    return c.json({ error: 'Missing room_id or recipient_id.' }, 400);
+  }
+
+  const room = await db
+    .prepare('SELECT id, host_id, title, status FROM live_rooms WHERE id = ?')
+    .bind(roomId)
+    .first();
+
+  if (!room || room.status !== 'live') {
+    return c.json({ error: 'Live room not available.' }, 404);
+  }
+
+  if (room.host_id !== userId) {
+    return c.json({ error: 'Unauthorized.' }, 403);
+  }
+
+  const host = await getUserById(db, userId);
+  const hostName = host?.full_name || 'Host';
+
+  try {
+    await createNotification(
+      db,
+      {
+        user_id: recipientId,
+        type: 'system',
+        title: 'Live stream invite',
+        message: `${hostName} invited you to a live stream`,
+        data: { room_id: roomId, notification_type: 'live_invite' }
+      },
+      c.env
+    );
+  } catch (error) {
+    console.error('Failed to create live invite notification:', error);
+  }
+
+  return c.json({ success: true });
 });
 
 export default live;

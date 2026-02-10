@@ -3,7 +3,9 @@ import {
   createMessage,
   updateMessageStatus,
   verifyUserInConnection,
+  getConnectionById,
 } from '../utils/db.js';
+import { createNotification } from '../utils/notifications.js';
 import { getAllowedOrigins, isOriginAllowed, isRefererAllowed } from '../utils/cors.js';
 
 // Sanitize content to prevent XSS
@@ -360,6 +362,31 @@ export class ChatRoom {
           status: 'sent',
           client_id: sanitizedClientId,
         });
+
+        try {
+          const connection = await getConnectionById(this.env.DB, connectionId);
+          if (connection) {
+            const recipientId = connection.user_id_1 === senderId
+              ? connection.user_id_2
+              : connection.user_id_1;
+            const recipientConnected = this.connections.has(recipientId);
+            if (recipientId && !recipientConnected) {
+              await createNotification(
+                this.env.DB,
+                {
+                  user_id: recipientId,
+                  type: 'message',
+                  title: 'New message',
+                  message: 'You have a new message',
+                  data: { connection_id: connectionId, sender_id: senderId, notification_type: 'message_received' }
+                },
+                this.env
+              );
+            }
+          }
+        } catch (error) {
+          console.error('[WS-Server] Failed to create message notification:', error?.message || error);
+        }
         break;
       }
       case 'typing_indicator': {

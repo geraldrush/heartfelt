@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
-import { getDb } from '../utils/db.js';
+import { getDb, savePushSubscription, removePushSubscription } from '../utils/db.js';
 import { createNotification } from '../utils/notifications.js';
 
 const notifications = new Hono();
@@ -61,6 +61,37 @@ notifications.get('/unread-count', authMiddleware, async (c) => {
     console.error('[Notifications] Unread count error:', error);
     return c.json({ count: 0 });
   }
+});
+
+// Get VAPID public key for push subscription
+notifications.get('/push/public-key', authMiddleware, async (c) => {
+  return c.json({ publicKey: c.env.VAPID_PUBLIC_KEY || null });
+});
+
+// Save push subscription
+notifications.post('/push/subscribe', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => null);
+  if (!body || !body.endpoint || !body.keys?.p256dh || !body.keys?.auth) {
+    return c.json({ error: 'Invalid subscription' }, 400);
+  }
+  const userAgent = c.req.header('User-Agent') || null;
+  await savePushSubscription(db, userId, body, userAgent);
+  return c.json({ success: true });
+});
+
+// Remove push subscription
+notifications.post('/push/unsubscribe', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => null);
+  const endpoint = body?.endpoint;
+  if (!endpoint) {
+    return c.json({ error: 'Missing endpoint' }, 400);
+  }
+  await removePushSubscription(db, userId, endpoint);
+  return c.json({ success: true });
 });
 
 export { createNotification };

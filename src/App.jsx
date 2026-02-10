@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
 import BottomNavigation from './components/BottomNavigation.jsx';
 import { useNotifications } from './hooks/useNotifications.js';
+import { ensurePushSubscription } from './utils/push.js';
 import Toast from './components/Toast.jsx';
 const SignInPage = React.lazy(() => import('./pages/SignInPage'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
@@ -89,6 +90,10 @@ const NotificationsListener = () => {
     }
     fetchNotifications();
     fetchUnreadCount();
+    const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+    if (publicKey) {
+      ensurePushSubscription(publicKey).catch(() => {});
+    }
     const interval = setInterval(() => {
       fetchNotifications();
       fetchUnreadCount();

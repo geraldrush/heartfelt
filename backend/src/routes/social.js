@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
-import { generateId, getDb } from '../utils/db.js';
+import { generateId, getDb, getUserById } from '../utils/db.js';
+import { createNotification } from './notifications.js';
 
 const social = new Hono();
 
@@ -27,6 +28,21 @@ social.post('/like', authMiddleware, async (c) => {
       .prepare('INSERT INTO likes (id, liker_id, liked_user_id) VALUES (?, ?, ?)')
       .bind(likeId, userId, user_id)
       .run();
+
+    const liker = await getUserById(db, userId);
+    if (liker) {
+      await createNotification(
+        db,
+        {
+          user_id,
+          type: 'system',
+          title: 'New like',
+          message: `${liker.full_name} liked your profile`,
+          data: { sender_id: userId, notification_type: 'like' }
+        },
+        c.env
+      );
+    }
     
     return c.json({ message: 'User liked successfully.' });
   } catch (error) {
@@ -80,6 +96,21 @@ social.post('/follow', authMiddleware, async (c) => {
       .prepare('INSERT INTO follows (id, follower_id, following_id) VALUES (?, ?, ?)')
       .bind(followId, userId, user_id)
       .run();
+
+    const follower = await getUserById(db, userId);
+    if (follower) {
+      await createNotification(
+        db,
+        {
+          user_id,
+          type: 'system',
+          title: 'New follower',
+          message: `${follower.full_name} started following you`,
+          data: { sender_id: userId, notification_type: 'follow' }
+        },
+        c.env
+      );
+    }
     
     return c.json({ message: 'User followed successfully.' });
   } catch (error) {

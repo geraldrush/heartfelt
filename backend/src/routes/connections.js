@@ -82,13 +82,17 @@ connections.post('/request', authMiddleware, connectionRequestRateLimit, async (
   }
 
   // Create notification for receiver
-  await createNotification(db, {
-    user_id: receiverId,
-    type: 'connection_request',
-    title: 'New Connection Request',
-    message: `${sender.full_name} sent you a connection request`,
-    data: { request_id: requestId, sender_id: senderId }
-  });
+  await createNotification(
+    db,
+    {
+      user_id: receiverId,
+      type: 'connection_request',
+      title: 'New Connection Request',
+      message: `${sender.full_name} sent you a connection request`,
+      data: { request_id: requestId, sender_id: senderId, notification_type: 'connection_request' }
+    },
+    c.env
+  );
 
   return c.json({
     success: true,

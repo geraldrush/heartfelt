@@ -1042,6 +1042,8 @@ const Chat = () => {
           tokenBalance={tokenBalance}
           peer={peerRef.current}
             isIncoming={isIncomingCall}
+            autoStart={!isIncomingCall}
+            autoAnswer={isIncomingCall}
             messages={messages}
             onSendMessage={sendQuickMessage}
             onSendGift={handleSendGift}
