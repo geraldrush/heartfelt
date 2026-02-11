@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
 import BottomNavigation from './components/BottomNavigation.jsx';
 import { useNotifications } from './hooks/useNotifications.js';
+import { NotificationsProvider } from './context/NotificationsContext.jsx';
 import { ensurePushSubscription } from './utils/push.js';
 import Toast from './components/Toast.jsx';
 const SignInPage = React.lazy(() => import('./pages/SignInPage'));
@@ -80,12 +81,16 @@ const AnimatedRoutes = () => {
 const NotificationsListener = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { notifications, fetchNotifications, fetchUnreadCount, markAsRead } = useNotifications({ enabled: isAuthenticated });
+  const { notifications, fetchNotifications, fetchUnreadCount, markAsRead } = useNotifications();
   const [toast, setToast] = useState(null);
   const seenIdsRef = useRef(new Set());
 
   useEffect(() => {
     if (!isAuthenticated) {
+      return;
+    }
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (!token) {
       return;
     }
     fetchNotifications();
@@ -169,11 +174,13 @@ const App = () => {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <AuthProvider>
-        <div className="pull-to-refresh">
-          <NotificationsListener />
-          <AnimatedRoutes />
-          {showBottomNav && <BottomNavigation />}
-        </div>
+        <NotificationsProvider>
+          <div className="pull-to-refresh">
+            <NotificationsListener />
+            <AnimatedRoutes />
+            {showBottomNav && <BottomNavigation />}
+          </div>
+        </NotificationsProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   );
