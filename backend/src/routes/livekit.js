@@ -6,7 +6,7 @@ import { logDiagnostics } from '../utils/diagnostics.js';
 
 const livekit = new Hono();
 
-const buildToken = ({ apiKey, apiSecret, identity, name, room, grants }) => {
+const buildToken = async ({ apiKey, apiSecret, identity, name, room, grants }) => {
   const token = new AccessToken(apiKey, apiSecret, { identity, name });
   token.addGrant({
     room,
@@ -15,7 +15,7 @@ const buildToken = ({ apiKey, apiSecret, identity, name, room, grants }) => {
     canSubscribe: true,
     ...grants,
   });
-  return token.toJwt();
+  return await token.toJwt();
 };
 
 livekit.post('/token', authMiddleware, async (c) => {
@@ -108,7 +108,7 @@ livekit.post('/token', authMiddleware, async (c) => {
       }
     }
 
-    const token = buildToken({
+    const token = await buildToken({
       apiKey,
       apiSecret,
       identity: userId,
