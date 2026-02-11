@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { AccessToken } from 'livekit-server-sdk';
 import { authMiddleware } from '../middleware/auth.js';
 import { getDb, verifyUserInConnection } from '../utils/db.js';
+import { logDiagnostics } from '../utils/diagnostics.js';
 
 const livekit = new Hono();
 
@@ -29,6 +30,15 @@ livekit.post('/token', authMiddleware, async (c) => {
       hasApiSecret: Boolean(apiSecret),
       hasUrl: Boolean(url),
     });
+    await logDiagnostics(getDb(c), {
+      category: 'livekit',
+      message: 'Missing configuration',
+      data: {
+        hasApiKey: Boolean(apiKey),
+        hasApiSecret: Boolean(apiSecret),
+        hasUrl: Boolean(url),
+      },
+    });
     return c.json({ error: 'LiveKit not configured', code: 'LIVEKIT_CONFIG_MISSING' }, 500);
   }
 
@@ -53,6 +63,11 @@ livekit.post('/token', authMiddleware, async (c) => {
           roomId,
           reason: verification?.reason,
         });
+        await logDiagnostics(db, {
+          category: 'livekit',
+          message: 'Unauthorized connection token request',
+          data: { userId, roomId, reason: verification?.reason },
+        });
         return c.json({ error: 'Unauthorized', code: verification?.reason }, 403);
       }
     }
@@ -68,6 +83,11 @@ livekit.post('/token', authMiddleware, async (c) => {
           roomId,
           status: liveRoom?.status,
         });
+        await logDiagnostics(db, {
+          category: 'livekit',
+          message: 'Live room not available',
+          data: { userId, roomId, status: liveRoom?.status },
+        });
         return c.json({ error: 'Live room not available', code: 'LIVE_ROOM_NOT_LIVE' }, 404);
       }
       const participant = await db
@@ -78,6 +98,11 @@ livekit.post('/token', authMiddleware, async (c) => {
         console.warn('[LiveKit] Unauthorized live room token request', {
           userId,
           roomId,
+        });
+        await logDiagnostics(db, {
+          category: 'livekit',
+          message: 'Unauthorized live room token request',
+          data: { userId, roomId },
         });
         return c.json({ error: 'Unauthorized', code: 'LIVE_ROOM_UNAUTHORIZED' }, 403);
       }
@@ -98,8 +123,35 @@ livekit.post('/token', authMiddleware, async (c) => {
       message: error?.message,
       stack: error?.stack,
     });
+    await logDiagnostics(getDb(c), {
+      category: 'livekit',
+      message: 'Token generation failed',
+      data: { message: error?.message },
+    });
     return c.json({ error: 'LiveKit token error', code: 'LIVEKIT_TOKEN_ERROR' }, 500);
   }
+});
+
+livekit.get('/diagnostics', async (c) => {
+  const key = c.req.header('X-Diagnostics-Key');
+  if (!key || !c.env.DIAGNOSTICS_KEY || key !== c.env.DIAGNOSTICS_KEY) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const limit = Math.min(Number(c.req.query('limit') || 50), 200);
+  const db = getDb(c);
+  const { results } = await db
+    .prepare(
+      `SELECT id, category, message, data, created_at
+       FROM diagnostics_log
+       WHERE category = 'livekit'
+       ORDER BY created_at DESC
+       LIMIT ?`
+    )
+    .bind(limit)
+    .all();
+
+  return c.json({ logs: results || [] });
 });
 
 export default livekit;
