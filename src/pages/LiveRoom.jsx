@@ -1,11 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import Peer from 'peerjs';
-import { getLiveRoom, joinLiveRoom, leaveLiveRoom, getMessages, transferTokens } from '../utils/api.js';
+import { Room, RoomEvent, Track, createLocalTracks } from 'livekit-client';
+import { getLiveRoom, joinLiveRoom, leaveLiveRoom, getMessages, transferTokens, requestLiveKitToken } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useWebSocket } from '../hooks/useWebSocket.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
-import { getPeerConfig } from '../utils/peer.js';
 
 const giftOptions = [5, 10, 20, 50];
 
@@ -24,19 +23,16 @@ const LiveRoom = () => {
   const [remoteStream, setRemoteStream] = useState(null);
   const [viewerCount, setViewerCount] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
-  const [joinRequested, setJoinRequested] = useState(false);
   const [joinInProgress, setJoinInProgress] = useState(false);
-  const [peerReady, setPeerReady] = useState(false);
 
-  const peerRef = useRef(null);
-  const peerRoleRef = useRef(null);
-  const localStreamRef = useRef(null);
+  const roomRef = useRef(null);
+  const localTracksRef = useRef([]);
+  const remoteStreamRef = useRef(new MediaStream());
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const chatListRef = useRef(null);
 
   const isHost = room?.host_id === user?.id;
-  const hostPeerId = room?.host_id;
 
   const { sendMessage } = useWebSocket({
     connectionId: (isHost || hasJoined) ? roomId : null,
@@ -105,9 +101,6 @@ const LiveRoom = () => {
     if (localStream && localVideoRef.current) {
       localVideoRef.current.srcObject = localStream;
     }
-    if (localStream) {
-      localStreamRef.current = localStream;
-    }
   }, [localStream]);
 
   useEffect(() => {
@@ -122,148 +115,118 @@ const LiveRoom = () => {
     }
   }, [remoteStream]);
 
-  useEffect(() => {
-    if (!user?.id || !room?.host_id) return;
+  const stopLocalTracks = () => {
+    localTracksRef.current.forEach((track) => track.stop());
+    localTracksRef.current = [];
+  };
 
-    const desiredRole = isHost ? 'host' : 'viewer';
-    if (peerRef.current && peerRoleRef.current === desiredRole) {
+  const disconnectLiveKit = () => {
+    if (roomRef.current) {
+      roomRef.current.disconnect();
+      roomRef.current = null;
+    }
+    remoteStreamRef.current = new MediaStream();
+    setRemoteStream(null);
+  };
+
+  const syncRemoteStream = () => {
+    const tracks = remoteStreamRef.current.getTracks();
+    if (tracks.length === 0) {
+      setRemoteStream(null);
       return;
     }
+    setRemoteStream(new MediaStream(tracks));
+  };
 
-    if (peerRef.current) {
-      peerRef.current.destroy();
-      peerRef.current = null;
-      setPeerReady(false);
-    }
-
-    const peerConfig = getPeerConfig();
-    const peer = new Peer(isHost ? user.id : undefined, {
-      ...peerConfig,
-      debug: 2
-    });
-
-    peer.on('open', () => {
-      peerRef.current = peer;
-      peerRoleRef.current = desiredRole;
-      setPeerReady(true);
-      console.log('[Live] Peer open:', peer.id, 'role:', desiredRole);
-    });
-    peer.on('error', (err) => {
-      console.error('[Live] Peer error:', err);
-      setError(err?.message || 'Peer connection error.');
-    });
-    peer.on('disconnected', () => {
-      console.warn('[Live] Peer disconnected');
-      setPeerReady(false);
-    });
-    peer.on('close', () => {
-      console.warn('[Live] Peer closed');
-      setPeerReady(false);
-    });
-
-    if (isHost) {
-      peer.on('call', async (incoming) => {
-        console.log('[Live] Incoming call from:', incoming.peer);
-        try {
-          let stream = localStreamRef.current;
-          if (!stream) {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            setLocalStream(stream);
-            localStreamRef.current = stream;
-          }
-          incoming.answer(stream);
+  const attachRoomHandlers = (room) => {
+    room.on(RoomEvent.TrackSubscribed, (track) => {
+      if (track.kind === Track.Kind.Video || track.kind === Track.Kind.Audio) {
+        remoteStreamRef.current.addTrack(track.mediaStreamTrack);
+        syncRemoteStream();
+        if (!isHost) {
           setIsLive(true);
-        } catch (err) {
-          console.error('Failed to answer viewer call:', err);
         }
-      });
-    } else {
-      peer.on('call', (incoming) => {
-        console.log('[Live] Incoming host stream');
-        incoming.answer(new MediaStream());
-        incoming.on('stream', (stream) => {
-          setRemoteStream(stream);
-        });
-        incoming.on('error', (err) => {
-          console.error('[Live] Incoming call error:', err);
-          setError(err?.message || 'Live stream error.');
-        });
-      });
-    }
+      }
+    });
 
-    return () => {
-      peer.destroy();
-      peerRef.current = null;
-      setPeerReady(false);
-    };
-  }, [user?.id, room?.host_id, isHost]);
+    room.on(RoomEvent.TrackUnsubscribed, (track) => {
+      if (track.kind === Track.Kind.Video || track.kind === Track.Kind.Audio) {
+        remoteStreamRef.current.removeTrack(track.mediaStreamTrack);
+        syncRemoteStream();
+      }
+    });
+
+    room.on(RoomEvent.Disconnected, () => {
+      stopLocalTracks();
+      disconnectLiveKit();
+      setIsLive(false);
+    });
+  };
+
+  const connectLiveKit = async () => {
+    if (roomRef.current) {
+      return roomRef.current;
+    }
+    const { token, url } = await requestLiveKitToken({
+      room_id: roomId,
+      room_type: 'live',
+      name: user?.full_name || (user?.id ? `user-${user.id}` : undefined)
+    });
+    const room = new Room({ adaptiveStream: true, dynacast: true });
+    attachRoomHandlers(room);
+    await room.connect(url, token);
+    roomRef.current = room;
+    return room;
+  };
 
   const handleStartLive = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      setLocalStream(stream);
+      const room = await connectLiveKit();
+      const tracks = await createLocalTracks({ audio: true, video: true });
+      localTracksRef.current = tracks;
+      tracks.forEach((track) => room.localParticipant.publishTrack(track));
+      setLocalStream(new MediaStream(tracks.map((track) => track.mediaStreamTrack)));
       setIsLive(true);
     } catch (err) {
       setError(err.message || 'Camera permission required to go live.');
     }
   };
 
-  const attemptJoinHost = useCallback(() => {
+  const handleJoinLive = async () => {
     if (isHost || joinInProgress) return;
-    if (!hostPeerId) {
-      setError('Host is not ready yet.');
-      return;
-    }
-    if (!peerReady || !peerRef.current) {
-      return;
-    }
+    setJoinInProgress(true);
     try {
-      setJoinInProgress(true);
-      setHasJoined(true);
-      const emptyStream = new MediaStream();
-      const call = peerRef.current.call(hostPeerId, emptyStream);
-      call.on('stream', (stream) => {
-        setRemoteStream(stream);
-        setJoinInProgress(false);
-      });
-      call.on('error', (err) => {
-        console.error('Join live error:', err);
-        setError(err?.message || 'Unable to join live stream.');
-        setHasJoined(false);
-        setJoinInProgress(false);
-      });
-      call.on('close', () => {
-        setJoinInProgress(false);
-      });
-      window.setTimeout(() => {
-        if (!remoteStream && joinRequested && peerRef.current) {
-          try {
-            console.warn('[Live] Retrying peer call...');
-            const retryCall = peerRef.current.call(hostPeerId, new MediaStream());
-            retryCall.on('stream', (stream) => setRemoteStream(stream));
-          } catch (err) {
-            console.error('[Live] Retry call failed:', err);
-          }
+      if (!hasJoined) {
+        const joinResult = await joinLiveRoom(roomId);
+        if (joinResult?.success) {
+          setHasJoined(true);
         }
-      }, 4000);
+      }
+      await connectLiveKit();
     } catch (err) {
       console.error('Join live error:', err);
       setError(err.message || 'Unable to join live stream.');
       setHasJoined(false);
+    } finally {
       setJoinInProgress(false);
     }
-  }, [hostPeerId, isHost, joinInProgress, peerReady, remoteStream, joinRequested]);
+  };
 
   useEffect(() => {
-    if (joinRequested && peerReady) {
-      attemptJoinHost();
-    }
-  }, [joinRequested, peerReady, attemptJoinHost]);
+    if (isHost) return;
+    if (!hasJoined) return;
+    connectLiveKit().catch((err) => {
+      console.error('LiveKit connect error:', err);
+      setError(err?.message || 'Unable to connect to live stream.');
+    });
+  }, [isHost, hasJoined]);
 
-  const handleJoinLive = () => {
-    setJoinRequested(true);
-    attemptJoinHost();
-  };
+  useEffect(() => {
+    return () => {
+      stopLocalTracks();
+      disconnectLiveKit();
+    };
+  }, []);
 
   const handleSendChat = () => {
     if (!chatInput.trim()) return;
@@ -300,6 +263,8 @@ const LiveRoom = () => {
     try {
       await leaveLiveRoom(roomId);
     } catch {}
+    stopLocalTracks();
+    disconnectLiveKit();
     navigate('/live');
   };
 

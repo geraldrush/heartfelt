@@ -1,75 +1,115 @@
 import { useEffect, useRef, useState } from 'react';
-import Peer from 'peerjs';
-import { requestVideoCall } from '../utils/api';
+import { Room, RoomEvent, Track, createLocalTracks } from 'livekit-client';
+import { requestLiveKitToken } from '../utils/api';
 
-export const useVideoCall = (userId, connectionId, recipientId, externalPeer = null) => {
-  const [peer, setPeer] = useState(externalPeer);
-  const [call, setCall] = useState(null);
-  const [incomingCall, setIncomingCall] = useState(null);
+export const useVideoCall = (userId, connectionId) => {
+  const roomRef = useRef(null);
+  const localTracksRef = useRef([]);
+  const remoteStreamRef = useRef(new MediaStream());
+  const [incomingCall, setIncomingCall] = useState(false);
   const [isCallActive, setIsCallActive] = useState(false);
   const [remoteStream, setRemoteStream] = useState(null);
+  const [localStream, setLocalStream] = useState(null);
   const [tokenBalance, setTokenBalance] = useState(null);
-  const localStreamRef = useRef(null);
 
   const resetCallState = () => {
-    setCall(null);
-    setIncomingCall(null);
-    setRemoteStream(null);
+    setIncomingCall(false);
     setIsCallActive(false);
+    setRemoteStream(null);
+    setLocalStream(null);
   };
 
-  const attachCallHandlers = (activeCall) => {
-    if (!activeCall) return;
-    activeCall.on('close', () => {
-      localStreamRef.current?.getTracks().forEach(track => track.stop());
-      resetCallState();
-    });
-    activeCall.on('error', () => {
-      localStreamRef.current?.getTracks().forEach(track => track.stop());
-      resetCallState();
-    });
+  const stopLocalTracks = () => {
+    localTracksRef.current.forEach((track) => track.stop());
+    localTracksRef.current = [];
   };
 
-  useEffect(() => {
-    if (externalPeer) {
-      setPeer(externalPeer);
-      
-      const handleIncomingCall = (incomingCall) => {
-        // Store incoming call; answer only after explicit user action
-        setIncomingCall(incomingCall);
-      };
-      
-      externalPeer.on('call', handleIncomingCall);
-      
-      return () => {
-        externalPeer.off('call', handleIncomingCall);
-        localStreamRef.current?.getTracks().forEach(track => track.stop());
-      };
+  const disconnectRoom = () => {
+    if (roomRef.current) {
+      roomRef.current.disconnect();
+      roomRef.current = null;
     }
-  }, [externalPeer]);
+  };
 
-  const startCall = async (remotePeerId) => {
-    try {
-      if (!peer) {
-        throw new Error('Peer connection not ready. Please wait and try again.');
-      }
-      
-      const result = await requestVideoCall(connectionId, recipientId);
-      setTokenBalance(result.new_balance);
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localStreamRef.current = stream;
-      
-      const outgoingCall = peer.call(remotePeerId, stream);
-      
-      outgoingCall.on('stream', (remoteStream) => {
-        setRemoteStream(remoteStream);
+  const cleanupRoom = () => {
+    stopLocalTracks();
+    disconnectRoom();
+    remoteStreamRef.current = new MediaStream();
+    resetCallState();
+  };
+
+  const syncRemoteStream = () => {
+    const tracks = remoteStreamRef.current.getTracks();
+    if (tracks.length === 0) {
+      setRemoteStream(null);
+      return;
+    }
+    setRemoteStream(new MediaStream(tracks));
+  };
+
+  const attachRoomHandlers = (room) => {
+    room.on(RoomEvent.TrackSubscribed, (track) => {
+      if (track.kind === Track.Kind.Video || track.kind === Track.Kind.Audio) {
+        remoteStreamRef.current.addTrack(track.mediaStreamTrack);
+        syncRemoteStream();
+        setIncomingCall(true);
         setIsCallActive(true);
-      });
-      attachCallHandlers(outgoingCall);
-      
-      setCall(outgoingCall);
-      return result;
+      }
+    });
+
+    room.on(RoomEvent.TrackUnsubscribed, (track) => {
+      if (track.kind === Track.Kind.Video || track.kind === Track.Kind.Audio) {
+        remoteStreamRef.current.removeTrack(track.mediaStreamTrack);
+        syncRemoteStream();
+      }
+    });
+
+    room.on(RoomEvent.ParticipantConnected, () => {
+      setIncomingCall(true);
+    });
+
+    room.on(RoomEvent.ParticipantDisconnected, () => {
+      if (room.remoteParticipants.size === 0) {
+        setIncomingCall(false);
+      }
+    });
+
+    room.on(RoomEvent.Disconnected, () => {
+      cleanupRoom();
+    });
+  };
+
+  const connectToRoom = async () => {
+    if (roomRef.current) {
+      return roomRef.current;
+    }
+
+    if (!connectionId) {
+      throw new Error('Missing connection ID.');
+    }
+
+    const { token, url } = await requestLiveKitToken({
+      room_id: connectionId,
+      room_type: 'connection',
+      name: userId ? `user-${userId}` : undefined
+    });
+
+    const room = new Room({ adaptiveStream: true, dynacast: true });
+    attachRoomHandlers(room);
+    await room.connect(url, token);
+    roomRef.current = room;
+    return room;
+  };
+
+  const startCall = async () => {
+    try {
+      const room = await connectToRoom();
+      const tracks = await createLocalTracks({ audio: true, video: true });
+      localTracksRef.current = tracks;
+      tracks.forEach((track) => room.localParticipant.publishTrack(track));
+      setLocalStream(new MediaStream(tracks.map((track) => track.mediaStreamTrack)));
+      setIsCallActive(true);
+      return null;
     } catch (error) {
       console.error('Failed to start call:', error);
       throw error;
@@ -77,20 +117,13 @@ export const useVideoCall = (userId, connectionId, recipientId, externalPeer = n
   };
 
   const answerCall = async () => {
-    if (!incomingCall) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localStreamRef.current = stream;
-      incomingCall.answer(stream);
-      
-      incomingCall.on('stream', (remoteStream) => {
-        setRemoteStream(remoteStream);
-        setIsCallActive(true);
-      });
-      attachCallHandlers(incomingCall);
-      
-      setCall(incomingCall);
-      setIncomingCall(null);
+      const room = await connectToRoom();
+      const tracks = await createLocalTracks({ audio: true, video: true });
+      localTracksRef.current = tracks;
+      tracks.forEach((track) => room.localParticipant.publishTrack(track));
+      setLocalStream(new MediaStream(tracks.map((track) => track.mediaStreamTrack)));
+      setIsCallActive(true);
     } catch (error) {
       console.error('Failed to answer call:', error);
       throw error;
@@ -98,17 +131,21 @@ export const useVideoCall = (userId, connectionId, recipientId, externalPeer = n
   };
 
   const endCall = () => {
-    call?.close();
-    localStreamRef.current?.getTracks().forEach(track => track.stop());
-    resetCallState();
+    cleanupRoom();
   };
+
+  useEffect(() => {
+    return () => {
+      cleanupRoom();
+    };
+  }, []);
 
   return {
     startCall,
     answerCall,
     endCall,
     isCallActive,
-    localStream: localStreamRef.current,
+    localStream,
     remoteStream,
     tokenBalance,
     incomingCall

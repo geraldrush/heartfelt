@@ -20,7 +20,6 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import Toast from '../components/Toast.jsx';
 import VideoCall from '../components/VideoCall.jsx';
 import { isTokenExpiringSoon } from '../utils/auth.js';
-import { getPeerConfig } from '../utils/peer.js';
 
 // Connection Status Banner Component
 const ConnectionStatusBanner = ({ connectionState, isPolling, connectionQuality, averageLatency, retryCount, onReconnect }) => {
@@ -201,8 +200,6 @@ const Chat = () => {
   const [videoCallInvitation, setVideoCallInvitation] = useState(null);
   const [isIncomingCall, setIsIncomingCall] = useState(false);
   const [toast, setToast] = useState(null);
-  const [peerReady, setPeerReady] = useState(false);
-  const peerRef = useRef(null);
   const giftOptions = [5, 10, 20, 50];
 
   const listRef = useRef(null);
@@ -464,35 +461,6 @@ const Chat = () => {
     loadMessages({ reset: true });
     loadTokenRequests();
     getTokenBalance().then(data => setTokenBalance(data.balance));
-    
-    // Initialize PeerJS connection when chat opens
-    if (user?.id && !peerRef.current) {
-      import('peerjs').then(({ default: Peer }) => {
-        const peerConfig = getPeerConfig();
-        const peer = new Peer(user.id, {
-          ...peerConfig
-        });
-        
-        peer.on('open', () => {
-          console.log('Peer connected:', user.id);
-          setPeerReady(true);
-        });
-        
-        peer.on('error', (error) => {
-          console.error('Peer error:', error);
-        });
-        
-        peerRef.current = peer;
-      });
-    }
-    
-    return () => {
-      if (peerRef.current) {
-        peerRef.current.destroy();
-        peerRef.current = null;
-        setPeerReady(false);
-      }
-    };
   }, [connectionId, user?.id]);
 
   useEffect(() => {
@@ -1042,13 +1010,11 @@ const Chat = () => {
       )}
 
       {/* Video Call Component */}
-      {showVideoCall && peerRef.current && (
+      {showVideoCall && (
         <VideoCall
           userId={user?.id}
           connectionId={connectionId}
-          remotePeerId={otherUserId}
           tokenBalance={tokenBalance}
-          peer={peerRef.current}
             isIncoming={isIncomingCall}
             autoStart={!isIncomingCall}
             autoAnswer={isIncomingCall}

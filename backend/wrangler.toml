@@ -39,6 +39,7 @@ PAYFAST_LIVE_URL = "https://www.payfast.co.za/eng/process"
 PAYFAST_REFUND_SECRET = "CHANGE_ME"
 VAPID_PUBLIC_KEY = "BP4Gu7ylk1yYktksVycMP0kbHOpRt0NgbeZpGK_ppJovxrj04pd9CoPReSi4lQj5b2YZlWwi6qSjV_bLw5YS5d0"
 VAPID_SUBJECT = "mailto:support@afrodate.co.za"
+LIVEKIT_URL = "https://live.afrodate.co.za"
 
 
 [ai]

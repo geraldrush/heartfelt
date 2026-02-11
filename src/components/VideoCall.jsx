@@ -4,10 +4,8 @@ import { useVideoCall } from '../hooks/useVideoCall';
 const VideoCall = ({
   userId,
   connectionId,
-  remotePeerId,
   onClose,
   tokenBalance: initialBalance,
-  peer,
   isIncoming = false,
   messages = [],
   onSendMessage,
@@ -17,7 +15,8 @@ const VideoCall = ({
   autoStart = false,
   autoAnswer = false
 }) => {
-  const { startCall, answerCall, endCall, isCallActive, localStream, remoteStream, tokenBalance, incomingCall } = useVideoCall(userId, connectionId, remotePeerId, peer);
+  const { startCall, answerCall, endCall, isCallActive, localStream, remoteStream, tokenBalance, incomingCall } = useVideoCall(userId, connectionId);
+  const displayBalance = tokenBalance ?? initialBalance;
   const [error, setError] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
   const [permissionError, setPermissionError] = useState(null);
@@ -50,7 +49,7 @@ const VideoCall = ({
       return;
     }
     if (isIncoming) {
-      if (autoAnswer && incomingCall) {
+      if (autoAnswer) {
         handleAnswerCall();
       }
       return;
@@ -144,9 +143,9 @@ const VideoCall = ({
       />
       
       {/* Token balance */}
-      {tokenBalance !== null && (
+      {displayBalance !== null && (
         <div className="absolute top-4 left-4 bg-black/50 text-white px-4 py-2 rounded-full text-sm">
-          🪙 {tokenBalance} tokens
+          🪙 {displayBalance} tokens
         </div>
       )}
       

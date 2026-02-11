@@ -10,6 +10,7 @@ import paymentRoutes from './routes/payments.js';
 import notificationRoutes from './routes/notifications.js';
 import liveRoutes from './routes/live.js';
 import socialRoutes from './routes/social.js';
+import livekitRoutes from './routes/livekit.js';
 import { getAllowedOrigins, isOriginAllowed, isRefererAllowed } from './utils/cors.js';
 
 const app = new Hono();
@@ -101,6 +102,7 @@ app.route('/api/payments', paymentRoutes);
 app.route('/api/notifications', notificationRoutes);
 app.route('/api/live', liveRoutes);
 app.route('/api/social', socialRoutes);
+app.route('/api/livekit', livekitRoutes);
 
 export default app;
 
