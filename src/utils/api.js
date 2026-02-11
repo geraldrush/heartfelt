@@ -241,8 +241,27 @@ export const getUnreadNotificationCount = () =>
   apiClient.get('/api/notifications/unread-count');
 export const requestVideoCall = (connectionId, recipientId) =>
   apiClient.post('/api/chat/video-call-request', { connection_id: connectionId, recipient_id: recipientId });
-export const requestLiveKitToken = ({ room_id, room_type, name } = {}) =>
-  apiClient.post('/api/livekit/token', { room_id, room_type, name });
+export const requestLiveKitToken = async ({ room_id, room_type, name } = {}) => {
+  const response = await apiClient.post('/api/livekit/token', { room_id, room_type, name });
+
+  // Normalize token shape if backend/client wraps it
+  if (response && typeof response.token !== 'string') {
+    const nestedToken = response?.token?.token;
+    if (typeof nestedToken === 'string') {
+      return {
+        ...response,
+        token: nestedToken,
+        url: response?.url ?? response?.token?.url
+      };
+    }
+  }
+
+  if (!response || typeof response.token !== 'string') {
+    throw new Error('Invalid LiveKit token response');
+  }
+
+  return response;
+};
 
 export const likeUser = (userId) => apiClient.post('/api/social/like', { user_id: userId });
 export const unlikeUser = (userId) => apiClient.post('/api/social/unlike', { user_id: userId });

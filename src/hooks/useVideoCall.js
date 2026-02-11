@@ -108,6 +108,9 @@ export const useVideoCall = (userId, connectionId) => {
       throw error;
     }
     const { token, url } = tokenResponse;
+    if (typeof token !== 'string') {
+      throw new Error('Invalid LiveKit token');
+    }
 
     const room = new Room({ adaptiveStream: true, dynacast: true });
     attachRoomHandlers(room);

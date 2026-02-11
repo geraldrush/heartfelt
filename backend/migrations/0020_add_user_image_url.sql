@@ -1,1 +1,3 @@
-ALTER TABLE users ADD COLUMN image_url TEXT;
+-- No-op migration.
+-- Column already exists in this database.
+SELECT 1;
