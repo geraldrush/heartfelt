@@ -74,6 +74,11 @@ async function request(method, path, data) {
     throw error;
   }
 
+  // Invalidate cache on any mutating request to avoid stale UI
+  if (method !== 'GET') {
+    cache.clear();
+  }
+
   // Cache successful GET requests
   if (method === 'GET' && !data) {
     const cacheKey = `${method}:${path}`;

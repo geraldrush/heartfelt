@@ -24,55 +24,82 @@ livekit.post('/token', authMiddleware, async (c) => {
   const url = env.LIVEKIT_URL;
 
   if (!apiKey || !apiSecret || !url) {
-    return c.json({ error: 'LiveKit not configured' }, 500);
+    console.error('[LiveKit] Missing configuration', {
+      hasApiKey: Boolean(apiKey),
+      hasApiSecret: Boolean(apiSecret),
+      hasUrl: Boolean(url),
+    });
+    return c.json({ error: 'LiveKit not configured', code: 'LIVEKIT_CONFIG_MISSING' }, 500);
   }
 
-  const userId = c.get('userId');
-  const body = await c.req.json().catch(() => ({}));
-  const roomId = body.room_id;
-  const roomType = body.room_type || 'connection';
-  const name = body.name || `user-${userId}`;
+  try {
+    const userId = c.get('userId');
+    const body = await c.req.json().catch(() => ({}));
+    const roomId = body.room_id;
+    const roomType = body.room_type || 'connection';
+    const name = body.name || `user-${userId}`;
 
-  if (!roomId) {
-    return c.json({ error: 'Missing room_id' }, 400);
-  }
-
-  const db = getDb(c);
-
-  if (roomType === 'connection') {
-    const verification = await verifyUserInConnection(db, roomId, userId);
-    if (!verification.valid) {
-      return c.json({ error: 'Unauthorized' }, 403);
+    if (!roomId) {
+      return c.json({ error: 'Missing room_id' }, 400);
     }
-  }
 
-  if (roomType === 'live') {
-    const liveRoom = await db
-      .prepare('SELECT host_id, status FROM live_rooms WHERE id = ?')
-      .bind(roomId)
-      .first();
-    if (!liveRoom || liveRoom.status !== 'live') {
-      return c.json({ error: 'Live room not available' }, 404);
+    const db = getDb(c);
+
+    if (roomType === 'connection') {
+      const verification = await verifyUserInConnection(db, roomId, userId);
+      if (!verification.valid) {
+        console.warn('[LiveKit] Unauthorized connection token request', {
+          userId,
+          roomId,
+          reason: verification?.reason,
+        });
+        return c.json({ error: 'Unauthorized', code: verification?.reason }, 403);
+      }
     }
-    const participant = await db
-      .prepare('SELECT 1 FROM live_room_participants WHERE room_id = ? AND user_id = ? AND left_at IS NULL')
-      .bind(roomId, userId)
-      .first();
-    if (!participant && liveRoom.host_id !== userId) {
-      return c.json({ error: 'Unauthorized' }, 403);
+
+    if (roomType === 'live') {
+      const liveRoom = await db
+        .prepare('SELECT host_id, status FROM live_rooms WHERE id = ?')
+        .bind(roomId)
+        .first();
+      if (!liveRoom || liveRoom.status !== 'live') {
+        console.warn('[LiveKit] Live room not available', {
+          userId,
+          roomId,
+          status: liveRoom?.status,
+        });
+        return c.json({ error: 'Live room not available', code: 'LIVE_ROOM_NOT_LIVE' }, 404);
+      }
+      const participant = await db
+        .prepare('SELECT 1 FROM live_room_participants WHERE room_id = ? AND user_id = ? AND left_at IS NULL')
+        .bind(roomId, userId)
+        .first();
+      if (!participant && liveRoom.host_id !== userId) {
+        console.warn('[LiveKit] Unauthorized live room token request', {
+          userId,
+          roomId,
+        });
+        return c.json({ error: 'Unauthorized', code: 'LIVE_ROOM_UNAUTHORIZED' }, 403);
+      }
     }
+
+    const token = buildToken({
+      apiKey,
+      apiSecret,
+      identity: userId,
+      name,
+      room: roomId,
+      grants: {}
+    });
+
+    return c.json({ token, url });
+  } catch (error) {
+    console.error('[LiveKit] Token generation failed', {
+      message: error?.message,
+      stack: error?.stack,
+    });
+    return c.json({ error: 'LiveKit token error', code: 'LIVEKIT_TOKEN_ERROR' }, 500);
   }
-
-  const token = buildToken({
-    apiKey,
-    apiSecret,
-    identity: userId,
-    name,
-    room: roomId,
-    grants: {}
-  });
-
-  return c.json({ token, url });
 });
 
 export default livekit;

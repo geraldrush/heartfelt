@@ -57,28 +57,36 @@ connections.post('/request', authMiddleware, connectionRequestRateLimit, async (
   const requestId = generateId();
   const transactionId = generateId();
   const message = parsed.data.message || 'Connection request sent';
+  const timestamp = new Date().toISOString();
+
+  const balanceUpdate = await db
+    .prepare(
+      'UPDATE users SET token_balance = token_balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND token_balance >= ? RETURNING token_balance'
+    )
+    .bind(cost, senderId, cost)
+    .first();
+
+  if (!balanceUpdate || balanceUpdate.token_balance == null) {
+    return c.json({ error: 'Insufficient tokens.' }, 402);
+  }
 
   try {
     await db.batch([
-      db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ? AND token_balance >= ?')
-        .bind(cost, senderId, cost),
       db.prepare('INSERT INTO connection_requests (id, sender_id, receiver_id, status, message, expires_at) VALUES (?, ?, ?, ?, ?, ?)')
         .bind(requestId, senderId, receiverId, 'pending', message, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
-      db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
-        .bind(transactionId, senderId, -cost, 'connection_request_sent', receiverId, requestId, senderId, message, new Date().toISOString())
+      db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(transactionId, senderId, -cost, 'connection_request_sent', receiverId, requestId, balanceUpdate.token_balance, message, timestamp)
     ]);
   } catch (error) {
+    await db
+      .prepare('UPDATE users SET token_balance = token_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .bind(cost, senderId)
+      .run();
     if (error?.message?.includes('SQLITE_CONSTRAINT')) {
       return c.json({ error: 'Connection request already pending.' }, 409);
     }
     console.error('Connection request error:', error);
     return c.json({ error: 'Database error occurred.' }, 500);
-  }
-
-  const updatedUser = await db.prepare('SELECT token_balance FROM users WHERE id = ?').bind(senderId).first();
-  
-  if (!updatedUser || updatedUser.token_balance < 0) {
-    return c.json({ error: 'Insufficient tokens.' }, 402);
   }
 
   // Create notification for receiver
@@ -97,7 +105,7 @@ connections.post('/request', authMiddleware, connectionRequestRateLimit, async (
   return c.json({
     success: true,
     request_id: requestId,
-    new_balance: updatedUser.token_balance,
+    new_balance: balanceUpdate.token_balance,
   });
 });
 
@@ -141,70 +149,78 @@ connections.post('/accept', authMiddleware, async (c) => {
   const cost = 3;
   const connectionId = generateId();
   const transactionId = generateId();
+  const existingConnection = await db
+    .prepare(
+      `SELECT 1 FROM connections
+       WHERE status = 'active'
+         AND ((user_id_1 = ? AND user_id_2 = ?) OR (user_id_1 = ? AND user_id_2 = ?))
+       LIMIT 1`
+    )
+    .bind(request.sender_id, userId, userId, request.sender_id)
+    .first();
 
-  // Pre-batch balance check
-  const balanceRow = await db.prepare('SELECT token_balance FROM users WHERE id = ?').bind(userId).first();
-  if (!balanceRow || balanceRow.token_balance < 3) {
+  if (existingConnection) {
+    return c.json({ error: 'Connection already exists.' }, 409);
+  }
+
+  const balanceUpdate = await db
+    .prepare(
+      'UPDATE users SET token_balance = token_balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND token_balance >= ? RETURNING token_balance'
+    )
+    .bind(cost, userId, cost)
+    .first();
+
+  if (!balanceUpdate || balanceUpdate.token_balance == null) {
     return c.json({ error: 'Insufficient tokens.' }, 402);
   }
 
   try {
-    // Verify connection was actually created
-    const createdConnection = await db.prepare(
-      'SELECT * FROM connections WHERE id = ?'
-    ).bind(connectionId).first();
-    
-    if (createdConnection) {
-      console.error('[Connections] Accept: Connection already exists, skipping batch operation');
-      return c.json({ error: 'Connection already exists' }, 409);
+    const acceptedRequest = await db
+      .prepare(
+        'UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND receiver_id = ? RETURNING id'
+      )
+      .bind('accepted', request.id, 'pending', userId)
+      .first();
+
+    if (!acceptedRequest) {
+      await db
+        .prepare('UPDATE users SET token_balance = token_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+        .bind(cost, userId)
+        .run();
+      return c.json({ error: 'Request is no longer pending.' }, 400);
     }
 
-    const result = await db.batch([
-      db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ?')
-        .bind(cost, userId),
-      db.prepare('UPDATE connection_requests SET status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ? AND receiver_id = ?')
-        .bind('accepted', request.id, 'pending', userId),
-      db.prepare('INSERT INTO connections (id, user_id_1, user_id_2, status) VALUES (?, ?, ?, ?)')
-        .bind(connectionId, request.sender_id, userId, 'active'),
-      db.prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT token_balance FROM users WHERE id = ?), ?, ?)')
-        .bind(transactionId, userId, -cost, 'connection_request_accepted', request.sender_id, request.id, userId, 'Connection request accepted', new Date().toISOString())
-    ]);
+    const [userId1, userId2] = request.sender_id < userId
+      ? [request.sender_id, userId]
+      : [userId, request.sender_id];
 
-    // Verify all operations succeeded
-    const finalConnection = await db.prepare(
-      'SELECT * FROM connections WHERE id = ?'
-    ).bind(connectionId).first();
-    
-    const updatedRequest = await db.prepare(
-      'SELECT status FROM connection_requests WHERE id = ?'
-    ).bind(request.id).first();
-    
-    if (!finalConnection || updatedRequest?.status !== 'accepted') {
-      console.error('[Connections] Accept: Batch operation failed - connection or request status not updated');
-      return c.json({ error: 'Failed to create connection' }, 500);
-    }
-    
-    console.log(`[Connections] Accept: Connection created successfully: ${connectionId}`);
-    console.log(`[Connections] Accept: Connection details:`, {
-      id: finalConnection.id,
-      user_id_1: finalConnection.user_id_1,
-      user_id_2: finalConnection.user_id_2,
-      status: finalConnection.status
-    });
+    await db
+      .prepare('INSERT INTO connections (id, user_id_1, user_id_2, status) VALUES (?, ?, ?, ?)')
+      .bind(connectionId, userId1, userId2, 'active')
+      .run();
 
-    const updatedUser = await db.prepare('SELECT token_balance FROM users WHERE id = ?').bind(userId).first();
-    
-    if (!updatedUser || updatedUser.token_balance < 0) {
-      console.log('Accept: Insufficient tokens:', updatedUser?.token_balance);
-      return c.json({ error: 'Insufficient tokens.' }, 402);
-    }
+    await db
+      .prepare('INSERT INTO token_transactions (id, user_id, amount, transaction_type, related_user_id, related_entity_id, balance_after, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(transactionId, userId, -cost, 'connection_request_accepted', request.sender_id, request.id, balanceUpdate.token_balance, 'Connection request accepted', new Date().toISOString())
+      .run();
 
     return c.json({
       success: true,
       connection_id: connectionId,
-      new_balance: updatedUser.token_balance,
+      new_balance: balanceUpdate.token_balance,
     });
   } catch (error) {
+    await db
+      .prepare('UPDATE users SET token_balance = token_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .bind(cost, userId)
+      .run();
+    await db
+      .prepare('UPDATE connection_requests SET status = ?, responded_at = NULL WHERE id = ? AND status = ?')
+      .bind('pending', request.id, 'accepted')
+      .run();
+    if (error?.message?.includes('SQLITE_CONSTRAINT')) {
+      return c.json({ error: 'Connection already exists.' }, 409);
+    }
     console.error('Accept connection error:', error);
     return c.json({ error: 'Database error occurred.' }, 500);
   }

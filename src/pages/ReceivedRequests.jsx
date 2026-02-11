@@ -54,7 +54,9 @@ const ReceivedRequests = () => {
     setError('');
     try {
       await acceptConnectionRequest(requestId);
-      await Promise.all([loadRequests(), refreshBalance()]);
+      setRequests((prev) => prev.filter((request) => request.id !== requestId));
+      await refreshBalance();
+      loadRequests();
     } catch (err) {
       setError(err.message || 'Failed to accept request.');
     } finally {
@@ -72,7 +74,9 @@ const ReceivedRequests = () => {
     setError('');
     try {
       await rejectConnectionRequest(requestId);
-      await Promise.all([loadRequests(), refreshBalance()]);
+      setRequests((prev) => prev.filter((request) => request.id !== requestId));
+      await refreshBalance();
+      loadRequests();
     } catch (err) {
       setError(err.message || 'Failed to reject request.');
     } finally {
