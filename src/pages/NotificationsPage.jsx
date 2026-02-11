@@ -6,7 +6,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import StickyNav from '../components/StickyNav';
 
 const NotificationsPage = () => {
-  const { notifications, loading, markAsRead } = useNotifications();
+  const { notifications, loading, markAsRead, markAllAsRead, unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   const handleNotificationClick = (notification) => {
@@ -43,6 +43,16 @@ const NotificationsPage = () => {
       <StickyNav title="Notifications" showTokens={false} />
       
       <div className="max-w-2xl mx-auto p-4 pt-6">
+        <div className="flex items-center justify-end mb-4">
+          <button
+            type="button"
+            onClick={() => markAllAsRead()}
+            className="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white/80 border border-gray-200 rounded-full hover:bg-white"
+            disabled={unreadCount === 0}
+          >
+            Clear all
+          </button>
+        </div>
         
         {notifications.length === 0 ? (
           <div className="text-center py-12">

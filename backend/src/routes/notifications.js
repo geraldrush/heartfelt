@@ -90,6 +90,24 @@ notifications.post('/mark-read-by', authMiddleware, async (c) => {
   return c.json({ success: true });
 });
 
+// Mark all notifications as read
+notifications.post('/mark-all-read', authMiddleware, async (c) => {
+  const db = getDb(c);
+  const userId = c.get('userId');
+
+  await db
+    .prepare(
+      `UPDATE notifications
+       SET read_at = datetime('now')
+       WHERE user_id = ?
+         AND read_at IS NULL`
+    )
+    .bind(userId)
+    .run();
+
+  return c.json({ success: true });
+});
+
 // Get VAPID public key for push subscription
 notifications.get('/push/public-key', authMiddleware, async (c) => {
   return c.json({ publicKey: c.env.VAPID_PUBLIC_KEY || null });

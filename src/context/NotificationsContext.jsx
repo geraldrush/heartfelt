@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { getNotifications, getUnreadNotificationCount, markNotificationAsRead } from '../utils/api';
+import { getNotifications, getUnreadNotificationCount, markAllNotificationsRead, markNotificationAsRead } from '../utils/api';
 
 const NotificationsContext = createContext(null);
 
@@ -41,6 +41,18 @@ export const NotificationsProvider = ({ children }) => {
     }
   }, []);
 
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await markAllNotificationsRead();
+      setNotifications(prev =>
+        prev.map(n => n.read_at ? n : { ...n, read_at: new Date().toISOString() })
+      );
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  }, []);
+
   const addNotification = useCallback((notification) => {
     setNotifications(prev => [notification, ...prev]);
     if (!notification.read_at) {
@@ -55,8 +67,9 @@ export const NotificationsProvider = ({ children }) => {
     fetchNotifications,
     fetchUnreadCount,
     markAsRead,
+    markAllAsRead,
     addNotification,
-  }), [notifications, unreadCount, loading, fetchNotifications, fetchUnreadCount, markAsRead, addNotification]);
+  }), [notifications, unreadCount, loading, fetchNotifications, fetchUnreadCount, markAsRead, markAllAsRead, addNotification]);
 
   return (
     <NotificationsContext.Provider value={value}>

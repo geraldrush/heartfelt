@@ -3,7 +3,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 
 export const NotificationBell = () => {
-  const { notifications, unreadCount, markAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleNotificationClick = (notification) => {
@@ -53,8 +53,16 @@ export const NotificationBell = () => {
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
           <div className="absolute right-0 z-20 w-80 mt-2 bg-white rounded-lg shadow-lg max-h-96 overflow-y-auto">
-            <div className="p-4 border-b">
+            <div className="p-4 border-b flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Notifications</h3>
+              <button
+                type="button"
+                onClick={() => markAllAsRead()}
+                className="text-xs font-semibold text-gray-600 hover:text-gray-900"
+                disabled={unreadCount === 0}
+              >
+                Clear all
+              </button>
             </div>
             {notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-500">

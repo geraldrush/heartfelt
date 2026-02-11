@@ -230,6 +230,8 @@ export const markNotificationAsRead = (notificationId) =>
   apiClient.post(`/api/notifications/${notificationId}/read`);
 export const markNotificationsReadBy = ({ notification_type, connection_id = null }) =>
   apiClient.post('/api/notifications/mark-read-by', { notification_type, connection_id });
+export const markAllNotificationsRead = () =>
+  apiClient.post('/api/notifications/mark-all-read');
 export const getUnreadNotificationCount = () =>
   apiClient.get('/api/notifications/unread-count');
 export const requestVideoCall = (connectionId, recipientId) =>
