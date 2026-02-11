@@ -19,6 +19,17 @@ Cloudflare Workers backend with Durable Objects for real-time chat functionality
   - Obtain from Google Cloud Console
   - Set in `wrangler.toml` or Workers dashboard
 
+- **LIVEKIT_API_KEY**: LiveKit server API key
+  - Obtain from your LiveKit server admin
+  - Set via: `wrangler secret put LIVEKIT_API_KEY`
+
+- **LIVEKIT_API_SECRET**: LiveKit server API secret
+  - Obtain from your LiveKit server admin
+  - Set via: `wrangler secret put LIVEKIT_API_SECRET`
+
+- **LIVEKIT_URL**: LiveKit server URL
+  - Set in `wrangler.toml` or Workers dashboard
+
 ### Local Development
 
 Create `.dev.vars` file in backend directory:
@@ -27,6 +38,9 @@ Create `.dev.vars` file in backend directory:
 JWT_SECRET=<generate-with-openssl-rand-base64-32>
 CORS_ORIGIN=http://localhost:5173
 GOOGLE_CLIENT_ID=<your-google-client-id>
+LIVEKIT_API_KEY=<your-livekit-api-key>
+LIVEKIT_API_SECRET=<your-livekit-api-secret>
+LIVEKIT_URL=https://your-livekit-server
 ```
 
 ### Security Notes

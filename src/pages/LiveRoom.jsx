@@ -24,6 +24,7 @@ const LiveRoom = () => {
   const [viewerCount, setViewerCount] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
   const [joinInProgress, setJoinInProgress] = useState(false);
+  const [livekitUnavailable, setLivekitUnavailable] = useState(false);
 
   const roomRef = useRef(null);
   const localTracksRef = useRef([]);
@@ -167,11 +168,24 @@ const LiveRoom = () => {
     if (roomRef.current) {
       return roomRef.current;
     }
-    const { token, url } = await requestLiveKitToken({
-      room_id: roomId,
-      room_type: 'live',
-      name: user?.full_name || (user?.id ? `user-${user.id}` : undefined)
-    });
+    if (livekitUnavailable) {
+      throw new Error('Live video is temporarily unavailable. Please try again later.');
+    }
+    let tokenResponse;
+    try {
+      tokenResponse = await requestLiveKitToken({
+        room_id: roomId,
+        room_type: 'live',
+        name: user?.full_name || (user?.id ? `user-${user.id}` : undefined)
+      });
+    } catch (err) {
+      if (err?.message === 'LiveKit not configured') {
+        setLivekitUnavailable(true);
+        throw new Error('Live video is temporarily unavailable. Please try again later.');
+      }
+      throw err;
+    }
+    const { token, url } = tokenResponse;
     const room = new Room({ adaptiveStream: true, dynacast: true });
     attachRoomHandlers(room);
     await room.connect(url, token);
@@ -181,6 +195,10 @@ const LiveRoom = () => {
 
   const handleStartLive = async () => {
     try {
+      if (livekitUnavailable) {
+        setError('Live video is temporarily unavailable. Please try again later.');
+        return;
+      }
       const room = await connectLiveKit();
       const tracks = await createLocalTracks({ audio: true, video: true });
       localTracksRef.current = tracks;
@@ -196,6 +214,10 @@ const LiveRoom = () => {
     if (isHost || joinInProgress) return;
     setJoinInProgress(true);
     try {
+      if (livekitUnavailable) {
+        setError('Live video is temporarily unavailable. Please try again later.');
+        return;
+      }
       if (!hasJoined) {
         const joinResult = await joinLiveRoom(roomId);
         if (joinResult?.success) {
@@ -324,7 +346,8 @@ const LiveRoom = () => {
           <button
             type="button"
             onClick={handleStartLive}
-            className="premium-button"
+            className="premium-button disabled:opacity-60"
+            disabled={livekitUnavailable}
           >
             Start Live
           </button>
@@ -336,7 +359,8 @@ const LiveRoom = () => {
           <button
             type="button"
             onClick={handleJoinLive}
-            className="rounded-full text-white px-8 py-4 text-lg font-bold hover:scale-105 transition-transform cursor-pointer"
+            className="rounded-full text-white px-8 py-4 text-lg font-bold hover:scale-105 transition-transform cursor-pointer disabled:opacity-60"
+            disabled={livekitUnavailable}
             style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
           >
             Join Live

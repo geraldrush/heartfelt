@@ -11,6 +11,7 @@ export const useVideoCall = (userId, connectionId) => {
   const [remoteStream, setRemoteStream] = useState(null);
   const [localStream, setLocalStream] = useState(null);
   const [tokenBalance, setTokenBalance] = useState(null);
+  const [livekitUnavailable, setLivekitUnavailable] = useState(false);
 
   const resetCallState = () => {
     setIncomingCall(false);
@@ -84,15 +85,29 @@ export const useVideoCall = (userId, connectionId) => {
       return roomRef.current;
     }
 
+    if (livekitUnavailable) {
+      throw new Error('Live video is temporarily unavailable. Please try again later.');
+    }
+
     if (!connectionId) {
       throw new Error('Missing connection ID.');
     }
 
-    const { token, url } = await requestLiveKitToken({
-      room_id: connectionId,
-      room_type: 'connection',
-      name: userId ? `user-${userId}` : undefined
-    });
+    let tokenResponse;
+    try {
+      tokenResponse = await requestLiveKitToken({
+        room_id: connectionId,
+        room_type: 'connection',
+        name: userId ? `user-${userId}` : undefined
+      });
+    } catch (error) {
+      if (error?.message === 'LiveKit not configured') {
+        setLivekitUnavailable(true);
+        throw new Error('Live video is temporarily unavailable. Please try again later.');
+      }
+      throw error;
+    }
+    const { token, url } = tokenResponse;
 
     const room = new Room({ adaptiveStream: true, dynacast: true });
     attachRoomHandlers(room);
@@ -148,6 +163,7 @@ export const useVideoCall = (userId, connectionId) => {
     localStream,
     remoteStream,
     tokenBalance,
-    incomingCall
+    incomingCall,
+    livekitUnavailable
   };
 };

@@ -15,7 +15,7 @@ const VideoCall = ({
   autoStart = false,
   autoAnswer = false
 }) => {
-  const { startCall, answerCall, endCall, isCallActive, localStream, remoteStream, tokenBalance, incomingCall } = useVideoCall(userId, connectionId);
+  const { startCall, answerCall, endCall, isCallActive, localStream, remoteStream, tokenBalance, incomingCall, livekitUnavailable } = useVideoCall(userId, connectionId);
   const displayBalance = tokenBalance ?? initialBalance;
   const [error, setError] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
@@ -45,7 +45,7 @@ const VideoCall = ({
   }, [messages, showChat]);
 
   useEffect(() => {
-    if (isCallActive || isStarting) {
+    if (isCallActive || isStarting || livekitUnavailable) {
       return;
     }
     if (isIncoming) {
@@ -57,7 +57,7 @@ const VideoCall = ({
     if (autoStart) {
       handleStartCall();
     }
-  }, [autoAnswer, autoStart, incomingCall, isIncoming, isCallActive, isStarting]);
+  }, [autoAnswer, autoStart, incomingCall, isIncoming, isCallActive, isStarting, livekitUnavailable]);
 
   const requestPermissions = async () => {
     setPermissionError(null);
@@ -160,6 +160,12 @@ const VideoCall = ({
       {error && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg">
           {error}
+        </div>
+      )}
+
+      {livekitUnavailable && !error && (
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg">
+          Live video is temporarily unavailable. Please try again later.
         </div>
       )}
       
