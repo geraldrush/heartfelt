@@ -58,7 +58,7 @@ stories.get('/me', authMiddleware, async (c) => {
       s.story_text,
       s.created_at,
       si.id AS image_id,
-      si.blurred_url AS blurred_image_url
+      si.original_url AS image_url
     FROM stories s
     LEFT JOIN story_images si
       ON si.id = (
@@ -77,8 +77,8 @@ stories.get('/me', authMiddleware, async (c) => {
   }
 
   const origin = new URL(c.req.url).origin;
-  const imageUrl = story.blurred_image_url
-    ? `${origin}/api/stories/${story.story_id}/blurred`
+  const imageUrl = story.image_url
+    ? `${origin}/api/stories/${story.story_id}/image`
     : null;
 
   return c.json({
@@ -638,7 +638,7 @@ stories.get('/feed', authMiddleware, async (c) => {
       END AS is_online,
       stories.story_text,
       stories.created_at,
-      si.blurred_url AS blurred_image_url,
+      si.original_url AS image_url,
       cr_received.id AS request_id,
       CASE WHEN l.id IS NOT NULL THEN 1 ELSE 0 END AS is_liked,
       CASE WHEN f.id IS NOT NULL THEN 1 ELSE 0 END AS is_following,
@@ -670,9 +670,9 @@ stories.get('/feed', authMiddleware, async (c) => {
 
   const origin = new URL(c.req.url).origin;
   const stories = results.map((row) => {
-    const hasImage = Boolean(row.blurred_image_url);
+    const hasImage = Boolean(row.image_url);
     const imageUrl = hasImage
-      ? `${origin}/api/stories/${row.story_id}/blurred`
+      ? `${origin}/api/stories/${row.story_id}/image`
       : null;
     return {
       ...row,
@@ -692,7 +692,7 @@ stories.get('/:storyId/images', async (c) => {
   const db = getDb(c);
   const { results } = await db
     .prepare(
-      'SELECT id, blurred_url, processing_status, created_at FROM story_images WHERE story_id = ? AND processing_status = ?'
+      'SELECT id, original_url, processing_status, created_at FROM story_images WHERE story_id = ? AND processing_status = ?'
     )
     .bind(storyId, 'completed')
     .all();
@@ -700,7 +700,7 @@ stories.get('/:storyId/images', async (c) => {
   const origin = new URL(c.req.url).origin;
   const images = results.map((row) => ({
     id: row.id,
-    blurred_url: `${origin}/api/stories/${storyId}/blurred`,
+    blurred_url: `${origin}/api/stories/${storyId}/image`,
     processing_status: row.processing_status,
     created_at: row.created_at,
   }));
@@ -729,6 +729,37 @@ stories.get('/:storyId/blurred', async (c) => {
   const stored = await c.env.R2_BUCKET.get(image.blurred_url);
   if (!stored) {
     return c.json({ error: 'Image unavailable.', image: image.blurred_url }, 404);
+  }
+
+  const headers = {
+    'Content-Type': stored.httpMetadata?.contentType || 'application/octet-stream',
+    'Cache-Control': 'public, max-age=300',
+  };
+
+  return c.body(stored.body, 200, headers);
+});
+
+stories.get('/:storyId/image', async (c) => {
+  const storyId = c.req.param('storyId');
+  const db = getDb(c);
+  const image = await db
+    .prepare(
+      `SELECT original_url
+       FROM story_images
+       WHERE story_id = ? AND processing_status = 'completed'
+       ORDER BY created_at ASC
+       LIMIT 1`
+    )
+    .bind(storyId)
+    .first();
+
+  if (!image || !image.original_url) {
+    return c.json({ error: 'Image not found.' }, 404);
+  }
+
+  const stored = await c.env.R2_BUCKET.get(image.original_url);
+  if (!stored) {
+    return c.json({ error: 'Image unavailable.', image: image.original_url }, 404);
   }
 
   const headers = {

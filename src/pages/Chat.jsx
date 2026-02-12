@@ -444,14 +444,13 @@ const Chat = () => {
     }
     try {
       await requestVideoCall(connectionId, connection.other_user_id);
-      sendNotification('video_call_request');
       setIsIncomingCall(false);
       setShowVideoCall(true);
       showToast('Video call request sent', 'success');
     } catch (err) {
       showToast(err.message || 'Failed to request video call.');
     }
-  }, [connectionId, connection?.other_user_id, sendNotification, showToast]);
+  }, [connectionId, connection?.other_user_id, showToast]);
 
   useEffect(() => {
     setMessages([]);

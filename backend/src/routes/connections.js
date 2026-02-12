@@ -336,7 +336,7 @@ connections.get('/list', authMiddleware, async (c) => {
   const connections = list.map((item) => ({
     ...item,
     is_online: Boolean(item.is_online),
-    image_url: item.story_id ? `${origin}/api/stories/${item.story_id}/blurred` : null,
+    image_url: item.story_id ? `${origin}/api/stories/${item.story_id}/image` : null,
   }));
   return c.json({ connections });
 });
@@ -385,7 +385,7 @@ connections.get('/profile/:connectionId', authMiddleware, async (c) => {
   let imageUrl = null;
   if (profile.story_id) {
     const origin = new URL(c.req.url).origin;
-    imageUrl = `${origin}/api/stories/${profile.story_id}/blurred`;
+    imageUrl = `${origin}/api/stories/${profile.story_id}/image`;
   }
 
   return c.json({

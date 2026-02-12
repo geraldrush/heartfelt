@@ -45,6 +45,7 @@ export class ChatRoom {
     this.heartbeats = new Map();
     this.messageIds = new Set(); // Track message IDs to prevent duplicates
     this.messageRateLimits = new Map(); // Track message counts per user
+    this.roomTypeCache = new Map(); // connectionId -> 'connection' | 'live'
   }
 
   checkMessageRateLimit(userId) {
@@ -302,7 +303,13 @@ export class ChatRoom {
           this.sendToUser(senderId, { type: 'error', message: 'Message is empty.' });
           return;
         }
-        
+
+        const roomType = await this.getRoomType(connectionId);
+        if (!roomType) {
+          this.sendToUser(senderId, { type: 'error', message: 'Invalid room.' });
+          return;
+        }
+
         // Check rate limit
         const rateLimitResult = this.checkMessageRateLimit(senderId);
         if (!rateLimitResult.allowed) {
@@ -335,15 +342,6 @@ export class ChatRoom {
         }
         
         const sanitizedContent = sanitizeContent(payload.content.trim());
-        
-        await createMessage(this.env.DB, {
-          id: messageId,
-          connection_id: connectionId,
-          sender_id: senderId,
-          content: sanitizedContent,
-          status: 'sent',
-          created_at: createdAt,
-        });
 
         const outgoing = {
           type: 'chat_message',
@@ -355,6 +353,17 @@ export class ChatRoom {
           created_at: createdAt,
         };
 
+        if (roomType === 'connection') {
+          await createMessage(this.env.DB, {
+            id: messageId,
+            connection_id: connectionId,
+            sender_id: senderId,
+            content: sanitizedContent,
+            status: 'sent',
+            created_at: createdAt,
+          });
+        }
+
         this.broadcast(outgoing, senderId);
         this.sendToUser(senderId, {
           type: 'delivery_confirmation',
@@ -363,29 +372,31 @@ export class ChatRoom {
           client_id: sanitizedClientId,
         });
 
-        try {
-          const connection = await getConnectionById(this.env.DB, connectionId);
-          if (connection) {
-            const recipientId = connection.user_id_1 === senderId
-              ? connection.user_id_2
-              : connection.user_id_1;
-            const recipientConnected = this.connections.has(recipientId);
-            if (recipientId && !recipientConnected) {
-              await createNotification(
-                this.env.DB,
-                {
-                  user_id: recipientId,
-                  type: 'message',
-                  title: 'New message',
-                  message: 'You have a new message',
-                  data: { connection_id: connectionId, sender_id: senderId, notification_type: 'message_received' }
-                },
-                this.env
-              );
+        if (roomType === 'connection') {
+          try {
+            const connection = await getConnectionById(this.env.DB, connectionId);
+            if (connection) {
+              const recipientId = connection.user_id_1 === senderId
+                ? connection.user_id_2
+                : connection.user_id_1;
+              const recipientConnected = this.connections.has(recipientId);
+              if (recipientId && !recipientConnected) {
+                await createNotification(
+                  this.env.DB,
+                  {
+                    user_id: recipientId,
+                    type: 'message',
+                    title: 'New message',
+                    message: 'You have a new message',
+                    data: { connection_id: connectionId, sender_id: senderId, notification_type: 'message_received' }
+                  },
+                  this.env
+                );
+              }
             }
+          } catch (error) {
+            console.error('[WS-Server] Failed to create message notification:', error?.message || error);
           }
-        } catch (error) {
-          console.error('[WS-Server] Failed to create message notification:', error?.message || error);
         }
         break;
       }
@@ -401,7 +412,8 @@ export class ChatRoom {
         break;
       }
       case 'delivery_confirmation': {
-        if (payload.id && typeof payload.id === 'string') {
+        const roomType = await this.getRoomType(connectionId);
+        if (roomType === 'connection' && payload.id && typeof payload.id === 'string') {
           await updateMessageStatus(this.env.DB, payload.id, 'delivered');
           this.broadcast(
             { type: 'delivery_confirmation', id: payload.id, status: 'delivered' },
@@ -411,7 +423,8 @@ export class ChatRoom {
         break;
       }
       case 'read_receipt': {
-        if (payload.id && typeof payload.id === 'string') {
+        const roomType = await this.getRoomType(connectionId);
+        if (roomType === 'connection' && payload.id && typeof payload.id === 'string') {
           await updateMessageStatus(this.env.DB, payload.id, 'read');
           this.broadcast(
             { type: 'read_receipt', id: payload.id, status: 'read' },
@@ -447,6 +460,26 @@ export class ChatRoom {
       default:
         this.sendToUser(senderId, { type: 'error', message: 'Unknown message type.' });
     }
+  }
+
+  async getRoomType(connectionId) {
+    if (this.roomTypeCache.has(connectionId)) {
+      return this.roomTypeCache.get(connectionId);
+    }
+    const connection = await getConnectionById(this.env.DB, connectionId);
+    if (connection) {
+      this.roomTypeCache.set(connectionId, 'connection');
+      return 'connection';
+    }
+    const liveRoom = await this.env.DB
+      .prepare('SELECT id FROM live_rooms WHERE id = ?')
+      .bind(connectionId)
+      .first();
+    if (liveRoom) {
+      this.roomTypeCache.set(connectionId, 'live');
+      return 'live';
+    }
+    return null;
   }
 
   sendToUser(userId, message) {
