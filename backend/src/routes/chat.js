@@ -162,6 +162,20 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
 
+    const existing = await db
+      .prepare(
+        `SELECT id FROM notifications
+         WHERE user_id = ?
+           AND read_at IS NULL
+           AND json_extract(data, '$.notification_type') = 'video_call_request'
+           AND json_extract(data, '$.connection_id') = ?
+           AND created_at >= datetime('now', '-2 minutes')
+         LIMIT 1`
+      )
+      .bind(body.recipient_id, body.connection_id)
+      .first();
+
+    if (!existing) {
     try {
       await createNotification(
         db,
@@ -176,6 +190,7 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
       );
     } catch (err) {
       console.error('[Chat] Failed to create video call notification:', err);
+    }
     }
     
     const requestId = generateId();

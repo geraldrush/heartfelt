@@ -112,22 +112,21 @@ stories.post('/upload-image', authMiddleware, async (c) => {
   const body = await c.req.parseBody();
   const originalFile = body?.image_original;
   const blurredFile = body?.image_blurred;
+  const hasBlurredFile = blurredFile && typeof blurredFile !== 'string';
 
   if (
     !originalFile ||
-    !blurredFile ||
-    typeof originalFile === 'string' ||
-    typeof blurredFile === 'string'
+    typeof originalFile === 'string'
   ) {
-    return c.json({ error: 'Original and blurred image files are required.' }, 400);
+    return c.json({ error: 'Original image file is required.' }, 400);
   }
 
   const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
-  if (!allowedTypes.has(originalFile.type) || !allowedTypes.has(blurredFile.type)) {
+  if (!allowedTypes.has(originalFile.type) || (hasBlurredFile && !allowedTypes.has(blurredFile.type))) {
     return c.json({ error: 'Unsupported image type.' }, 400);
   }
 
-  if (originalFile.size > 5 * 1024 * 1024 || blurredFile.size > 5 * 1024 * 1024) {
+  if (originalFile.size > 5 * 1024 * 1024 || (hasBlurredFile && blurredFile.size > 5 * 1024 * 1024)) {
     return c.json({ error: 'Image must be smaller than 5MB.' }, 400);
   }
 
@@ -152,8 +151,8 @@ stories.post('/upload-image', authMiddleware, async (c) => {
     customMetadata: metadata,
   });
 
-  await c.env.R2_BUCKET.put(blurredKey, blurredFile, {
-    httpMetadata: { contentType: blurredFile.type },
+  await c.env.R2_BUCKET.put(blurredKey, hasBlurredFile ? blurredFile : originalFile, {
+    httpMetadata: { contentType: hasBlurredFile ? blurredFile.type : originalFile.type },
     customMetadata: metadata,
   });
 

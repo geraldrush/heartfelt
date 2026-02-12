@@ -20,6 +20,16 @@ export const useVideoCall = (userId, connectionId) => {
     setLocalStream(null);
   };
 
+  const getIceTransportPolicy = () => {
+    if (typeof navigator === 'undefined') return 'all';
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (!conn) return 'all';
+    const isCellular = conn.type === 'cellular';
+    const slowTypes = ['slow-2g', '2g', '3g', '4g'];
+    const isSlow = slowTypes.includes(conn.effectiveType);
+    return (isCellular || isSlow) ? 'relay' : 'all';
+  };
+
   const stopLocalTracks = () => {
     localTracksRef.current.forEach((track) => track.stop());
     localTracksRef.current = [];
@@ -112,9 +122,16 @@ export const useVideoCall = (userId, connectionId) => {
       throw new Error('Invalid LiveKit token');
     }
 
-    const room = new Room({ adaptiveStream: true, dynacast: true });
+    const room = new Room({
+      adaptiveStream: true,
+      dynacast: true,
+      rtcConfig: { iceTransportPolicy: getIceTransportPolicy() }
+    });
     attachRoomHandlers(room);
-    await room.connect(url, token);
+    if (typeof room.prepareConnection === 'function') {
+      await room.prepareConnection(url, token);
+    }
+    await room.connect(url, token, { autoSubscribe: true });
     roomRef.current = room;
     return room;
   };
