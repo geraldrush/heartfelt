@@ -241,6 +241,10 @@ export const getUnreadNotificationCount = () =>
   apiClient.get('/api/notifications/unread-count');
 export const requestVideoCall = (connectionId, recipientId) =>
   apiClient.post('/api/chat/video-call-request', { connection_id: connectionId, recipient_id: recipientId });
+export const respondToVideoCall = (requestId, response) =>
+  apiClient.post('/api/chat/video-call-response', { request_id: requestId, response });
+export const endVideoCall = (requestId, status) =>
+  apiClient.post('/api/chat/video-call-ended', { request_id: requestId, status });
 export const requestLiveKitToken = async ({ room_id, room_type, name } = {}) => {
   const response = await apiClient.post('/api/livekit/token', { room_id, room_type, name });
 

@@ -9,6 +9,8 @@ import {
   getTokenRequests,
   getTokenBalance,
   requestVideoCall,
+  respondToVideoCall,
+  endVideoCall,
   transferTokens,
   refreshToken,
   markNotificationsReadBy,
@@ -179,6 +181,7 @@ const Chat = () => {
   const navigate = useNavigate();
   const connectionId = searchParams.get('connectionId');
   const incomingParam = searchParams.get('incoming');
+  const requestIdParam = searchParams.get('requestId');
   const [connection, setConnection] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -199,12 +202,15 @@ const Chat = () => {
   const [tokenBalance, setTokenBalance] = useState(0);
   const [videoCallInvitation, setVideoCallInvitation] = useState(null);
   const [isIncomingCall, setIsIncomingCall] = useState(false);
+  const [pendingCallRequest, setPendingCallRequest] = useState(null);
+  const [activeCallRequestId, setActiveCallRequestId] = useState(null);
   const [toast, setToast] = useState(null);
   const giftOptions = [5, 10, 20, 50];
 
   const listRef = useRef(null);
   const topSentinelRef = useRef(null);
   const typingTimeout = useRef(null);
+  const callTimeoutRef = useRef(null);
   const messageRefs = useRef(new Map());
   const readSent = useRef(new Set());
 
@@ -297,12 +303,86 @@ const Chat = () => {
     return unique;
   };
 
+  const clearCallTimeout = useCallback(() => {
+    if (callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = null;
+    }
+  }, []);
+
+  const handleCallStatus = useCallback((data) => {
+    if (!data || (data.connection_id && data.connection_id !== connectionId)) {
+      return;
+    }
+    const status = data.status;
+    const requestId = data.request_id;
+    const isRecipient = data.to_user_id === user?.id;
+
+    if (status === 'ringing' && isRecipient) {
+      if (!videoCallInvitation || videoCallInvitation.request_id !== requestId) {
+        setVideoCallInvitation({
+          notification_type: 'video_call_request',
+          request_id: requestId,
+          sender_id: data.from_user_id,
+        });
+        setToast({ message: 'Incoming video call request', type: 'info' });
+      }
+      return;
+    }
+
+    if (status === 'accepted') {
+      if (pendingCallRequest?.requestId === requestId) {
+        clearCallTimeout();
+        setPendingCallRequest(null);
+        setActiveCallRequestId(requestId);
+        setIsIncomingCall(false);
+        setShowVideoCall(true);
+        setToast({ message: 'Call accepted', type: 'success' });
+      }
+      return;
+    }
+
+    if (['declined', 'expired', 'canceled'].includes(status)) {
+      if (pendingCallRequest?.requestId === requestId) {
+        clearCallTimeout();
+        setPendingCallRequest(null);
+        setToast({ message: status === 'expired' ? 'No answer' : 'Call declined', type: 'info' });
+      }
+      if (videoCallInvitation?.request_id === requestId) {
+        clearCallTimeout();
+        setVideoCallInvitation(null);
+      }
+      if (activeCallRequestId === requestId) {
+        setShowVideoCall(false);
+        setActiveCallRequestId(null);
+        setIsIncomingCall(false);
+      }
+      return;
+    }
+
+    if (status === 'ended') {
+      if (activeCallRequestId === requestId) {
+        setShowVideoCall(false);
+        setActiveCallRequestId(null);
+        setIsIncomingCall(false);
+        setToast({ message: 'Call ended', type: 'info' });
+      }
+      if (pendingCallRequest?.requestId === requestId) {
+        clearCallTimeout();
+        setPendingCallRequest(null);
+      }
+      if (videoCallInvitation?.request_id === requestId) {
+        clearCallTimeout();
+        setVideoCallInvitation(null);
+      }
+    }
+  }, [activeCallRequestId, clearCallTimeout, connectionId, pendingCallRequest, user?.id, videoCallInvitation]);
+
   const {
     sendMessage,
     sendTypingIndicator,
     sendReadReceipt,
     sendDeliveryConfirmation,
-    sendNotification,
     connectionState,
     reconnect,
     isPolling,
@@ -347,6 +427,7 @@ const Chat = () => {
         setToast({ message: 'Incoming video call request', type: 'info' });
       }
     },
+    onCallStatus: handleCallStatus,
   });
 
   const loadConnection = async () => {
@@ -443,32 +524,81 @@ const Chat = () => {
       return;
     }
     try {
-      await requestVideoCall(connectionId, connection.other_user_id);
+      const response = await requestVideoCall(connectionId, connection.other_user_id);
+      const requestId = response?.request_id;
+      if (!requestId) {
+        throw new Error('Failed to start call.');
+      }
+      clearCallTimeout();
+      setPendingCallRequest({ requestId, startedAt: Date.now() });
+      setActiveCallRequestId(null);
       setIsIncomingCall(false);
-      setShowVideoCall(true);
-      showToast('Video call request sent', 'success');
+      setShowVideoCall(false);
+      showToast('Calling…', 'info');
     } catch (err) {
       showToast(err.message || 'Failed to request video call.');
     }
-  }, [connectionId, connection?.other_user_id, showToast]);
+  }, [clearCallTimeout, connectionId, connection?.other_user_id, showToast]);
 
   useEffect(() => {
     setMessages([]);
     setOffset(0);
     readSent.current = new Set();
+    clearCallTimeout();
+    setVideoCallInvitation(null);
+    setPendingCallRequest(null);
+    setActiveCallRequestId(null);
+    setShowVideoCall(false);
+    setIsIncomingCall(false);
     loadConnection();
     loadMessages({ reset: true });
     loadTokenRequests();
     getTokenBalance().then(data => setTokenBalance(data.balance));
-  }, [connectionId, user?.id]);
+  }, [clearCallTimeout, connectionId, user?.id]);
 
   useEffect(() => {
     if (!connectionId || !incomingParam) {
       return;
     }
-    setVideoCallInvitation({ notification_type: 'video_call_request' });
+    setVideoCallInvitation({
+      notification_type: 'video_call_request',
+      request_id: requestIdParam || null
+    });
     setSearchParams({ connectionId });
-  }, [connectionId, incomingParam, setSearchParams]);
+  }, [connectionId, incomingParam, requestIdParam, setSearchParams]);
+
+  useEffect(() => {
+    if (!videoCallInvitation?.request_id) {
+      return;
+    }
+    clearCallTimeout();
+    callTimeoutRef.current = setTimeout(async () => {
+      try {
+        await respondToVideoCall(videoCallInvitation.request_id, 'expired');
+        await markNotificationsReadBy({ notification_type: 'video_call_request', connection_id: connectionId });
+      } catch {}
+      setVideoCallInvitation(null);
+      setToast({ message: 'Missed call', type: 'info' });
+    }, 45000);
+
+    return clearCallTimeout;
+  }, [clearCallTimeout, connectionId, videoCallInvitation?.request_id]);
+
+  useEffect(() => {
+    if (!pendingCallRequest?.requestId) {
+      return;
+    }
+    clearCallTimeout();
+    callTimeoutRef.current = setTimeout(async () => {
+      try {
+        await endVideoCall(pendingCallRequest.requestId, 'expired');
+      } catch {}
+      setPendingCallRequest(null);
+      setToast({ message: 'No answer', type: 'info' });
+    }, 45000);
+
+    return clearCallTimeout;
+  }, [clearCallTimeout, pendingCallRequest?.requestId]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -981,11 +1111,19 @@ const Chat = () => {
             <div className="flex gap-3">
               <button
                 onClick={async () => {
+                  const requestId = videoCallInvitation?.request_id || requestIdParam;
+                  if (!requestId) {
+                    setVideoCallInvitation(null);
+                    return;
+                  }
+                  clearCallTimeout();
                   try {
+                    await respondToVideoCall(requestId, 'accepted');
                     await markNotificationsReadBy({ notification_type: 'video_call_request', connection_id: connectionId });
                   } catch {}
                   setVideoCallInvitation(null);
                   setIsIncomingCall(true);
+                  setActiveCallRequestId(requestId);
                   setShowVideoCall(true);
                 }}
                 className="flex-1 text-white px-3 py-2 rounded-full font-semibold text-sm hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
@@ -994,7 +1132,14 @@ const Chat = () => {
               </button>
               <button
                 onClick={async () => {
+                  const requestId = videoCallInvitation?.request_id || requestIdParam;
+                  if (!requestId) {
+                    setVideoCallInvitation(null);
+                    return;
+                  }
+                  clearCallTimeout();
                   try {
+                    await respondToVideoCall(requestId, 'declined');
                     await markNotificationsReadBy({ notification_type: 'video_call_request', connection_id: connectionId });
                   } catch {}
                   setVideoCallInvitation(null);
@@ -1025,6 +1170,10 @@ const Chat = () => {
             onClose={() => {
               setShowVideoCall(false);
               setIsIncomingCall(false);
+              if (activeCallRequestId) {
+                endVideoCall(activeCallRequestId).catch(() => {});
+              }
+              setActiveCallRequestId(null);
               getTokenBalance().then(data => setTokenBalance(data.balance));
             }}
           />

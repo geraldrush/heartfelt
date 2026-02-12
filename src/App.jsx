@@ -126,7 +126,8 @@ const NotificationsListener = () => {
         setToast({
           id: notification.id,
           message: notification.message || 'Incoming video call request',
-          connectionId: data.connection_id || null
+          connectionId: data.connection_id || null,
+          requestId: data.request_id || null
         });
         break;
       }
@@ -139,7 +140,8 @@ const NotificationsListener = () => {
       return;
     }
     markAsRead(toast.id);
-    navigate(`/chat?connectionId=${toast.connectionId}&incoming=1`);
+    const requestParam = toast.requestId ? `&requestId=${toast.requestId}` : '';
+    navigate(`/chat?connectionId=${toast.connectionId}&incoming=1${requestParam}`);
     setToast(null);
   };
 

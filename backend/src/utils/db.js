@@ -454,6 +454,61 @@ export async function getMessagesByConnection(db, connectionId, limit, offset, b
   return results;
 }
 
+export async function createLiveRoomMessage(db, messageData) {
+  const { id, room_id, sender_id, content, created_at } = messageData;
+  await db
+    .prepare(
+      `INSERT INTO live_room_messages (
+        id,
+        room_id,
+        sender_id,
+        content,
+        created_at
+      ) VALUES (?, ?, ?, ?, ?)`
+    )
+    .bind(
+      id,
+      room_id,
+      sender_id,
+      content,
+      created_at || new Date().toISOString()
+    )
+    .run();
+}
+
+export async function getLiveRoomMessages(db, roomId, limit, offset, beforeTimestamp) {
+  const conditions = ['m.room_id = ?'];
+  const params = [roomId];
+
+  if (beforeTimestamp) {
+    conditions.push('m.created_at < ?');
+    params.push(beforeTimestamp);
+  }
+
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+  const { results } = await db
+    .prepare(
+      `SELECT
+        m.id,
+        m.room_id as connection_id,
+        m.sender_id,
+        m.content,
+        'sent' as status,
+        m.created_at,
+        u.full_name AS sender_name
+      FROM live_room_messages m
+      JOIN users u ON u.id = m.sender_id
+      ${whereClause}
+      ORDER BY m.created_at DESC
+      LIMIT ? OFFSET ?`
+    )
+    .bind(...params, limit, offset)
+    .all();
+
+  return results;
+}
+
 export async function updateMessageStatus(db, messageId, status) {
   await db
     .prepare('UPDATE messages SET status = ? WHERE id = ?')

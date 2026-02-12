@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Room, RoomEvent, Track, createLocalTracks } from 'livekit-client';
-import { getLiveRoom, joinLiveRoom, leaveLiveRoom, getMessages, transferTokens, requestLiveKitToken } from '../utils/api.js';
+import { getLiveRoom, joinLiveRoom, leaveLiveRoom, transferTokens, requestLiveKitToken } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useWebSocket } from '../hooks/useWebSocket.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
@@ -78,18 +78,7 @@ const LiveRoom = () => {
   }, [roomId]);
 
   useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        const data = await getMessages(roomId, { limit: 50, offset: 0 });
-        const ordered = [...(data.messages || [])].reverse();
-        setMessages(ordered);
-      } catch (err) {
-        // ignore
-      }
-    };
-    if (roomId) {
-      loadMessages();
-    }
+    setMessages([]);
   }, [roomId]);
 
   useEffect(() => {
@@ -310,6 +299,15 @@ const LiveRoom = () => {
     navigate('/live');
   };
 
+  const handleCloseRoom = async () => {
+    try {
+      await leaveLiveRoom(roomId);
+    } catch {}
+    stopLocalTracks();
+    disconnectLiveKit();
+    navigate('/live');
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black">
@@ -321,13 +319,24 @@ const LiveRoom = () => {
   return (
     <div className="fixed inset-0 bg-black text-white">
       <div className="absolute top-4 left-4 z-30 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleLeave}
-          className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"
-        >
-          Back
-        </button>
+        {isHost ? (
+          <button
+            type="button"
+            onClick={handleCloseRoom}
+            className="rounded-full px-3 py-1.5 text-xs font-semibold text-white"
+            style={{ background: 'linear-gradient(135deg, #E74C3C, #2C3E50)' }}
+          >
+            Close room
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleLeave}
+            className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"
+          >
+            Back
+          </button>
+        )}
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-white/70">Live Room</p>
           <p className="text-sm font-semibold">{room?.title}</p>

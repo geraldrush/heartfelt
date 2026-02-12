@@ -1,9 +1,26 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
-import { verifyUserInConnection, getMessagesByConnection, createTokenRequest, getPendingTokenRequests, generateId } from '../utils/db.js';
+import { verifyUserInConnection, getMessagesByConnection, createTokenRequest, getPendingTokenRequests, generateId, getConnectionById } from '../utils/db.js';
 import { createNotification } from './notifications.js';
 
 const chat = new Hono();
+
+const broadcastCallStatus = async (env, connectionId, payload) => {
+  if (!env?.CHAT_ROOM || !connectionId) {
+    return;
+  }
+  try {
+    const id = env.CHAT_ROOM.idFromName(connectionId);
+    const stub = env.CHAT_ROOM.get(id);
+    await stub.fetch(`https://chat-room/call-status/${connectionId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.error('[Chat] Failed to broadcast call status:', error?.message || error);
+  }
+};
 
 chat.get('/connect/:connectionId', async (c) => {
   const connectionId = c.req.param('connectionId');
@@ -102,7 +119,10 @@ chat.get('/messages/:connectionId', authMiddleware, async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
     
-    const messages = await getMessagesByConnection(c.env.DB, connectionId, limit, offset, before);
+    const existingConnection = await getConnectionById(c.env.DB, connectionId);
+    const messages = existingConnection
+      ? await getMessagesByConnection(c.env.DB, connectionId, limit, offset, before)
+      : [];
     
     return c.json({ messages });
   } catch (error) {
@@ -162,6 +182,30 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
 
+    const recentRequest = await db
+      .prepare(
+        `SELECT id FROM video_call_requests
+         WHERE connection_id = ?
+           AND status = 'pending'
+           AND created_at >= datetime('now', '-2 minutes')
+         LIMIT 1`
+      )
+      .bind(body.connection_id)
+      .first();
+
+    if (recentRequest) {
+      return c.json({ error: 'Call request already pending.' }, 409);
+    }
+
+    const requestId = generateId();
+    await db
+      .prepare(
+        `INSERT INTO video_call_requests (id, connection_id, caller_id, recipient_id, status)
+         VALUES (?, ?, ?, ?, 'pending')`
+      )
+      .bind(requestId, body.connection_id, userId, body.recipient_id)
+      .run();
+
     const existing = await db
       .prepare(
         `SELECT id FROM notifications
@@ -184,7 +228,7 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
           type: 'system',
           title: 'Incoming video call',
           message: `${user.full_name} wants to start a video call`,
-          data: { connection_id: body.connection_id, sender_id: userId, notification_type: 'video_call_request' }
+          data: { request_id: requestId, connection_id: body.connection_id, sender_id: userId, notification_type: 'video_call_request' }
         },
         c.env
       );
@@ -192,8 +236,13 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
       console.error('[Chat] Failed to create video call notification:', err);
     }
     }
-    
-    const requestId = generateId();
+
+    await broadcastCallStatus(c.env, body.connection_id, {
+      status: 'ringing',
+      request_id: requestId,
+      from_user_id: userId,
+      to_user_id: body.recipient_id,
+    });
     
     return c.json({ 
       success: true, 
@@ -204,6 +253,102 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
     console.error('[Chat] Video call request error:', error);
     return c.json({ error: 'Failed to create video call request' }, 500);
   }
+});
+
+chat.post('/video-call-response', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => null);
+  const requestId = body?.request_id;
+  const response = body?.response;
+
+  if (!requestId || !['accepted', 'declined', 'expired'].includes(response)) {
+    return c.json({ error: 'Invalid request.' }, 400);
+  }
+
+  const db = c.env.DB;
+  const existing = await db
+    .prepare(
+      `SELECT id, connection_id, caller_id, recipient_id FROM video_call_requests
+       WHERE id = ? AND recipient_id = ? AND status = 'pending'`
+    )
+    .bind(requestId, userId)
+    .first();
+
+  if (!existing) {
+    return c.json({ error: 'Request not found.' }, 404);
+  }
+
+  await db
+    .prepare(
+      `UPDATE video_call_requests
+       SET status = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`
+    )
+    .bind(response, requestId)
+    .run();
+
+  await broadcastCallStatus(c.env, existing.connection_id, {
+    status: response,
+    request_id: requestId,
+    from_user_id: userId,
+    to_user_id: existing.caller_id,
+  });
+
+  return c.json({ success: true });
+});
+
+chat.post('/video-call-ended', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => null);
+  const requestId = body?.request_id;
+  const requestedStatus = body?.status === 'expired' ? 'expired' : 'ended';
+
+  if (!requestId) {
+    return c.json({ error: 'Invalid request.' }, 400);
+  }
+
+  const db = c.env.DB;
+  const existing = await db
+    .prepare(
+      `SELECT id FROM video_call_requests
+       WHERE id = ? AND (caller_id = ? OR recipient_id = ?) AND status IN ('pending', 'accepted')`
+    )
+    .bind(requestId, userId, userId)
+    .first();
+
+  if (!existing) {
+    return c.json({ error: 'Request not found.' }, 404);
+  }
+
+  const currentStatusRow = await db
+    .prepare(
+      `SELECT status, connection_id, caller_id, recipient_id FROM video_call_requests
+       WHERE id = ?`
+    )
+    .bind(requestId)
+    .first();
+
+  const nextStatus = requestedStatus === 'expired' && currentStatusRow?.status === 'pending'
+    ? 'expired'
+    : 'ended';
+
+  await db
+    .prepare(
+      `UPDATE video_call_requests
+       SET status = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`
+    )
+    .bind(nextStatus, requestId)
+    .run();
+
+  await broadcastCallStatus(c.env, currentStatusRow?.connection_id, {
+    status: nextStatus,
+    request_id: requestId,
+    from_user_id: userId,
+    to_user_id: currentStatusRow?.caller_id === userId ? currentStatusRow?.recipient_id : currentStatusRow?.caller_id,
+  });
+
+  return c.json({ success: true });
 });
 
 chat.get('/unread-counts', authMiddleware, async (c) => {

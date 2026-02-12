@@ -65,6 +65,7 @@ export const useWebSocket = ({
   onRead,
   onConnectionError,
   onNotification,
+  onCallStatus,
 }) => {
   // Mobile detection at hook level
   const userAgent = navigator.userAgent;
@@ -383,7 +384,7 @@ export const useWebSocket = ({
         };
         
         // Whitelist allowed message types
-        const allowedTypes = ['chat_message', 'typing_indicator', 'presence', 'delivery_confirmation', 'read_receipt', 'notification', 'ping', 'pong', 'error'];
+        const allowedTypes = ['chat_message', 'typing_indicator', 'presence', 'delivery_confirmation', 'read_receipt', 'notification', 'call_status', 'ping', 'pong', 'error'];
         if (!allowedTypes.includes(data.type)) {
           return;
         }
@@ -419,6 +420,10 @@ export const useWebSocket = ({
           case 'notification':
             lastActivityTime.current = Date.now();
             onNotification?.(data);
+            break;
+          case 'call_status':
+            lastActivityTime.current = Date.now();
+            onCallStatus?.(data);
             break;
           case 'ping':
             sendPayload({ type: 'pong' });

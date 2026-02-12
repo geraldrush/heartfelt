@@ -48,6 +48,34 @@ export class ChatRoom {
     this.roomTypeCache = new Map(); // connectionId -> 'connection' | 'live'
   }
 
+  async handleCallStatus(request, connectionId) {
+    const payload = await request.json().catch(() => null);
+    if (!payload || typeof payload.status !== 'string') {
+      return new Response('Invalid call status payload', { status: 400 });
+    }
+
+    const status = sanitizeContent(payload.status);
+    const allowedStatuses = new Set(['ringing', 'accepted', 'declined', 'ended', 'expired', 'canceled']);
+    if (!allowedStatuses.has(status)) {
+      return new Response('Invalid call status', { status: 400 });
+    }
+
+    this.broadcast({
+      type: 'call_status',
+      status,
+      request_id: payload.request_id || null,
+      from_user_id: payload.from_user_id || null,
+      to_user_id: payload.to_user_id || null,
+      connection_id: connectionId,
+      created_at: new Date().toISOString(),
+    });
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   checkMessageRateLimit(userId) {
     const now = Date.now();
     const windowMs = 60 * 1000; // 1 minute
@@ -109,6 +137,10 @@ export class ChatRoom {
     const timestamp = new Date().toISOString();
     const url = new URL(request.url);
     const connectionId = url.pathname.split('/').pop();
+
+    if (request.method === 'POST' && url.pathname.includes('/call-status/')) {
+      return this.handleCallStatus(request, connectionId);
+    }
 
     // Origin validation with comprehensive logging
     const origin = request.headers.get('Origin');
