@@ -17,6 +17,27 @@ export function generateSignature(data, passphrase) {
   return createHash('md5').update(base).digest('hex');
 }
 
+export function buildSignaturePayload(data, passphrase, options = {}) {
+  const { maskPassphrase = false, maskEmail = false } = options;
+  const payload = Object.keys(data)
+    .sort()
+    .filter((key) => data[key] !== undefined && data[key] !== null && data[key] !== '')
+    .map((key) => {
+      let value = data[key];
+      if (maskEmail && key === 'email_address') {
+        value = '***';
+      }
+      return `${key}=${encodeValue(value)}`;
+    })
+    .join('&');
+
+  if (!passphrase) {
+    return payload;
+  }
+  const passphraseValue = maskPassphrase ? '***' : passphrase;
+  return `${payload}&passphrase=${encodeValue(passphraseValue)}`;
+}
+
 export function verifySignature(data, receivedSignature, passphrase) {
   if (!receivedSignature) {
     return false;

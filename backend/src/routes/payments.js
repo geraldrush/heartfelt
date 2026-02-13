@@ -7,9 +7,47 @@ import {
   getPayfastUrl,
   validateItnSource,
   verifySignature,
+  buildSignaturePayload,
 } from '../utils/payfast.js';
 
 const payments = new Hono();
+
+const parseUrlList = (raw) =>
+  (raw || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+const getPayfastPassphrase = (env) => {
+  const mode = (env.PAYFAST_MODE || '').toLowerCase();
+  if (mode === 'live') {
+    return env.PAYFAST_PASSPHRASE_LIVE || env.PAYFAST_PASSPHRASE || '';
+  }
+  return env.PAYFAST_PASSPHRASE_SANDBOX || env.PAYFAST_PASSPHRASE || '';
+};
+
+const pickFrontendUrl = (env) => {
+  const urls = parseUrlList(env.FRONTEND_URL);
+  if (urls.length === 0) {
+    return '';
+  }
+
+  const mode = (env.PAYFAST_MODE || '').toLowerCase();
+  if (mode === 'live') {
+    const production =
+      urls.find((url) => url.includes('afrodate.co.za')) ||
+      urls.find((url) => url.startsWith('https://') && !url.includes('localhost')) ||
+      urls.find((url) => url.startsWith('https://')) ||
+      urls[0];
+    return production.replace(/\/$/, '');
+  }
+
+  const dev =
+    urls.find((url) => url.includes('localhost')) ||
+    urls.find((url) => url.startsWith('http://')) ||
+    urls[0];
+  return dev.replace(/\/$/, '');
+};
 
 payments.get('/packages', async (c) => {
   const db = getDb(c);
@@ -81,7 +119,7 @@ payments.post('/initiate', authMiddleware, async (c) => {
     return c.json({ error: 'Payfast is not configured.' }, 500);
   }
 
-  const frontendUrl = (c.env.FRONTEND_URL || '').replace(/\/$/, '');
+  const frontendUrl = pickFrontendUrl(c.env);
   if (!frontendUrl) {
     return c.json({ error: 'Frontend URL is not configured.' }, 500);
   }
@@ -115,7 +153,24 @@ payments.post('/initiate', authMiddleware, async (c) => {
     m_payment_id: paymentId,
   };
 
-  const signature = generateSignature(paymentData, c.env.PAYFAST_PASSPHRASE || '');
+  const signature = generateSignature(paymentData, getPayfastPassphrase(c.env));
+  if ((c.env.PAYFAST_SIGNATURE_DEBUG || '').toLowerCase() === 'true') {
+    const debugPayload = buildSignaturePayload(paymentData, getPayfastPassphrase(c.env), {
+      maskPassphrase: true,
+      maskEmail: true,
+    });
+    console.log('[Payfast] Signature debug', {
+      mode: c.env.PAYFAST_MODE,
+      merchant_id: merchantId,
+      payment_id: paymentId,
+      return_url: paymentData.return_url,
+      cancel_url: paymentData.cancel_url,
+      notify_url: paymentData.notify_url,
+      has_passphrase: Boolean(getPayfastPassphrase(c.env)),
+      payload: debugPayload,
+      signature,
+    });
+  }
 
   return c.json({
     payment_url: getPayfastUrl(c.env),
@@ -134,8 +189,20 @@ payments.post('/notify', async (c) => {
   const receivedSignature = payload.signature;
   delete payload.signature;
 
-  const passphrase = c.env.PAYFAST_PASSPHRASE || '';
+  const passphrase = getPayfastPassphrase(c.env);
   if (!verifySignature(payload, receivedSignature, passphrase)) {
+    if ((c.env.PAYFAST_SIGNATURE_DEBUG || '').toLowerCase() === 'true') {
+      const debugPayload = buildSignaturePayload(payload, passphrase, {
+        maskPassphrase: true,
+        maskEmail: true,
+      });
+      console.log('[Payfast] ITN signature mismatch', {
+        payment_id: payload.m_payment_id,
+        has_passphrase: Boolean(passphrase),
+        payload: debugPayload,
+        received_signature: receivedSignature,
+      });
+    }
     return c.text('Invalid signature', 400);
   }
 
