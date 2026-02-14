@@ -742,7 +742,9 @@ export const useWebSocket = ({
 
   const disconnect = useCallback(() => {
     isManualCloseRef.current = true;
-    socketRef.current?.close();
+    if (socketRef.current && socketRef.current.readyState !== WebSocket.CLOSED) {
+      socketRef.current.close(1000, 'Manual disconnect');
+    }
   }, []);
 
   return {

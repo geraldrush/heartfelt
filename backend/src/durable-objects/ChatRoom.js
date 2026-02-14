@@ -375,11 +375,27 @@ export class ChatRoom {
         
         const sanitizedContent = sanitizeContent(payload.content.trim());
 
+        // Get sender info for live rooms
+        let senderName = null;
+        let senderImage = null;
+        if (roomType === 'live') {
+          const senderInfo = await this.env.DB
+            .prepare('SELECT full_name, image_url FROM users WHERE id = ?')
+            .bind(senderId)
+            .first();
+          if (senderInfo) {
+            senderName = senderInfo.full_name;
+            senderImage = senderInfo.image_url;
+          }
+        }
+
         const outgoing = {
           type: 'chat_message',
           id: messageId,
           connection_id: connectionId,
           sender_id: senderId,
+          sender_name: senderName,
+          sender_image: senderImage,
           content: sanitizedContent,
           status: 'sent',
           created_at: createdAt,

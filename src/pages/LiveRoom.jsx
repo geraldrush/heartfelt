@@ -414,15 +414,31 @@ const LiveRoom = () => {
             ) : (
               messages.slice(-50).map((msg) => {
                 const isSender = msg.sender_id === user?.id;
+                const isGift = msg.content?.startsWith('🎁');
+                const senderName = msg.sender_name || (isSender ? 'You' : 'Viewer');
+                
                 return (
-                  <div key={msg.id} className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs shadow-md ${
-                      isSender ? 'text-white' : 'bg-white/20 text-white backdrop-blur-sm'
-                    }`}
-                    style={isSender ? { background: 'linear-gradient(135deg, #E74C3C, #F39C12)' } : {}}
-                    >
-                      {msg.content}
-                    </div>
+                  <div key={msg.id} className="space-y-1">
+                    {!isSender && !isGift && (
+                      <p className="text-[10px] text-white/70 px-1">{senderName}</p>
+                    )}
+                    {isGift ? (
+                      <div className="flex justify-center">
+                        <div className="rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-lg">
+                          {msg.content}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs shadow-md ${
+                          isSender ? 'text-white' : 'bg-white/20 text-white backdrop-blur-sm'
+                        }`}
+                        style={isSender ? { background: 'linear-gradient(135deg, #E74C3C, #F39C12)' } : {}}
+                        >
+                          {msg.content}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })
