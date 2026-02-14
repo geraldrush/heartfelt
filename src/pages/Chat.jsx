@@ -531,9 +531,9 @@ const Chat = () => {
       }
       clearCallTimeout();
       setPendingCallRequest({ requestId, startedAt: Date.now() });
-      setActiveCallRequestId(null);
+      setActiveCallRequestId(requestId);
       setIsIncomingCall(false);
-      setShowVideoCall(false);
+      setShowVideoCall(true);
       showToast('Calling…', 'info');
     } catch (err) {
       showToast(err.message || 'Failed to request video call.');
