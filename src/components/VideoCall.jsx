@@ -87,7 +87,7 @@ const VideoCall = ({
     }
     
     try {
-      await startCall(remotePeerId);
+      await startCall();
     } catch (err) {
       setError(err.message || 'Failed to start call');
     } finally {
