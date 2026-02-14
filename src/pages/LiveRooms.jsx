@@ -222,15 +222,28 @@ const LiveRooms = () => {
                   className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-5 shadow-xl hover:shadow-2xl transition-shadow"
                 >
                   <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                        <span className="text-xs font-semibold text-red-600 uppercase">Live</span>
+                    <div className="flex items-center gap-3 flex-1">
+                      {room.host_image ? (
+                        <img
+                          src={room.host_image}
+                          alt={room.host_name || 'Host'}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E74C3C] to-[#F39C12] flex items-center justify-center text-white font-bold text-lg shadow-md">
+                          {(room.host_name || 'H').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                          <span className="text-xs font-semibold text-red-600 uppercase">Live</span>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">{room.title}</h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Hosted by {room.host_name || 'Anonymous'}
+                        </p>
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900">{room.title}</h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Hosted by {room.host_name || 'Anonymous'}
-                      </p>
                     </div>
                   </div>
                   {room.description && (

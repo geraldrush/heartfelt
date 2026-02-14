@@ -13,8 +13,6 @@ import {
   sendConnectionRequest,
   likeUser,
   unlikeUser,
-  followUser,
-  unfollowUser,
 } from '../utils/api.js';
 
 import EmptyState from '../components/EmptyState.jsx';
@@ -372,25 +370,6 @@ const StoryFeed = () => {
     }
   };
 
-  const handleFollow = async (story) => {
-    triggerHaptic('light');
-    try {
-      if (story.is_following) {
-        await unfollowUser(story.user_id);
-        showToast('Unfollowed', 'success');
-      } else {
-        await followUser(story.user_id);
-        showToast('Following!', 'success');
-      }
-      // Update story in list
-      setStories(prev => prev.map(s => 
-        s.story_id === story.story_id ? { ...s, is_following: !s.is_following } : s
-      ));
-    } catch (err) {
-      showToast(err.message);
-    }
-  };
-
   const handleSendMessage = async () => {
     if (!connectingStory) return;
     
@@ -546,24 +525,6 @@ const StoryFeed = () => {
             >
               <svg className="w-7 h-7" fill={story.is_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={story.is_liked ? 0 : 2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </button>
-
-            {/* Follow Button */}
-            <button
-              type="button"
-              onClick={() => handleFollow(story)}
-              className={`w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all ${
-                story.is_following
-                  ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white scale-110'
-                  : 'bg-white/95 backdrop-blur text-gray-700 hover:scale-105'
-              }`}
-            >
-              <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                {!story.is_following && (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                )}
               </svg>
             </button>
 
