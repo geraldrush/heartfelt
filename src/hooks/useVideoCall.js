@@ -137,30 +137,48 @@ export const useVideoCall = (userId, connectionId) => {
   };
 
   const startCall = async () => {
+    console.log('[VideoCall] Starting call...', { connectionId, userId });
     try {
       const room = await connectToRoom();
+      console.log('[VideoCall] Room connected, creating local tracks...');
       const tracks = await createLocalTracks({ audio: true, video: true });
+      console.log('[VideoCall] Local tracks created:', tracks.length);
       localTracksRef.current = tracks;
-      tracks.forEach((track) => room.localParticipant.publishTrack(track));
-      setLocalStream(new MediaStream(tracks.map((track) => track.mediaStreamTrack)));
+      tracks.forEach((track) => {
+        console.log('[VideoCall] Publishing track:', track.kind);
+        room.localParticipant.publishTrack(track);
+      });
+      const mediaStream = new MediaStream(tracks.map((track) => track.mediaStreamTrack));
+      console.log('[VideoCall] Local stream created with tracks:', mediaStream.getTracks().length);
+      setLocalStream(mediaStream);
       setIsCallActive(true);
+      console.log('[VideoCall] Call started successfully');
       return null;
     } catch (error) {
-      console.error('Failed to start call:', error);
+      console.error('[VideoCall] Failed to start call:', error);
       throw error;
     }
   };
 
   const answerCall = async () => {
+    console.log('[VideoCall] Answering call...', { connectionId, userId });
     try {
       const room = await connectToRoom();
+      console.log('[VideoCall] Room connected, creating local tracks...');
       const tracks = await createLocalTracks({ audio: true, video: true });
+      console.log('[VideoCall] Local tracks created:', tracks.length);
       localTracksRef.current = tracks;
-      tracks.forEach((track) => room.localParticipant.publishTrack(track));
-      setLocalStream(new MediaStream(tracks.map((track) => track.mediaStreamTrack)));
+      tracks.forEach((track) => {
+        console.log('[VideoCall] Publishing track:', track.kind);
+        room.localParticipant.publishTrack(track);
+      });
+      const mediaStream = new MediaStream(tracks.map((track) => track.mediaStreamTrack));
+      console.log('[VideoCall] Local stream created with tracks:', mediaStream.getTracks().length);
+      setLocalStream(mediaStream);
       setIsCallActive(true);
+      console.log('[VideoCall] Call answered successfully');
     } catch (error) {
-      console.error('Failed to answer call:', error);
+      console.error('[VideoCall] Failed to answer call:', error);
       throw error;
     }
   };

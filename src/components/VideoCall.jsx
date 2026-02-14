@@ -28,12 +28,22 @@ const VideoCall = ({
 
   useEffect(() => {
     if (localStream && localVideoRef.current) {
+      console.log('[VideoCall UI] Attaching local stream to video element', {
+        tracks: localStream.getTracks().length,
+        videoTracks: localStream.getVideoTracks().length,
+        audioTracks: localStream.getAudioTracks().length
+      });
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
 
   useEffect(() => {
     if (remoteStream && remoteVideoRef.current) {
+      console.log('[VideoCall UI] Attaching remote stream to video element', {
+        tracks: remoteStream.getTracks().length,
+        videoTracks: remoteStream.getVideoTracks().length,
+        audioTracks: remoteStream.getAudioTracks().length
+      });
       remoteVideoRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
@@ -44,20 +54,7 @@ const VideoCall = ({
     }
   }, [messages, showChat]);
 
-  useEffect(() => {
-    if (isCallActive || isStarting || livekitUnavailable) {
-      return;
-    }
-    if (isIncoming) {
-      if (autoAnswer) {
-        handleAnswerCall();
-      }
-      return;
-    }
-    if (autoStart) {
-      handleStartCall();
-    }
-  }, [autoAnswer, autoStart, incomingCall, isIncoming, isCallActive, isStarting, livekitUnavailable]);
+
 
   const requestPermissions = async () => {
     setPermissionError(null);
@@ -78,18 +75,23 @@ const VideoCall = ({
   };
 
   const handleStartCall = async () => {
+    console.log('[VideoCall UI] handleStartCall triggered');
     setIsStarting(true);
     setError(null);
     const granted = await requestPermissions();
     if (!granted) {
+      console.log('[VideoCall UI] Permissions denied');
       setIsStarting(false);
       return;
     }
     
     try {
+      console.log('[VideoCall UI] Calling startCall...');
       await startCall();
+      console.log('[VideoCall UI] startCall completed');
     } catch (err) {
       setError(err.message || 'Failed to start call');
+      console.error('[VideoCall UI] Start call error:', err);
     } finally {
       setIsStarting(false);
     }
@@ -107,10 +109,24 @@ const VideoCall = ({
       await answerCall();
     } catch (err) {
       setError(err.message || 'Failed to answer call');
+      console.error('Answer call error:', err);
     } finally {
       setIsStarting(false);
     }
   };
+
+  useEffect(() => {
+    if (isCallActive || isStarting || livekitUnavailable) {
+      return;
+    }
+    if (isIncoming && autoAnswer) {
+      handleAnswerCall();
+      return;
+    }
+    if (!isIncoming && autoStart) {
+      handleStartCall();
+    }
+  }, [autoAnswer, autoStart, isIncoming, isCallActive, isStarting, livekitUnavailable]);
 
   const handleEndCall = () => {
     endCall();
@@ -166,6 +182,14 @@ const VideoCall = ({
       {livekitUnavailable && !error && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg">
           Live video is temporarily unavailable. Please try again later.
+        </div>
+      )}
+
+      {/* Connecting/Starting indicator */}
+      {isStarting && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white px-6 py-4 rounded-lg text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+          <p>Connecting...</p>
         </div>
       )}
       
