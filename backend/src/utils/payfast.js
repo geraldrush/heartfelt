@@ -1,8 +1,14 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 
 const encodeValue = (value) => {
-  // PayFast requires specific encoding: spaces as '+', but preserve other special chars
-  return String(value).replace(/ /g, '+');
+  // PayFast requires URL encoding but with spaces as '+'
+  // Do NOT encode: A-Z a-z 0-9 - _ . ~
+  return encodeURIComponent(String(value))
+    .replace(/%20/g, '+')
+    .replace(/%2D/g, '-')
+    .replace(/%5F/g, '_')
+    .replace(/%2E/g, '.')
+    .replace(/%7E/g, '~');
 };
 
 export function generateSignature(data, passphrase) {
