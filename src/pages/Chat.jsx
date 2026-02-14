@@ -227,8 +227,12 @@ const Chat = () => {
   };
 
   const handleGoBack = useCallback(() => {
-    window.history.back();
-  }, []);
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigate('/connections');
+    }
+  }, [navigate]);
 
   const handleNavigateToConnection = useCallback(() => {
     navigate(`/connection/${connectionId}`);
