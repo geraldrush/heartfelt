@@ -114,8 +114,14 @@ payments.post('/initiate', authMiddleware, async (c) => {
 
   const merchantId = c.env.PAYFAST_MERCHANT_ID;
   const merchantKey = c.env.PAYFAST_MERCHANT_KEY;
+  const passphrase = getPayfastPassphrase(c.env);
 
   if (!merchantId || !merchantKey) {
+    console.error('[Payfast] Missing credentials', {
+      has_merchant_id: Boolean(merchantId),
+      has_merchant_key: Boolean(merchantKey),
+      mode: c.env.PAYFAST_MODE
+    });
     return c.json({ error: 'Payfast is not configured.' }, 500);
   }
 
@@ -153,20 +159,24 @@ payments.post('/initiate', authMiddleware, async (c) => {
     m_payment_id: paymentId,
   };
 
-  const signature = generateSignature(paymentData, getPayfastPassphrase(c.env));
+  const signature = generateSignature(paymentData, passphrase);
+  
+  // Always log signature generation for debugging
+  console.log('[Payfast] Payment initiated', {
+    mode: c.env.PAYFAST_MODE,
+    merchant_id: merchantId,
+    payment_id: paymentId,
+    amount: amount,
+    has_passphrase: Boolean(passphrase && passphrase.trim()),
+    signature_length: signature.length,
+  });
+  
   if ((c.env.PAYFAST_SIGNATURE_DEBUG || '').toLowerCase() === 'true') {
-    const debugPayload = buildSignaturePayload(paymentData, getPayfastPassphrase(c.env), {
+    const debugPayload = buildSignaturePayload(paymentData, passphrase, {
       maskPassphrase: true,
       maskEmail: true,
     });
     console.log('[Payfast] Signature debug', {
-      mode: c.env.PAYFAST_MODE,
-      merchant_id: merchantId,
-      payment_id: paymentId,
-      return_url: paymentData.return_url,
-      cancel_url: paymentData.cancel_url,
-      notify_url: paymentData.notify_url,
-      has_passphrase: Boolean(getPayfastPassphrase(c.env)),
       payload: debugPayload,
       signature,
     });

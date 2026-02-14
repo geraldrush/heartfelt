@@ -1,16 +1,19 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 
-const encodeValue = (value) =>
-  encodeURIComponent(String(value)).replace(/%20/g, '+');
+const encodeValue = (value) => {
+  // PayFast requires specific encoding: spaces as '+', but preserve other special chars
+  return String(value).replace(/ /g, '+');
+};
 
 export function generateSignature(data, passphrase) {
+  // PayFast requires parameters in alphabetical order
   const payload = Object.keys(data)
     .sort()
     .filter((key) => data[key] !== undefined && data[key] !== null && data[key] !== '')
     .map((key) => `${key}=${encodeValue(data[key])}`)
     .join('&');
 
-  const base = passphrase
+  const base = passphrase && passphrase.trim()
     ? `${payload}&passphrase=${encodeValue(passphrase)}`
     : payload;
 
