@@ -351,6 +351,34 @@ chat.post('/video-call-ended', authMiddleware, async (c) => {
   return c.json({ success: true });
 });
 
+chat.get('/video-call-status/:requestId', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const requestId = c.req.param('requestId');
+
+  if (!requestId) {
+    return c.json({ error: 'Invalid request.' }, 400);
+  }
+
+  const db = c.env.DB;
+  const request = await db
+    .prepare(
+      `SELECT status, caller_id, recipient_id, created_at
+       FROM video_call_requests
+       WHERE id = ? AND (caller_id = ? OR recipient_id = ?)`
+    )
+    .bind(requestId, userId, userId)
+    .first();
+
+  if (!request) {
+    return c.json({ error: 'Request not found.' }, 404);
+  }
+
+  return c.json({
+    status: request.status,
+    created_at: request.created_at
+  });
+});
+
 chat.get('/unread-counts', authMiddleware, async (c) => {
   const userId = c.get('userId');
   

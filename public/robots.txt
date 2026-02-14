@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /chat
+Disallow: /connections
+Disallow: /profile
+Disallow: /tokens
+Disallow: /notifications
+Disallow: /live
+
+Sitemap: https://afrodate.co.za/sitemap.xml

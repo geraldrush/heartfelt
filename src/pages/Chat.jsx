@@ -557,13 +557,33 @@ const Chat = () => {
   }, [clearCallTimeout, connectionId, user?.id]);
 
   useEffect(() => {
-    if (!connectionId || !incomingParam) {
+    if (!connectionId || !incomingParam || !requestIdParam) {
       return;
     }
-    setVideoCallInvitation({
-      notification_type: 'video_call_request',
-      request_id: requestIdParam || null
-    });
+    
+    // Check if the call request is still pending before showing invitation
+    const checkCallStatus = async () => {
+      try {
+        const db = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8787'}/api/chat/video-call-status/${requestIdParam}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          }
+        });
+        const data = await db.json();
+        
+        // Only show invitation if call is still pending
+        if (data.status === 'pending') {
+          setVideoCallInvitation({
+            notification_type: 'video_call_request',
+            request_id: requestIdParam
+          });
+        }
+      } catch (err) {
+        console.log('[Chat] Could not verify call status:', err);
+      }
+    };
+    
+    checkCallStatus();
     setSearchParams({ connectionId });
   }, [connectionId, incomingParam, requestIdParam, setSearchParams]);
 

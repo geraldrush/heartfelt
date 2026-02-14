@@ -243,8 +243,14 @@ export const requestVideoCall = (connectionId, recipientId) =>
   apiClient.post('/api/chat/video-call-request', { connection_id: connectionId, recipient_id: recipientId });
 export const respondToVideoCall = (requestId, response) =>
   apiClient.post('/api/chat/video-call-response', { request_id: requestId, response });
-export const endVideoCall = (requestId, status) =>
-  apiClient.post('/api/chat/video-call-ended', { request_id: requestId, status });
+export const endVideoCall = (requestId, status) => {
+  // Make this call non-blocking - don't throw errors
+  return apiClient.post('/api/chat/video-call-ended', { request_id: requestId, status })
+    .catch(err => {
+      console.warn('[API] Failed to end video call (non-critical):', err.message);
+      return { success: false };
+    });
+};
 export const requestLiveKitToken = async ({ room_id, room_type, name } = {}) => {
   const response = await apiClient.post('/api/livekit/token', { room_id, room_type, name });
 
