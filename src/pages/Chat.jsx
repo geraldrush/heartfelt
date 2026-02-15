@@ -226,88 +226,6 @@ const Chat = () => {
     return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
   };
 
-  const handleGoBack = useCallback(() => {
-    disconnect();
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      navigate('/connections');
-    }
-  }, [disconnect, navigate]);
-
-  const handleNavigateToConnection = useCallback(() => {
-    navigate(`/connection/${connectionId}`);
-  }, [navigate, connectionId]);
-
-  const handleLoginRedirect = useCallback(() => {
-    window.location.href = '/login';
-  }, []);
-
-  // Log component lifecycle
-  useEffect(() => {
-    const timestamp = new Date().toISOString();
-    console.log(`[WS-Client] ${timestamp} Chat component mounted with connectionId: ${connectionId}`);
-    return () => {
-      console.log(`[WS-Client] ${timestamp} Chat component unmounting`);
-    };
-  }, [connectionId]);
-
-  if (!connectionId) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100">
-        <div className="rounded-2xl bg-white px-6 py-8 text-center text-sm text-slate-600 shadow">
-          Select a connection to start chatting.
-        </div>
-      </div>
-    );
-  }
-
-  // Don't attempt WebSocket connection if no valid connection found
-  if (!loading && !connection) {
-    const timestamp = new Date().toISOString();
-    console.log(`[WS-Client] ${timestamp} Connection not found: ${connectionId}`);
-    
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100">
-        <div className="rounded-2xl bg-white px-6 py-8 text-center text-sm text-slate-600 shadow max-w-md">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">Connection Not Found</h3>
-          <p className="mb-4">Connection ID: {connectionId}</p>
-          <p className="mb-4">This connection doesn't exist or you don't have access to it.</p>
-          <button 
-            onClick={handleGoBack} 
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const updateMessageStatus = (id, status) => {
-    setMessages((prev) =>
-      prev.map((msg) => (msg.id === id ? { ...msg, status } : msg))
-    );
-  };
-
-  const messageKey = (msg) =>
-    msg.id || `${msg.sender_id}|${msg.created_at}|${msg.content}`;
-
-  const mergeUniqueMessages = (base, incoming, { prepend = false } = {}) => {
-    const combined = prepend ? [...incoming, ...base] : [...base, ...incoming];
-    const seen = new Set();
-    const unique = [];
-    for (const msg of combined) {
-      const key = messageKey(msg);
-      if (seen.has(key)) {
-        continue;
-      }
-      seen.add(key);
-      unique.push(msg);
-    }
-    return unique;
-  };
-
   const clearCallTimeout = useCallback(() => {
     if (callTimeoutRef.current) {
       clearTimeout(callTimeoutRef.current);
@@ -435,6 +353,88 @@ const Chat = () => {
     },
     onCallStatus: handleCallStatus,
   });
+
+  const handleGoBack = useCallback(() => {
+    disconnect();
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigate('/connections');
+    }
+  }, [disconnect, navigate]);
+
+  const handleNavigateToConnection = useCallback(() => {
+    navigate(`/connection/${connectionId}`);
+  }, [navigate, connectionId]);
+
+  const handleLoginRedirect = useCallback(() => {
+    window.location.href = '/login';
+  }, []);
+
+  // Log component lifecycle
+  useEffect(() => {
+    const timestamp = new Date().toISOString();
+    console.log(`[WS-Client] ${timestamp} Chat component mounted with connectionId: ${connectionId}`);
+    return () => {
+      console.log(`[WS-Client] ${timestamp} Chat component unmounting`);
+    };
+  }, [connectionId]);
+
+  if (!connectionId) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-100">
+        <div className="rounded-2xl bg-white px-6 py-8 text-center text-sm text-slate-600 shadow">
+          Select a connection to start chatting.
+        </div>
+      </div>
+    );
+  }
+
+  // Don't attempt WebSocket connection if no valid connection found
+  if (!loading && !connection) {
+    const timestamp = new Date().toISOString();
+    console.log(`[WS-Client] ${timestamp} Connection not found: ${connectionId}`);
+    
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-100">
+        <div className="rounded-2xl bg-white px-6 py-8 text-center text-sm text-slate-600 shadow max-w-md">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Connection Not Found</h3>
+          <p className="mb-4">Connection ID: {connectionId}</p>
+          <p className="mb-4">This connection doesn't exist or you don't have access to it.</p>
+          <button 
+            onClick={handleGoBack} 
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const updateMessageStatus = (id, status) => {
+    setMessages((prev) =>
+      prev.map((msg) => (msg.id === id ? { ...msg, status } : msg))
+    );
+  };
+
+  const messageKey = (msg) =>
+    msg.id || `${msg.sender_id}|${msg.created_at}|${msg.content}`;
+
+  const mergeUniqueMessages = (base, incoming, { prepend = false } = {}) => {
+    const combined = prepend ? [...incoming, ...base] : [...base, ...incoming];
+    const seen = new Set();
+    const unique = [];
+    for (const msg of combined) {
+      const key = messageKey(msg);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      unique.push(msg);
+    }
+    return unique;
+  };
 
   const loadConnection = async () => {
     if (!connectionId) {
