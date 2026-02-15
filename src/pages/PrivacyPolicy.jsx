@@ -1,11 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import SEO from '../components/SEO';
 
 const PrivacyPolicy = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <>
+      <SEO 
+        title="Privacy Policy | AfroDate"
+        description="Learn how AfroDate collects, uses, and protects your personal information. Read our comprehensive privacy policy."
+      />
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-8">
         <button onClick={() => navigate(-1)} className="mb-6 text-orange-600 hover:underline">
           ← Back
@@ -73,7 +79,7 @@ const PrivacyPolicy = () => {
           </section>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

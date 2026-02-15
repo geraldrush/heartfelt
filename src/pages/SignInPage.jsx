@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { emailLogin, googleAuth } from '../utils/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { isBasicProfileComplete } from '../utils/profileCompletion.js';
+import SEO from '../components/SEO.jsx';
 
 const SignInPage = () => {
   const navigate = useNavigate();
@@ -53,7 +54,9 @@ const SignInPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-premium-mesh">
+    <>
+      <SEO />
+      <div className="min-h-screen bg-premium-mesh">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-2 py-8 sm:px-6 sm:py-12">
         <div className="w-full glass-card p-0 shadow-2xl backdrop-blur sm:rounded-3xl sm:p-12">
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] px-2 py-8 sm:px-6 sm:py-12">
@@ -317,6 +320,7 @@ const SignInPage = () => {
         </footer>
       </div>
     </div>
+    </>
   );
 };
 
