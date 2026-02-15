@@ -78,6 +78,27 @@ app.use('/*', async (c, next) => {
   await next();
 });
 
+app.use('/*', async (c, next) => {
+  if (c.req.header('X-Forwarded-Proto') !== 'https') {
+    return c.redirect(301, `https://${c.req.header('Host')}${c.req.path}`);
+  }
+
+  c.header(
+    'Strict-Transport-Security',
+    'max-age=31536000; includeSubDomains; preload'
+  );
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('X-XSS-Protection', '1; mode=block');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; connect-src 'self' https://api.afrodate.co.za wss://live.afrodate.co.za; frame-ancestors 'none'; form-action 'self';"
+  );
+
+  await next();
+});
+
 app.get('/health', (c) => {
   const requiredVars = ['JWT_SECRET', 'GOOGLE_CLIENT_ID', 'CORS_ORIGIN'];
   const missing = requiredVars.filter(key => !c.env[key]);
