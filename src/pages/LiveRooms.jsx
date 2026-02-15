@@ -5,6 +5,7 @@ import { createLiveRoom, getLiveRooms, joinLiveRoom, getTokenBalance } from '../
 import { useAuth } from '../context/AuthContext.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import StickyNav from '../components/StickyNav.jsx';
+import InsufficientTokensModal from '../components/InsufficientTokensModal.jsx';
 
 const LiveRooms = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const LiveRooms = () => {
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [tokenBalance, setTokenBalance] = useState(null);
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
 
   const loadRooms = async () => {
     try {
@@ -59,7 +61,11 @@ const LiveRooms = () => {
       setShowCreateForm(false);
       navigate(`/live/${room.id}`);
     } catch (err) {
-      setError(err.message || 'Failed to create live room.');
+      if (err.status === 402) {
+        setShowTopUpModal(true);
+      } else {
+        setError(err.message || 'Failed to create live room.');
+      }
     } finally {
       setCreating(false);
     }
@@ -82,7 +88,11 @@ const LiveRooms = () => {
         setError('Failed to join live room.');
       }
     } catch (err) {
-      setError(err.message || 'Failed to join live room.');
+      if (err.status === 402) {
+        setShowTopUpModal(true);
+      } else {
+        setError(err.message || 'Failed to join live room.');
+      }
     }
   };
 
@@ -272,6 +282,14 @@ const LiveRooms = () => {
           )}
         </div>
       </div>
+
+      {/* Top Up Modal */}
+      <InsufficientTokensModal
+        isOpen={showTopUpModal}
+        onClose={() => setShowTopUpModal(false)}
+        requiredTokens={5}
+        action="join or create a live room"
+      />
     </div>
   );
 };

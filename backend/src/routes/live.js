@@ -68,6 +68,11 @@ live.post('/create', authMiddleware, async (c) => {
     return c.json({ error: 'User not found.' }, 404);
   }
 
+  // Check token balance
+  if (user.token_balance < 5) {
+    return c.json({ error: 'Insufficient tokens. You need 5 tokens to create a live room.' }, 402);
+  }
+
   const body = await c.req.json().catch(() => ({}));
   const title = String(body.title || '').trim();
   const description = String(body.description || '').trim();
@@ -78,22 +83,27 @@ live.post('/create', authMiddleware, async (c) => {
 
   const roomId = generateId();
   const participantId = generateId();
+  const transactionId = generateId();
+  const timestamp = new Date().toISOString();
 
-  await db
-    .prepare(
+  // Deduct 5 tokens and create room
+  await db.batch([
+    db.prepare(
+      `UPDATE users SET token_balance = token_balance - 5, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+    ).bind(userId),
+    db.prepare(
+      `INSERT INTO token_transactions (id, user_id, amount, transaction_type, balance_after, description, created_at)
+       VALUES (?, ?, -5, 'live_create', (SELECT token_balance FROM users WHERE id = ?), 'Created live room', ?)`
+    ).bind(transactionId, userId, userId, timestamp),
+    db.prepare(
       `INSERT INTO live_rooms (id, host_id, title, description, status)
        VALUES (?, ?, ?, ?, 'live')`
-    )
-    .bind(roomId, userId, title, description || null)
-    .run();
-
-  await db
-    .prepare(
+    ).bind(roomId, userId, title, description || null),
+    db.prepare(
       `INSERT INTO live_room_participants (id, room_id, user_id, role)
        VALUES (?, ?, ?, 'host')`
-    )
-    .bind(participantId, roomId, userId)
-    .run();
+    ).bind(participantId, roomId, userId)
+  ]);
 
   return c.json({
     room: {
@@ -112,6 +122,7 @@ live.post('/create', authMiddleware, async (c) => {
 live.post('/join', authMiddleware, async (c) => {
   const db = getDb(c);
   const userId = c.get('userId');
+  const user = await getUserById(db, userId);
   const body = await c.req.json().catch(() => ({}));
   const roomId = body.room_id;
 
@@ -142,16 +153,30 @@ live.post('/join', authMiddleware, async (c) => {
     return c.json({ success: true, status: 'joined', role: existing.role });
   }
 
-  // Add as participant immediately (no approval needed for now)
+  // Check token balance
+  if (user.token_balance < 5) {
+    return c.json({ error: 'Insufficient tokens. You need 5 tokens to join a live room.' }, 402);
+  }
+
+  // Deduct 5 tokens and add as participant
   const participantId = generateId();
+  const transactionId = generateId();
+  const timestamp = new Date().toISOString();
+
   try {
-    await db
-      .prepare(
+    await db.batch([
+      db.prepare(
+        `UPDATE users SET token_balance = token_balance - 5, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+      ).bind(userId),
+      db.prepare(
+        `INSERT INTO token_transactions (id, user_id, amount, transaction_type, balance_after, description, created_at)
+         VALUES (?, ?, -5, 'live_join', (SELECT token_balance FROM users WHERE id = ?), 'Joined live room', ?)`
+      ).bind(transactionId, userId, userId, timestamp),
+      db.prepare(
         `INSERT INTO live_room_participants (id, room_id, user_id, role)
          VALUES (?, ?, ?, 'viewer')`
-      )
-      .bind(participantId, roomId, userId)
-      .run();
+      ).bind(participantId, roomId, userId)
+    ]);
 
     return c.json({ success: true, status: 'joined', role: 'viewer' });
   } catch (err) {
