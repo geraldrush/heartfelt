@@ -31,7 +31,7 @@ export async function authMiddleware(c, next) {
     console.log(`[Auth] ${timestamp} JWT verification failed: ${error.code || error.message}`);
     
     if (error.code === 'ERR_JWT_EXPIRED') {
-      return c.json({ error: 'Token expired', code: 'TOKEN_EXPIRED' }, 401);
+      return c.json({ error: 'Session expired. Please sign in again.', code: 'TOKEN_EXPIRED' }, 401);
     }
     if (error.code === 'ERR_JWS_INVALID') {
       return c.json({ error: 'Invalid token signature', code: 'INVALID_SIGNATURE' }, 401);

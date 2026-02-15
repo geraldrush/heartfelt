@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
+import { imagesRateLimit } from '../middleware/rateLimit.js';
 import { getDb } from '../utils/db.js';
 
 const images = new Hono();
 
-images.post('/process', authMiddleware, async (c) => {
+images.post('/process', imagesRateLimit, authMiddleware, async (c) => {
   const body = await c.req.json().catch(() => null);
   const imageId = body?.image_id;
   const storyId = body?.story_id;

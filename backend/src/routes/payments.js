@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
+import { paymentsRateLimit } from '../middleware/rateLimit.js';
 import { generateId, getDb, getUserById } from '../utils/db.js';
 import { paymentInitiateSchema } from '../utils/validation.js';
 import {
@@ -64,7 +65,7 @@ payments.get('/packages', async (c) => {
   return c.json({ packages: results });
 });
 
-payments.post('/initiate', authMiddleware, async (c) => {
+payments.post('/initiate', paymentsRateLimit, authMiddleware, async (c) => {
   // CSRF protection for payment initiation
   const origin = c.req.header('Origin');
   const referer = c.req.header('Referer');

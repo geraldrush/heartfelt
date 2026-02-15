@@ -114,3 +114,24 @@ export const connectionRequestRateLimit = createRateLimiter({
   message: 'Too many connection requests. Please try again later.',
   keyPrefix: 'connection'
 });
+
+export const imagesRateLimit = createRateLimiter({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: 'Too many image processing requests. Please try again later.',
+  keyPrefix: 'images'
+});
+
+export const paymentsRateLimit = createRateLimiter({
+  windowMs: 24 * 60 * 60 * 1000, // 1 day
+  max: 10,
+  message: 'Too many payment attempts. Please try again later.',
+  keyPrefix: 'payments'
+});
+
+export const storiesRateLimit = createRateLimiter({
+  windowMs: 24 * 60 * 60 * 1000, // 1 day
+  max: 3,
+  message: 'Too many story submissions. Please try again later.',
+  keyPrefix: 'stories'
+});

@@ -18,6 +18,7 @@ import {
   updateUserProfile,
   getUserPreferences,
 } from '../utils/db.js';
+import { storiesRateLimit } from '../middleware/rateLimit.js';
 
 const stories = new Hono();
 
@@ -163,7 +164,7 @@ stories.post('/upload-image', authMiddleware, async (c) => {
   });
 });
 
-stories.post('/create-story', authMiddleware, async (c) => {
+stories.post('/create-story', storiesRateLimit, authMiddleware, async (c) => {
   // CSRF protection for story creation
   const origin = c.req.header('Origin');
   const referer = c.req.header('Referer');

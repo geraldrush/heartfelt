@@ -1,15 +1,16 @@
 import { z } from 'zod';
 import { getReferenceData } from './db.js';
 
-const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/;
 
 export const emailSignupSchema = z.object({
   email: z.string().email({ message: 'Enter a valid email address.' }),
   password: z
     .string()
-    .min(8, { message: 'Password must be at least 8 characters.' })
+    .min(12, { message: 'Password must be at least 12 characters.' })
     .regex(passwordRegex, {
-      message: 'Password must include at least one uppercase letter and one number.',
+      message:
+        'Password must include uppercase, lowercase, a number, and a special character.',
     }),
   full_name: z.string().min(2, { message: 'Full name is required.' }),
   age: z.coerce

@@ -29,6 +29,8 @@ const getSignupBonusTokens = (c) => {
 
 const REFRESH_TOKEN_TTL_DAYS = 30;
 const REFRESH_TOKEN_TTL_MS = REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
 
 function userResponse(user) {
   return {
@@ -66,6 +68,58 @@ function getClientInfo(c) {
     c.req.header('X-Forwarded-For') ||
     null;
   return { userAgent, ipAddress };
+}
+
+async function getLoginAttempt(db, email, ipAddress) {
+  if (!email || !ipAddress) {
+    return null;
+  }
+  return await db
+    .prepare(
+      `SELECT failed_count, locked_until
+       FROM auth_login_attempts
+       WHERE email = ? AND ip_address = ?`
+    )
+    .bind(email, ipAddress)
+    .first();
+}
+
+async function recordFailedLogin(db, email, ipAddress) {
+  if (!email || !ipAddress) {
+    return;
+  }
+  const existing = await getLoginAttempt(db, email, ipAddress);
+  const currentCount = existing?.failed_count ?? 0;
+  const newCount = currentCount + 1;
+  const shouldLock = newCount >= MAX_FAILED_LOGIN_ATTEMPTS;
+  const lockedUntil = shouldLock ? new Date(Date.now() + LOGIN_LOCKOUT_MS).toISOString() : null;
+
+  await db
+    .prepare(
+      `INSERT INTO auth_login_attempts (
+        email,
+        ip_address,
+        failed_count,
+        locked_until,
+        updated_at
+      ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(email, ip_address) DO UPDATE SET
+        failed_count = excluded.failed_count,
+        locked_until = excluded.locked_until,
+        updated_at = CURRENT_TIMESTAMP`
+    )
+    .bind(email, ipAddress, newCount, lockedUntil)
+    .run();
+}
+
+async function clearLoginAttempts(db, email, ipAddress) {
+  if (!email || !ipAddress) {
+    return;
+  }
+  await db
+    .prepare('DELETE FROM auth_login_attempts WHERE email = ? AND ip_address = ?')
+    .bind(email, ipAddress)
+    .run();
 }
 
 async function issueRefreshToken(db, userId, clientInfo) {
@@ -220,17 +274,30 @@ auth.post('/email-login', authRateLimit, async (c) => {
 
   const db = getDb(c);
   const user = await getUserByEmail(db, parsed.data.email);
+  const clientInfo = getClientInfo(c);
+  const ipAddress = clientInfo.ipAddress || 'unknown';
+
+  const loginAttempt = await getLoginAttempt(db, parsed.data.email, ipAddress);
+  const lockedUntil = loginAttempt?.locked_until ? Date.parse(loginAttempt.locked_until) : null;
+  if (lockedUntil && lockedUntil > Date.now()) {
+    return c.json({ error: 'Too many failed login attempts. Please try again later.' }, 429);
+  }
+
   if (!user || !user.password_hash) {
+    await recordFailedLogin(db, parsed.data.email, ipAddress);
     return c.json({ error: 'Invalid email or password.' }, 401);
   }
 
   const isValid = await verifyPassword(parsed.data.password, user.password_hash);
   if (!isValid) {
+    await recordFailedLogin(db, parsed.data.email, ipAddress);
     return c.json({ error: 'Invalid email or password.' }, 401);
   }
 
+  await clearLoginAttempts(db, parsed.data.email, ipAddress);
+
   const token = await generateToken(user.id, c.env.JWT_SECRET);
-  const { refreshToken } = await issueRefreshToken(db, user.id, getClientInfo(c));
+  const { refreshToken } = await issueRefreshToken(db, user.id, clientInfo);
 
   return c.json({ token, access_token: token, refresh_token: refreshToken, user: userResponse(user) });
 });
