@@ -182,6 +182,10 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
 
+    if (user.token_balance < 5) {
+      return c.json({ error: 'Insufficient tokens' }, 402);
+    }
+
     const recentRequest = await db
       .prepare(
         `SELECT id FROM video_call_requests
@@ -198,13 +202,17 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
     }
 
     const requestId = generateId();
-    await db
-      .prepare(
+    await db.batch([
+      db.prepare('UPDATE users SET token_balance = token_balance - 5 WHERE id = ?').bind(userId),
+      db.prepare(
+        `INSERT INTO token_transactions (id, user_id, amount, type, description)
+         VALUES (?, ?, -5, 'video_call', 'Video call request')`
+      ).bind(generateId(), userId),
+      db.prepare(
         `INSERT INTO video_call_requests (id, connection_id, caller_id, recipient_id, status)
          VALUES (?, ?, ?, ?, 'pending')`
-      )
-      .bind(requestId, body.connection_id, userId, body.recipient_id)
-      .run();
+      ).bind(requestId, body.connection_id, userId, body.recipient_id)
+    ]);
 
     const existing = await db
       .prepare(
@@ -247,7 +255,7 @@ chat.post('/video-call-request', authMiddleware, async (c) => {
     return c.json({ 
       success: true, 
       request_id: requestId,
-      new_balance: user.token_balance 
+      new_balance: user.token_balance - 5
     });
   } catch (error) {
     console.error('[Chat] Video call request error:', error);

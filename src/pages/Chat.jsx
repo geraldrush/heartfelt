@@ -21,6 +21,7 @@ import EmptyState from '../components/EmptyState.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import Toast from '../components/Toast.jsx';
 import VideoCall from '../components/VideoCall.jsx';
+import InsufficientTokensModal from '../components/InsufficientTokensModal.jsx';
 import { isTokenExpiringSoon } from '../utils/auth.js';
 
 // Connection Status Banner Component
@@ -205,6 +206,7 @@ const Chat = () => {
   const [pendingCallRequest, setPendingCallRequest] = useState(null);
   const [activeCallRequestId, setActiveCallRequestId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [showInsufficientTokens, setShowInsufficientTokens] = useState(false);
   const giftOptions = [5, 10, 20, 50];
 
   const listRef = useRef(null);
@@ -529,12 +531,17 @@ const Chat = () => {
       showToast('Unable to start video call.', 'error');
       return;
     }
+    if (tokenBalance < 5) {
+      setShowInsufficientTokens(true);
+      return;
+    }
     try {
       const response = await requestVideoCall(connectionId, connection.other_user_id);
       const requestId = response?.request_id;
       if (!requestId) {
         throw new Error('Failed to start call.');
       }
+      setTokenBalance(response.new_balance);
       clearCallTimeout();
       setPendingCallRequest({ requestId, startedAt: Date.now() });
       setActiveCallRequestId(requestId);
@@ -542,9 +549,13 @@ const Chat = () => {
       setShowVideoCall(true);
       showToast('Calling…', 'info');
     } catch (err) {
-      showToast(err.message || 'Failed to request video call.');
+      if (err.message === 'Insufficient tokens') {
+        setShowInsufficientTokens(true);
+      } else {
+        showToast(err.message || 'Failed to request video call.');
+      }
     }
-  }, [clearCallTimeout, connectionId, connection?.other_user_id, showToast]);
+  }, [clearCallTimeout, connectionId, connection?.other_user_id, showToast, tokenBalance]);
 
   useEffect(() => {
     setMessages([]);
@@ -1204,6 +1215,13 @@ const Chat = () => {
             }}
           />
         )}
+
+      <InsufficientTokensModal
+        isOpen={showInsufficientTokens}
+        onClose={() => setShowInsufficientTokens(false)}
+        requiredTokens={5}
+        action="start a video call"
+      />
     </ChatErrorBoundary>
   );
 };
