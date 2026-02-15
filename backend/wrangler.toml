@@ -47,6 +47,5 @@ tag = "v1"
 new_classes = ["ChatRoom"]
 
 [[routes]]
-pattern = "api.afrodate.co.za/*"
-zone_name = "afrodate.co.za"
+pattern = "api.afrodate.co.za"
 custom_domain = true
