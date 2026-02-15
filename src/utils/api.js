@@ -108,10 +108,19 @@ export const googleAuth = (credential) =>
 export const refreshToken = async () => {
   let retryCount = 0;
   const maxRetries = 2;
+  const refreshTokenValue = localStorage.getItem('refresh_token');
+
+  if (!refreshTokenValue) {
+    const error = new Error('Refresh token missing');
+    error.status = 401;
+    throw error;
+  }
   
   while (retryCount <= maxRetries) {
     try {
-      const result = await apiClient.post('/api/auth/refresh');
+      const result = await apiClient.post('/api/auth/refresh', {
+        refresh_token: refreshTokenValue,
+      });
       console.log('[API] Token refresh successful');
       return result;
     } catch (error) {
@@ -120,7 +129,7 @@ export const refreshToken = async () => {
       if (error.code === 'TOKEN_EXPIRED') {
         console.log('[API] Token expired, clearing localStorage and redirecting to login');
         localStorage.removeItem('auth_token');
-        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
         window.location.href = '/login';
         throw error;
       }
@@ -139,6 +148,8 @@ export const refreshToken = async () => {
 };
 export const getCurrentUser = () => apiClient.get('/api/auth/me');
 export const deleteAccount = () => apiClient.delete('/api/auth/account');
+export const logoutSession = (refreshToken) =>
+  apiClient.post('/api/auth/logout', { refresh_token: refreshToken });
 
 export const uploadStoryImage = (formData) => {
   const token = localStorage.getItem('auth_token');

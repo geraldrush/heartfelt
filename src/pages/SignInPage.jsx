@@ -22,7 +22,8 @@ const SignInPage = () => {
 
     try {
       const data = await emailLogin({ email, password });
-      login(data.token, data.user);
+      const accessToken = data.access_token || data.token;
+      login(accessToken, data.refresh_token, data.user);
       navigate(isBasicProfileComplete(data.user) ? '/stories' : '/onboarding-basics');
     } catch (err) {
       setError(err.message || 'Something went wrong.');
@@ -37,7 +38,8 @@ const SignInPage = () => {
 
     try {
       const data = await googleAuth(credentialResponse.credential);
-      login(data.token, data.user);
+      const accessToken = data.access_token || data.token;
+      login(accessToken, data.refresh_token, data.user);
       navigate(isBasicProfileComplete(data.user) ? '/stories' : '/onboarding-basics');
     } catch (err) {
       setError(err.message || 'Google sign-in failed.');

@@ -36,7 +36,8 @@ const SignUpPage = () => {
     setLoading(true);
     try {
       const data = await emailSignup({ email, password, full_name: fullName.trim() });
-      login(data.token, data.user);
+      const accessToken = data.access_token || data.token;
+      login(accessToken, data.refresh_token, data.user);
       navigate(isBasicProfileComplete(data.user) ? '/stories' : '/onboarding-basics');
     } catch (err) {
       setError(err.message || 'Sign up failed.');
@@ -50,7 +51,8 @@ const SignUpPage = () => {
     setLoading(true);
     try {
       const data = await googleAuth(credentialResponse.credential);
-      login(data.token, data.user);
+      const accessToken = data.access_token || data.token;
+      login(accessToken, data.refresh_token, data.user);
       navigate(isBasicProfileComplete(data.user) ? '/stories' : '/onboarding-basics');
     } catch (err) {
       setError(err.message || 'Google sign-up failed.');

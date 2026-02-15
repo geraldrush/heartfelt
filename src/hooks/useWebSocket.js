@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { isTokenExpiringSoon, isTokenExpired } from '../utils/auth.js';
+import { isTokenExpiringSoon, isTokenExpired, storage } from '../utils/auth.js';
 import { refreshToken, getMessages } from '../utils/api.js';
 
 const buildWebSocketUrl = (connectionId, token) => {
@@ -29,7 +29,7 @@ const buildWebSocketUrl = (connectionId, token) => {
     const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     console.log('[WS-Client] URL validation: all checks passed');
     // Always use latest token from localStorage
-    const latestToken = localStorage.getItem('auth_token') || token;
+    const latestToken = storage.getToken() || token;
     return `${protocol}//${url.host}/api/chat/connect/${connectionId}?token=${latestToken}`;
   } catch (error) {
     console.log('[WS-Client] URL validation: API URL invalid', error.message);
@@ -225,7 +225,7 @@ export const useWebSocket = ({
       return;
     }
     
-    let token = localStorage.getItem('auth_token');
+    let token = storage.getToken();
     if (!token) {
       console.log(`[WS-Client] ${new Date().toISOString()} Connection attempt failed: no token in localStorage`);
       setConnectionState('error');
@@ -240,8 +240,11 @@ export const useWebSocket = ({
       console.log('[WS-Client] Token expired, attempting refresh');
       try {
         const refreshResult = await refreshToken();
-        token = refreshResult.token;
-        localStorage.setItem('auth_token', token);
+        token = refreshResult.access_token || refreshResult.token;
+        storage.setToken(token);
+        if (refreshResult.refresh_token) {
+          storage.setRefreshToken(refreshResult.refresh_token);
+        }
         console.log('[WS-Client] Token refresh before WebSocket: success');
       } catch (error) {
         console.log('[WS-Client] Token refresh before WebSocket: failed', error.message);
@@ -255,8 +258,11 @@ export const useWebSocket = ({
       console.log('[WS-Client] Token expiring soon, attempting refresh');
       try {
         const refreshResult = await refreshToken();
-        token = refreshResult.token;
-        localStorage.setItem('auth_token', token);
+        token = refreshResult.access_token || refreshResult.token;
+        storage.setToken(token);
+        if (refreshResult.refresh_token) {
+          storage.setRefreshToken(refreshResult.refresh_token);
+        }
         console.log('[WS-Client] Token refresh before WebSocket: success');
       } catch (error) {
         console.log('[WS-Client] Token refresh before WebSocket: failed, proceeding with existing token');
@@ -551,7 +557,7 @@ export const useWebSocket = ({
       
       // Log full diagnostics on first error
       if (retryRef.current === 0) {
-        logConnectionDiagnostics(connectionId, localStorage.getItem('auth_token'));
+        logConnectionDiagnostics(connectionId, storage.getToken());
       }
       
       setConnectionState('error');

@@ -13,6 +13,7 @@ dist-ssr
 *.local
 
 backend/.wrangler/
+backend/wrangler.local.toml
 
 # Editor directories and files
 .vscode/*

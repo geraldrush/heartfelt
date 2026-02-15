@@ -7,9 +7,10 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { refreshToken, getCurrentUser } from '../utils/api.js';
+import { refreshToken, getCurrentUser, logoutSession } from '../utils/api.js';
 import {
   getIdleTimeout,
+  isTokenExpired,
   isTokenValid,
   scheduleRefreshTimer,
   shouldRefreshToken,
@@ -39,8 +40,12 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logout = useCallback(() => {
+    const activeRefreshToken = storage.getRefreshToken();
+    if (activeRefreshToken) {
+      logoutSession(activeRefreshToken).catch(() => {});
+    }
     clearTimers();
-    storage.clearToken();
+    storage.clearSession();
     setToken(null);
     setUser(null);
     setLoading(false);
@@ -74,7 +79,7 @@ export const AuthProvider = ({ children }) => {
   );
 
   const commitSession = useCallback(
-    (nextToken, nextUser, options = {}) => {
+    (nextToken, nextRefreshToken, nextUser, options = {}) => {
       if (!nextToken) {
         logout();
         return;
@@ -85,6 +90,9 @@ export const AuthProvider = ({ children }) => {
         setUser(nextUser);
       }
       storage.setToken(nextToken);
+      if (nextRefreshToken) {
+        storage.setRefreshToken(nextRefreshToken);
+      }
 
       if (refreshTimer.current && typeof window !== 'undefined') {
         window.clearTimeout(refreshTimer.current);
@@ -124,7 +132,8 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const data = await refreshToken();
-        commitSession(data.token, data.user, {
+        const accessToken = data.access_token || data.token;
+        commitSession(accessToken, data.refresh_token, data.user, {
           skipIdle,
           skipLoading: background,
         });
@@ -146,11 +155,11 @@ export const AuthProvider = ({ children }) => {
   }, [refreshSession]);
 
   const login = useCallback(
-    (nextToken, nextUser) => {
+    (nextToken, nextRefreshToken, nextUser) => {
       if (!nextToken || !nextUser) {
         return;
       }
-      commitSession(nextToken, nextUser);
+      commitSession(nextToken, nextRefreshToken, nextUser);
     },
     [commitSession]
   );
@@ -160,6 +169,19 @@ export const AuthProvider = ({ children }) => {
     if (!storedToken) {
       setLoading(false);
       return;
+    }
+
+    if (!isTokenValid(storedToken) || isTokenExpired(storedToken)) {
+      try {
+        const data = await refreshToken();
+        const accessToken = data.access_token || data.token;
+        commitSession(accessToken, data.refresh_token, data.user, { skipLoading: true });
+        return;
+      } catch {
+        storage.clearSession();
+        setLoading(false);
+        return;
+      }
     }
     
     // Set token and fetch user data

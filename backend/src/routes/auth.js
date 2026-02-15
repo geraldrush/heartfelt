@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
 import { authRateLimit } from '../middleware/rateLimit.js';
-import { generateToken } from '../utils/jwt.js';
+import { generateRefreshToken, generateToken, hashToken } from '../utils/jwt.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import { sanitizeName } from '../utils/sanitize.js';
 import {
@@ -26,6 +26,9 @@ const getSignupBonusTokens = (c) => {
   const value = Number.isFinite(raw) ? Math.trunc(raw) : NaN;
   return value >= 1 ? value : 2;
 };
+
+const REFRESH_TOKEN_TTL_DAYS = 30;
+const REFRESH_TOKEN_TTL_MS = REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
 
 function userResponse(user) {
   return {
@@ -54,6 +57,57 @@ function userResponse(user) {
     seeking_age_max: user.seeking_age_max,
     seeking_races: user.seeking_races ? JSON.parse(user.seeking_races) : [],
   };
+}
+
+function getClientInfo(c) {
+  const userAgent = c.req.header('User-Agent') || null;
+  const ipAddress =
+    c.req.header('CF-Connecting-IP') ||
+    c.req.header('X-Forwarded-For') ||
+    null;
+  return { userAgent, ipAddress };
+}
+
+async function issueRefreshToken(db, userId, clientInfo) {
+  const refreshToken = generateRefreshToken();
+  const tokenHash = await hashToken(refreshToken);
+  const tokenId = generateId();
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS).toISOString();
+
+  await db
+    .prepare(
+      `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, user_agent, ip_address)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      tokenId,
+      userId,
+      tokenHash,
+      expiresAt,
+      clientInfo.userAgent,
+      clientInfo.ipAddress
+    )
+    .run();
+
+  return { refreshToken, tokenId, expiresAt };
+}
+
+async function revokeRefreshToken(db, tokenId, replacedBy) {
+  await db
+    .prepare(
+      `UPDATE refresh_tokens
+       SET revoked_at = CURRENT_TIMESTAMP, replaced_by = ?
+       WHERE id = ? AND revoked_at IS NULL`
+    )
+    .bind(replacedBy ?? null, tokenId)
+    .run();
+}
+
+async function revokeRefreshTokensForUser(db, userId) {
+  await db
+    .prepare('UPDATE refresh_tokens SET revoked_at = CURRENT_TIMESTAMP WHERE user_id = ? AND revoked_at IS NULL')
+    .bind(userId)
+    .run();
 }
 
 auth.post('/email-signup', authRateLimit, async (c) => {
@@ -124,9 +178,12 @@ auth.post('/email-signup', authRateLimit, async (c) => {
     .run();
 
   const token = await generateToken(id, c.env.JWT_SECRET);
+  const { refreshToken } = await issueRefreshToken(db, id, getClientInfo(c));
 
   return c.json({
     token,
+    access_token: token,
+    refresh_token: refreshToken,
     user: {
       id,
       email: parsed.data.email,
@@ -173,8 +230,9 @@ auth.post('/email-login', authRateLimit, async (c) => {
   }
 
   const token = await generateToken(user.id, c.env.JWT_SECRET);
+  const { refreshToken } = await issueRefreshToken(db, user.id, getClientInfo(c));
 
-  return c.json({ token, user: userResponse(user) });
+  return c.json({ token, access_token: token, refresh_token: refreshToken, user: userResponse(user) });
 });
 
 auth.post('/google', authRateLimit, async (c) => {
@@ -302,22 +360,95 @@ auth.post('/google', authRateLimit, async (c) => {
   }
 
   const token = await generateToken(user.id, c.env.JWT_SECRET);
+  const { refreshToken } = await issueRefreshToken(db, user.id, getClientInfo(c));
 
-  return c.json({ token, user: userResponse(user) });
+  return c.json({ token, access_token: token, refresh_token: refreshToken, user: userResponse(user) });
 });
 
-auth.post('/refresh', authMiddleware, async (c) => {
-  const db = getDb(c);
-  const userId = c.get('userId');
-  const user = await getUserById(db, userId);
+auth.post('/refresh', authRateLimit, async (c) => {
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
 
+  const isValidOrigin = origin ? isOriginAllowed(origin, c.env) : false;
+  const isValidReferer = referer ? isRefererAllowed(referer, c.env) : false;
+
+  if (!isValidOrigin && !isValidReferer) {
+    const allowedOrigins = getAllowedOrigins(c.env);
+    console.log(`[Auth] Invalid origin/referer: origin=${origin}, referer=${referer}, allowed: ${allowedOrigins.join(', ')}`);
+    return c.json({ error: 'Invalid origin or referer' }, 403);
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const refreshToken = body?.refresh_token;
+
+  if (!refreshToken || typeof refreshToken !== 'string') {
+    return c.json({ error: 'Refresh token required.' }, 400);
+  }
+
+  const db = getDb(c);
+  const tokenHash = await hashToken(refreshToken);
+  const storedToken = await db
+    .prepare('SELECT * FROM refresh_tokens WHERE token_hash = ?')
+    .bind(tokenHash)
+    .first();
+
+  if (!storedToken) {
+    return c.json({ error: 'Invalid refresh token.' }, 401);
+  }
+
+  if (storedToken.revoked_at) {
+    return c.json({ error: 'Refresh token revoked.' }, 401);
+  }
+
+  const expiresAt = storedToken.expires_at ? Date.parse(storedToken.expires_at) : NaN;
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    await revokeRefreshToken(db, storedToken.id, null);
+    return c.json({ error: 'Refresh token expired.' }, 401);
+  }
+
+  const user = await getUserById(db, storedToken.user_id);
   if (!user) {
+    await revokeRefreshToken(db, storedToken.id, null);
     return c.json({ error: 'User not found.' }, 404);
   }
 
+  const newRefreshToken = generateRefreshToken();
+  const newTokenHash = await hashToken(newRefreshToken);
+  const newTokenId = generateId();
+  const newExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS).toISOString();
+  const clientInfo = getClientInfo(c);
+
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE refresh_tokens
+         SET revoked_at = CURRENT_TIMESTAMP, replaced_by = ?
+         WHERE id = ? AND revoked_at IS NULL`
+      )
+      .bind(newTokenId, storedToken.id),
+    db
+      .prepare(
+        `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, user_agent, ip_address)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .bind(
+        newTokenId,
+        storedToken.user_id,
+        newTokenHash,
+        newExpiresAt,
+        clientInfo.userAgent,
+        clientInfo.ipAddress
+      ),
+  ]);
+
   const token = await generateToken(user.id, c.env.JWT_SECRET);
 
-  return c.json({ token, user: userResponse(user) });
+  return c.json({
+    token,
+    access_token: token,
+    refresh_token: newRefreshToken,
+    user: userResponse(user),
+  });
 });
 
 auth.get('/me', authMiddleware, async (c) => {
@@ -330,6 +461,41 @@ auth.get('/me', authMiddleware, async (c) => {
   }
 
   return c.json({ user: userResponse(user) });
+});
+
+auth.post('/logout', authMiddleware, async (c) => {
+  const origin = c.req.header('Origin');
+  const referer = c.req.header('Referer');
+
+  const isValidOrigin = origin ? isOriginAllowed(origin, c.env) : false;
+  const isValidReferer = referer ? isRefererAllowed(referer, c.env) : false;
+
+  if (!isValidOrigin && !isValidReferer) {
+    const allowedOrigins = getAllowedOrigins(c.env);
+    console.log(`[Auth] Invalid origin/referer: origin=${origin}, referer=${referer}, allowed: ${allowedOrigins.join(', ')}`);
+    return c.json({ error: 'Invalid origin or referer' }, 403);
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const refreshToken = body?.refresh_token;
+  const db = getDb(c);
+  const userId = c.get('userId');
+
+  if (refreshToken && typeof refreshToken === 'string') {
+    const tokenHash = await hashToken(refreshToken);
+    const storedToken = await db
+      .prepare('SELECT id, user_id FROM refresh_tokens WHERE token_hash = ?')
+      .bind(tokenHash)
+      .first();
+
+    if (storedToken && storedToken.user_id === userId) {
+      await revokeRefreshToken(db, storedToken.id, null);
+    }
+  } else {
+    await revokeRefreshTokensForUser(db, userId);
+  }
+
+  return c.json({ success: true });
 });
 
 auth.delete('/account', authMiddleware, async (c) => {
@@ -421,6 +587,11 @@ auth.delete('/account', authMiddleware, async (c) => {
     [userId, userId]
   );
   await deleteIfExists('story_reports', 'DELETE FROM story_reports WHERE reporter_id = ?', [userId]);
+  await deleteIfExists(
+    'refresh_tokens',
+    'UPDATE refresh_tokens SET revoked_at = CURRENT_TIMESTAMP WHERE user_id = ? AND revoked_at IS NULL',
+    [userId]
+  );
 
   await db.prepare('DELETE FROM users WHERE id = ?').bind(userId).run();
 

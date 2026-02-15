@@ -75,6 +75,13 @@ export const storage = {
       return null;
     }
   },
+  getRefreshToken: () => {
+    try {
+      return localStorage.getItem('refresh_token');
+    } catch {
+      return null;
+    }
+  },
   setToken: (token) => {
     try {
       // Validate token format before storing
@@ -84,9 +91,28 @@ export const storage = {
       localStorage.setItem('auth_token', token);
     } catch {}
   },
+  setRefreshToken: (token) => {
+    try {
+      if (!token || typeof token !== 'string') {
+        throw new Error('Invalid refresh token format');
+      }
+      localStorage.setItem('refresh_token', token);
+    } catch {}
+  },
   clearToken: () => {
     try {
       localStorage.removeItem('auth_token');
+    } catch {}
+  },
+  clearRefreshToken: () => {
+    try {
+      localStorage.removeItem('refresh_token');
+    } catch {}
+  },
+  clearSession: () => {
+    try {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('refresh_token');
     } catch {}
   }
 };
