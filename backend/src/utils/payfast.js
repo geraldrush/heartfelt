@@ -22,10 +22,10 @@ export function generateSignature(data, passphrase) {
     'name_first',
     'name_last',
     'email_address',
+    'm_payment_id',
     'amount',
     'item_name',
-    'item_description',
-    'm_payment_id'
+    'item_description'
   ];
   
   const payload = orderedKeys

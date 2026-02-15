@@ -436,7 +436,7 @@ const TokensPage = () => {
             {packagesLoading ? (
               <div className="mt-6 text-sm text-slate-500">Loading packages...</div>
             ) : (
-              <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <div className="mt-6 grid gap-3 grid-cols-3">
                 {packages.map((pkg) => {
                   const isSelected = selectedPackage?.id === pkg.id;
                   const isBestValue = bestValueId === pkg.id;
@@ -445,23 +445,23 @@ const TokensPage = () => {
                       key={pkg.id}
                       type="button"
                       onClick={() => setSelectedPackage(pkg)}
-                      className={`relative rounded-2xl border px-4 py-5 text-left transition ${
+                      className={`relative rounded-2xl border px-3 py-4 text-left transition ${
                         isSelected
                           ? 'border-[#E74C3C] bg-orange-50'
                           : 'border-slate-200 hover:border-orange-200'
                       }`}
                     >
                       {isBestValue && (
-                        <span className="absolute right-3 top-3 rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}>
+                        <span className="absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ background: 'linear-gradient(135deg, #E74C3C, #F39C12)' }}>
                           Best Value
                         </span>
                       )}
-                      <p className="text-sm font-semibold text-slate-500">Tokens</p>
-                      <p className="mt-2 text-2xl font-bold text-slate-900">
+                      <p className="text-xs font-semibold text-slate-500">Tokens</p>
+                      <p className="mt-1 text-xl font-bold text-slate-900">
                         {pkg.amount}
                       </p>
-                      <p className="mt-3 text-sm text-slate-500">Price</p>
-                      <p className="text-lg font-semibold text-slate-900">
+                      <p className="mt-2 text-xs text-slate-500">Price</p>
+                      <p className="text-base font-semibold text-slate-900">
                         R{(pkg.price_cents / 100).toFixed(2)}
                       </p>
                     </button>

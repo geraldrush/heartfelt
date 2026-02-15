@@ -156,10 +156,10 @@ payments.post('/initiate', authMiddleware, async (c) => {
     name_first: user.first_name || 'User',
     name_last: user.last_name || 'Name',
     email_address: user.email,
+    m_payment_id: customPaymentId,
     amount,
     item_name: packageRow.name,
     item_description: itemDescription,
-    m_payment_id: customPaymentId,
   };
 
   const signature = generateSignature(paymentData, passphrase);
