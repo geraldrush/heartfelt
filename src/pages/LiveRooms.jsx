@@ -177,12 +177,13 @@ const LiveRooms = () => {
               </svg>
             </div>
             <div>
-              <h3 className="font-bold text-gray-900 mb-1">How Live Rooms Work</h3>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Host a live session and invite your followers</li>
-                <li>• Join active rooms to connect with others</li>
-                <li>• Chat in real-time with participants</li>
-                <li>• Build meaningful connections through conversation</li>
+              <h3 className="font-bold text-gray-900 mb-2">How Live Rooms Work</h3>
+              <ul className="text-sm text-gray-600 space-y-1.5">
+                <li>• Share invitation links to invite people to your live sessions</li>
+                <li>• Review room details before joining - content varies by host</li>
+                <li>• Earn tokens through gifts from viewers who enjoy your content</li>
+                <li>• Withdraw your earnings directly to your bank account or PayFast</li>
+                <li>• Build your audience and monetize your live sessions</li>
               </ul>
             </div>
           </div>
@@ -268,13 +269,27 @@ const LiveRooms = () => {
                         {room.viewer_count ?? 0} watching
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleJoin(room.id)}
-                      className="px-6 py-2 bg-gradient-to-r from-[#E74C3C] to-[#F39C12] text-white rounded-full text-sm font-semibold shadow-lg hover:scale-105 transition-transform"
-                    >
-                      Join Room
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const link = `${window.location.origin}/live/${room.id}`;
+                          navigator.clipboard.writeText(link);
+                          setError('Invitation link copied!');
+                          setTimeout(() => setError(''), 2000);
+                        }}
+                        className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-full text-sm font-semibold shadow hover:scale-105 transition-transform"
+                      >
+                        📋 Copy Link
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleJoin(room.id)}
+                        className="px-6 py-2 bg-gradient-to-r from-[#E74C3C] to-[#F39C12] text-white rounded-full text-sm font-semibold shadow-lg hover:scale-105 transition-transform"
+                      >
+                        Join Room
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ))}

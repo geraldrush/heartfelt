@@ -351,6 +351,18 @@ const Profile = () => {
                 <p className="text-2xl font-semibold text-slate-900 mt-1">{completion.percent}%</p>
               </div>
               <div className="flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => {
+                  const link = `${window.location.origin}/profile/preview?userId=${user.id}`;
+                  if (navigator.share) {
+                    navigator.share({ title: `${user.full_name}'s Profile`, url: link });
+                  } else {
+                    navigator.clipboard.writeText(link);
+                    setError('Profile link copied!');
+                    setTimeout(() => setError(''), 2000);
+                  }
+                }}>
+                  Share
+                </Button>
                 <Button variant="secondary" size="sm" onClick={() => navigate('/profile/preview')}>
                   Preview
                 </Button>
