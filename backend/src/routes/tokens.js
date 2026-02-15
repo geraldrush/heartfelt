@@ -193,4 +193,44 @@ tokens.get('/history', authMiddleware, async (c) => {
   });
 });
 
+tokens.post('/withdraw', authMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const db = getDb(c);
+  const userId = c.get('userId');
+
+  if (!body || !body.tokens || !body.payment_method) {
+    return c.json({ error: 'Missing required fields' }, 400);
+  }
+
+  const tokens = parseInt(body.tokens);
+  const MIN_WITHDRAWAL = 500;
+  const TOKEN_TO_RAND = 2;
+
+  if (tokens < MIN_WITHDRAWAL) {
+    return c.json({ error: `Minimum withdrawal is ${MIN_WITHDRAWAL} tokens` }, 400);
+  }
+
+  const user = await getUserById(db, userId);
+  if (!user || user.token_balance < tokens) {
+    return c.json({ error: 'Insufficient balance' }, 402);
+  }
+
+  const amountRand = tokens * TOKEN_TO_RAND;
+  const requestId = generateId();
+
+  await db.batch([
+    db.prepare('UPDATE users SET token_balance = token_balance - ? WHERE id = ?').bind(tokens, userId),
+    db.prepare(
+      `INSERT INTO token_transactions (id, user_id, amount, type, description)
+       VALUES (?, ?, ?, 'withdrawal', ?)`
+    ).bind(generateId(), userId, -tokens, `Withdrawal request: R${amountRand}`),
+    db.prepare(
+      `INSERT INTO withdrawal_requests (id, user_id, tokens, amount_rand, payment_method, bank_details, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'pending')`
+    ).bind(requestId, userId, tokens, amountRand, body.payment_method, body.bank_details ? JSON.stringify(body.bank_details) : null)
+  ]);
+
+  return c.json({ success: true, request_id: requestId, new_balance: user.token_balance - tokens });
+});
+
 export default tokens;

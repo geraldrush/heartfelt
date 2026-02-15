@@ -232,6 +232,13 @@ const TokensPage = () => {
             </button>
             <button
               type="button"
+              onClick={() => navigate('/tokens/withdraw')}
+              className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow hover:scale-105 transition-transform"
+            >
+              Withdraw
+            </button>
+            <button
+              type="button"
               onClick={() => setShowTransfer(true)}
               className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow hover:scale-105 transition-transform"
             >

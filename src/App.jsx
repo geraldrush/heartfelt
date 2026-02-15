@@ -22,6 +22,7 @@ const Connections = React.lazy(() => import('./pages/Connections'));
 const Profile = React.lazy(() => import('./pages/Profile'));
 const ProfilePreview = React.lazy(() => import('./pages/ProfilePreview.jsx'));
 const TokensPage = React.lazy(() => import('./pages/TokensPage'));
+const WithdrawalPage = React.lazy(() => import('./pages/WithdrawalPage'));
 const OnboardingBasics = React.lazy(() => import('./pages/OnboardingBasics.jsx'));
 const ConnectionProfile = React.lazy(() => import('./pages/ConnectionProfile.jsx'));
 const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage.jsx'));
@@ -73,6 +74,7 @@ const AnimatedRoutes = () => {
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/profile/preview" element={<ProtectedRoute><ProfilePreview /></ProtectedRoute>} />
           <Route path="/tokens" element={<ProtectedRoute><TokensPage /></ProtectedRoute>} />
+          <Route path="/tokens/withdraw" element={<ProtectedRoute><WithdrawalPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         </Routes>
       </Suspense>
