@@ -11,6 +11,7 @@ import { NotificationsProvider } from './context/NotificationsContext.jsx';
 import { ensurePushSubscription } from './utils/push.js';
 import Toast from './components/Toast.jsx';
 import GlobalVideoCallModal from './components/GlobalVideoCallModal.jsx';
+import CookieConsent from './components/CookieConsent.jsx';
 const SignInPage = React.lazy(() => import('./pages/SignInPage'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 const SignUpPage = React.lazy(() => import('./pages/SignUpPage.jsx'));
@@ -23,11 +24,13 @@ const Profile = React.lazy(() => import('./pages/Profile'));
 const ProfilePreview = React.lazy(() => import('./pages/ProfilePreview.jsx'));
 const TokensPage = React.lazy(() => import('./pages/TokensPage'));
 const WithdrawalPage = React.lazy(() => import('./pages/WithdrawalPage'));
+const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy'));
 const OnboardingBasics = React.lazy(() => import('./pages/OnboardingBasics.jsx'));
 const ConnectionProfile = React.lazy(() => import('./pages/ConnectionProfile.jsx'));
 const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage.jsx'));
 const LiveRooms = React.lazy(() => import('./pages/LiveRooms.jsx'));
 const LiveRoom = React.lazy(() => import('./pages/LiveRoom.jsx'));
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard.jsx'));
 
 const AuthRedirect = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -75,7 +78,9 @@ const AnimatedRoutes = () => {
           <Route path="/profile/preview" element={<ProtectedRoute><ProfilePreview /></ProtectedRoute>} />
           <Route path="/tokens" element={<ProtectedRoute><TokensPage /></ProtectedRoute>} />
           <Route path="/tokens/withdraw" element={<ProtectedRoute><WithdrawalPage /></ProtectedRoute>} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         </Routes>
       </Suspense>
   );
@@ -193,6 +198,7 @@ const App = () => {
             <NotificationsListener />
             <AnimatedRoutes />
             {showBottomNav && <BottomNavigation />}
+            <CookieConsent />
           </div>
         </NotificationsProvider>
       </AuthProvider>

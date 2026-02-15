@@ -1,74 +1,75 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const PrivacyPolicy = () => {
+  const navigate = useNavigate();
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm border p-8">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-6">Privacy Policy</h1>
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-8">
+        <button onClick={() => navigate(-1)} className="mb-6 text-orange-600 hover:underline">
+          ← Back
+        </button>
         
-        <div className="prose prose-sm max-w-none">
-          <p className="text-gray-600 mb-4">
-            <strong>Last updated:</strong> {new Date().toLocaleDateString()}
-          </p>
-          
-          <section className="mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-3">1. Information We Collect</h2>
-            <p className="text-gray-600 mb-2">We collect information you provide directly to us, such as:</p>
-            <ul className="list-disc pl-6 text-gray-600 space-y-1">
-              <li>Account information (name, email, age, location)</li>
-              <li>Profile information and photos</li>
-              <li>Messages and interactions with other users</li>
-              <li>Usage data and analytics</li>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Privacy Policy</h1>
+        <p className="text-sm text-gray-500 mb-8">Last updated: {new Date().toLocaleDateString()}</p>
+
+        <div className="space-y-6 text-gray-700">
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">1. Information We Collect</h2>
+            <p>We collect information you provide directly, including name, email, profile details, and payment information. We also collect usage data, device information, and location data.</p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">2. How We Use Your Information</h2>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>Provide and improve our services</li>
+              <li>Process payments and transactions</li>
+              <li>Send notifications and updates</li>
+              <li>Ensure platform security</li>
+              <li>Comply with legal obligations</li>
             </ul>
           </section>
 
-          <section className="mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-3">2. How We Use Your Information</h2>
-            <ul className="list-disc pl-6 text-gray-600 space-y-1">
-              <li>To provide and improve our services</li>
-              <li>To facilitate connections between users</li>
-              <li>To send important updates and notifications</li>
-              <li>To ensure safety and prevent abuse</li>
-            </ul>
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">3. Data Sharing</h2>
+            <p>We do not sell your personal information. We may share data with service providers, payment processors, and as required by law.</p>
           </section>
 
-          <section className="mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-3">3. Information Sharing</h2>
-            <p className="text-gray-600">
-              We do not sell, trade, or rent your personal information to third parties. 
-              We may share information only in specific circumstances such as legal compliance 
-              or with your explicit consent.
-            </p>
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">4. Cookies</h2>
+            <p>We use cookies and similar technologies to enhance your experience, analyze usage, and personalize content. You can control cookies through your browser settings.</p>
           </section>
 
-          <section className="mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-3">4. Your Rights (GDPR)</h2>
-            <p className="text-gray-600 mb-2">If you are in the EU, you have the right to:</p>
-            <ul className="list-disc pl-6 text-gray-600 space-y-1">
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">5. Data Security</h2>
+            <p>We implement industry-standard security measures to protect your data. However, no method of transmission over the internet is 100% secure.</p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">6. Your Rights</h2>
+            <ul className="list-disc pl-6 space-y-2">
               <li>Access your personal data</li>
-              <li>Correct inaccurate data</li>
-              <li>Delete your data (right to be forgotten)</li>
+              <li>Request data correction or deletion</li>
               <li>Export your data</li>
-              <li>Object to processing</li>
+              <li>Withdraw consent</li>
+              <li>Object to data processing</li>
             </ul>
           </section>
 
-          <section className="mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-3">5. Data Security</h2>
-            <p className="text-gray-600">
-              We implement appropriate security measures to protect your information against 
-              unauthorized access, alteration, disclosure, or destruction.
-            </p>
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">7. Data Retention</h2>
+            <p>We retain your data as long as your account is active or as needed to provide services. You may request deletion at any time.</p>
           </section>
 
-          <section className="mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-3">6. Contact Us</h2>
-            <p className="text-gray-600">
-              If you have questions about this Privacy Policy, please contact us at{' '}
-              <a href="mailto:privacy@heartfelt.app" className="text-blue-500 hover:text-blue-600">
-                privacy@heartfelt.app
-              </a>
-            </p>
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">8. Children's Privacy</h2>
+            <p>Our service is not intended for users under 18. We do not knowingly collect data from children.</p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">9. Contact Us</h2>
+            <p>For privacy concerns or data requests, contact us at: <a href="mailto:privacy@heartfelt.app" className="text-orange-600 hover:underline">privacy@heartfelt.app</a></p>
           </section>
         </div>
       </div>

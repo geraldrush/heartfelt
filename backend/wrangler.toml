@@ -46,9 +46,7 @@ script_name = "heartfelt-api"
 tag = "v1"
 new_classes = ["ChatRoom"]
 
-[deployment]
-previews_enabled = false
-
-routes = [
-  { pattern = "api.afrodate.co.za/*", zone_name = "afrodate.co.za", custom_domain = true }
-]
+[[routes]]
+pattern = "api.afrodate.co.za/*"
+zone_name = "afrodate.co.za"
+custom_domain = true

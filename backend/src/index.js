@@ -11,7 +11,10 @@ import notificationRoutes from './routes/notifications.js';
 import liveRoutes from './routes/live.js';
 import socialRoutes from './routes/social.js';
 import livekitRoutes from './routes/livekit.js';
+import adminRoutes from './routes/admin.js';
+import dataExportRoutes from './routes/data-export.js';
 import { getAllowedOrigins, isOriginAllowed, isRefererAllowed } from './utils/cors.js';
+import { logSecurityEvent } from './utils/security.js';
 
 const app = new Hono();
 
@@ -72,6 +75,17 @@ app.use('/*', async (c, next) => {
     if (!isValidOrigin && !isValidReferer) {
       const allowedOrigins = getAllowedOrigins(c.env);
       console.log(`[CSRF] Invalid origin/referer: origin=${origin}, referer=${referer}, allowed: ${allowedOrigins.join(', ')}`);
+      
+      // Log security event
+      try {
+        await logSecurityEvent(c.env.DB, {
+          event_type: 'csrf_violation',
+          ip_address: c.req.header('CF-Connecting-IP'),
+          user_agent: c.req.header('User-Agent'),
+          metadata: { origin, referer, path }
+        });
+      } catch (e) {}
+      
       return c.json({ error: 'Invalid origin or referer' }, 403);
     }
   }
@@ -124,6 +138,8 @@ app.route('/api/notifications', notificationRoutes);
 app.route('/api/live', liveRoutes);
 app.route('/api/social', socialRoutes);
 app.route('/api/livekit', livekitRoutes);
+app.route('/api/admin', adminRoutes);
+app.route('/api/data', dataExportRoutes);
 
 export default app;
 
