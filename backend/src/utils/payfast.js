@@ -1,21 +1,38 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 
 const encodeValue = (value) => {
-  // PayFast requires URL encoding but with spaces as '+'
-  // Do NOT encode: A-Z a-z 0-9 - _ . ~
-  return encodeURIComponent(String(value))
-    .replace(/%20/g, '+')
-    .replace(/%2D/g, '-')
-    .replace(/%5F/g, '_')
-    .replace(/%2E/g, '.')
-    .replace(/%7E/g, '~');
+  // PayFast uses PHP urlencode which is equivalent to encodeURIComponent
+  // but with spaces as '+' instead of '%20'
+  // This matches PHP's urlencode() exactly
+  return encodeURIComponent(String(value).trim()).replace(/%20/g, '+');
 };
 
 export function generateSignature(data, passphrase) {
-  // PayFast requires parameters in alphabetical order
-  const payload = Object.keys(data)
-    .sort()
-    .filter((key) => data[key] !== undefined && data[key] !== null && data[key] !== '')
+  // IMPORTANT: PayFast requires parameters in the EXACT order they are defined
+  // NOT alphabetical order (that's only for API calls)
+  // Order: merchant_id, merchant_key, return_url, cancel_url, notify_url,
+  //        name_first, name_last, email_address, amount, item_name, item_description, m_payment_id
+  
+  const orderedKeys = [
+    'merchant_id',
+    'merchant_key', 
+    'return_url',
+    'cancel_url',
+    'notify_url',
+    'name_first',
+    'name_last',
+    'email_address',
+    'amount',
+    'item_name',
+    'item_description',
+    'm_payment_id'
+  ];
+  
+  const payload = orderedKeys
+    .filter((key) => {
+      const val = data[key];
+      return val !== undefined && val !== null && val !== '';
+    })
     .map((key) => `${key}=${encodeValue(data[key])}`)
     .join('&');
 
@@ -52,7 +69,21 @@ export function verifySignature(data, receivedSignature, passphrase) {
     return false;
   }
 
-  const expected = generateSignature(data, passphrase);
+  // ITN uses alphabetical order (different from payment form)
+  const payload = Object.keys(data)
+    .sort()
+    .filter((key) => {
+      const val = data[key];
+      return val !== undefined && val !== null && val !== '';
+    })
+    .map((key) => `${key}=${encodeValue(data[key])}`)
+    .join('&');
+
+  const base = passphrase && passphrase.trim()
+    ? `${payload}&passphrase=${encodeValue(passphrase)}`
+    : payload;
+
+  const expected = createHash('md5').update(base).digest('hex');
   const expectedBuffer = Buffer.from(expected, 'utf8');
   const receivedBuffer = Buffer.from(receivedSignature, 'utf8');
 

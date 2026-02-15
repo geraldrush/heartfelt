@@ -9,6 +9,7 @@ import {
   verifySignature,
   buildSignaturePayload,
 } from '../utils/payfast.js';
+import { debugSignature, compareSignatures, testSignatureWithVariations } from '../utils/payfast-debug.js';
 
 const payments = new Hono();
 
@@ -140,9 +141,11 @@ payments.post('/initiate', authMiddleware, async (c) => {
     .run();
 
   const amount = (packageRow.price_cents / 100).toFixed(2);
-  const pricePerToken = (packageRow.price_cents / packageRow.amount / 100).toFixed(2);
-  const itemDescription = `${packageRow.amount} token(s) @ R${pricePerToken} per token`;
+  // Match prosdirectory format: simple description without special characters
+  const itemDescription = `${packageRow.amount} tokens for Afrodate`;
   const baseUrl = new URL(c.req.url).origin;
+  // Match prosdirectory format: timestamp-uuid-amount
+  const customPaymentId = `${Date.now()}-${userId.split('-')[0]}-${packageRow.amount}`;
 
   const paymentData = {
     merchant_id: merchantId,
@@ -156,7 +159,7 @@ payments.post('/initiate', authMiddleware, async (c) => {
     amount,
     item_name: packageRow.name,
     item_description: itemDescription,
-    m_payment_id: paymentId,
+    m_payment_id: customPaymentId,
   };
 
   const signature = generateSignature(paymentData, passphrase);
@@ -168,18 +171,13 @@ payments.post('/initiate', authMiddleware, async (c) => {
     payment_id: paymentId,
     amount: amount,
     has_passphrase: Boolean(passphrase && passphrase.trim()),
+    passphrase_length: passphrase?.length || 0,
     signature_length: signature.length,
+    signature: signature,
   });
   
   if ((c.env.PAYFAST_SIGNATURE_DEBUG || '').toLowerCase() === 'true') {
-    const debugPayload = buildSignaturePayload(paymentData, passphrase, {
-      maskPassphrase: true,
-      maskEmail: true,
-    });
-    console.log('[Payfast] Signature debug', {
-      payload: debugPayload,
-      signature,
-    });
+    debugSignature(paymentData, passphrase, { showPassphrase: true });
   }
 
   return c.json({
@@ -201,17 +199,16 @@ payments.post('/notify', async (c) => {
 
   const passphrase = getPayfastPassphrase(c.env);
   if (!verifySignature(payload, receivedSignature, passphrase)) {
+    console.error('[Payfast] ITN signature mismatch', {
+      payment_id: payload.m_payment_id,
+      has_passphrase: Boolean(passphrase),
+      passphrase_length: passphrase?.length || 0,
+      received_signature: receivedSignature,
+    });
+    
     if ((c.env.PAYFAST_SIGNATURE_DEBUG || '').toLowerCase() === 'true') {
-      const debugPayload = buildSignaturePayload(payload, passphrase, {
-        maskPassphrase: true,
-        maskEmail: true,
-      });
-      console.log('[Payfast] ITN signature mismatch', {
-        payment_id: payload.m_payment_id,
-        has_passphrase: Boolean(passphrase),
-        payload: debugPayload,
-        received_signature: receivedSignature,
-      });
+      compareSignatures(payload, receivedSignature, passphrase, { showPassphrase: true });
+      testSignatureWithVariations(payload, passphrase);
     }
     return c.text('Invalid signature', 400);
   }
@@ -219,6 +216,19 @@ payments.post('/notify', async (c) => {
   const paymentId = payload.m_payment_id;
   if (!paymentId) {
     return c.text('Missing payment id', 400);
+  }
+
+  // Extract the actual UUID from custom format (timestamp-uuid-amount)
+  // If it's in old format (just UUID), use as-is
+  let actualPaymentId = paymentId;
+  if (paymentId.includes('-') && paymentId.split('-').length > 5) {
+    // Custom format: extract the UUID part from return_url instead
+    // The return_url contains the real payment ID
+    const returnUrl = payload.return_url || '';
+    const match = returnUrl.match(/[?&]id=([a-f0-9-]{36})/i);
+    if (match) {
+      actualPaymentId = match[1];
+    }
   }
 
   const db = getDb(c);
@@ -236,7 +246,7 @@ payments.post('/notify', async (c) => {
       JOIN tokens ON tokens.id = payments.package_id
       WHERE payments.id = ?`
     )
-    .bind(paymentId)
+    .bind(actualPaymentId)
     .first();
 
   if (!payment) {
@@ -295,7 +305,7 @@ payments.post('/notify', async (c) => {
       )
       .bind(
         payfastPaymentId,
-        paymentId,
+        actualPaymentId,
         payment.token_amount,
         payment.user_id,
         transactionId,
@@ -316,7 +326,7 @@ payments.post('/notify', async (c) => {
            payfast_payment_id = ?
        WHERE id = ? AND status = 'pending'`
     )
-    .bind(payload.pf_payment_id || null, paymentId)
+    .bind(payload.pf_payment_id || null, actualPaymentId)
     .run();
 
   return c.text('OK', 200);

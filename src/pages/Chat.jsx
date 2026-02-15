@@ -227,12 +227,13 @@ const Chat = () => {
   };
 
   const handleGoBack = useCallback(() => {
+    disconnect();
     if (window.history.length > 1) {
       window.history.back();
     } else {
       navigate('/connections');
     }
-  }, [navigate]);
+  }, [disconnect, navigate]);
 
   const handleNavigateToConnection = useCallback(() => {
     navigate(`/connection/${connectionId}`);
@@ -391,7 +392,8 @@ const Chat = () => {
     reconnect,
     isPolling,
     connectionQuality,
-    averageLatency
+    averageLatency,
+    disconnect
   } = useWebSocket({
     connectionId: connection ? connectionId : null, // Only connect if valid connection exists
     onMessage: (data) => {
