@@ -436,7 +436,7 @@ const TokensPage = () => {
             {packagesLoading ? (
               <div className="mt-6 text-sm text-slate-500">Loading packages...</div>
             ) : (
-              <div className="mt-6 grid gap-3 grid-cols-3">
+              <div className="mt-6 grid gap-3 grid-cols-2 md:grid-cols-5">
                 {packages.map((pkg) => {
                   const isSelected = selectedPackage?.id === pkg.id;
                   const isBestValue = bestValueId === pkg.id;
