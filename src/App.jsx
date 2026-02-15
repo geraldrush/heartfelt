@@ -10,6 +10,7 @@ import { useNotifications } from './hooks/useNotifications.js';
 import { NotificationsProvider } from './context/NotificationsContext.jsx';
 import { ensurePushSubscription } from './utils/push.js';
 import Toast from './components/Toast.jsx';
+import GlobalVideoCallModal from './components/GlobalVideoCallModal.jsx';
 const SignInPage = React.lazy(() => import('./pages/SignInPage'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 const SignUpPage = React.lazy(() => import('./pages/SignUpPage.jsx'));
@@ -82,7 +83,7 @@ const NotificationsListener = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { notifications, fetchNotifications, fetchUnreadCount, markAsRead } = useNotifications();
-  const [toast, setToast] = useState(null);
+  const [videoCall, setVideoCall] = useState(null);
   const seenIdsRef = useRef(new Set());
 
   useEffect(() => {
@@ -123,9 +124,9 @@ const NotificationsListener = () => {
         } catch {}
       }
       if (data?.notification_type === 'video_call_request') {
-        setToast({
+        setVideoCall({
           id: notification.id,
-          message: notification.message || 'Incoming video call request',
+          callerName: notification.title?.replace('Incoming video call', '').trim() || 'Someone',
           connectionId: data.connection_id || null,
           requestId: data.request_id || null
         });
@@ -135,35 +136,44 @@ const NotificationsListener = () => {
   }, [notifications]);
 
   const handleAnswer = () => {
-    if (!toast?.connectionId) {
-      setToast(null);
+    if (!videoCall?.connectionId || !videoCall?.requestId) {
+      setVideoCall(null);
       return;
     }
-    markAsRead(toast.id);
-    const requestParam = toast.requestId ? `&requestId=${toast.requestId}` : '';
-    navigate(`/chat?connectionId=${toast.connectionId}&incoming=1${requestParam}`);
-    setToast(null);
+    markAsRead(videoCall.id);
+    navigate(`/chat?connectionId=${videoCall.connectionId}&incoming=1&requestId=${videoCall.requestId}`);
+    setVideoCall(null);
   };
 
-  const handleDismiss = () => {
-    if (toast?.id) {
-      markAsRead(toast.id);
+  const handleDismiss = async () => {
+    if (videoCall?.requestId) {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8787'}/api/chat/video-call-response`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify({
+            request_id: videoCall.requestId,
+            response: 'declined'
+          })
+        });
+      } catch {}
     }
-    setToast(null);
+    if (videoCall?.id) {
+      markAsRead(videoCall.id);
+    }
+    setVideoCall(null);
   };
 
-  if (!toast) return null;
+  if (!videoCall) return null;
 
   return (
-    <Toast
-      message={toast.message}
-      type="info"
-      onClose={handleDismiss}
-      actionLabel="Answer"
-      onAction={handleAnswer}
-      secondaryLabel="Dismiss"
-      onSecondary={handleDismiss}
-      duration={120000}
+    <GlobalVideoCallModal
+      callerName={videoCall.callerName}
+      onAccept={handleAnswer}
+      onDecline={handleDismiss}
     />
   );
 };

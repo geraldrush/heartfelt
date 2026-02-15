@@ -201,7 +201,6 @@ const Chat = () => {
   const [tokenWarning, setTokenWarning] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [tokenBalance, setTokenBalance] = useState(0);
-  const [videoCallInvitation, setVideoCallInvitation] = useState(null);
   const [isIncomingCall, setIsIncomingCall] = useState(false);
   const [pendingCallRequest, setPendingCallRequest] = useState(null);
   const [activeCallRequestId, setActiveCallRequestId] = useState(null);
@@ -244,14 +243,6 @@ const Chat = () => {
     const isRecipient = data.to_user_id === user?.id;
 
     if (status === 'ringing' && isRecipient) {
-      if (!videoCallInvitation || videoCallInvitation.request_id !== requestId) {
-        setVideoCallInvitation({
-          notification_type: 'video_call_request',
-          request_id: requestId,
-          sender_id: data.from_user_id,
-        });
-        setToast({ message: 'Incoming video call request', type: 'info' });
-      }
       return;
     }
 
@@ -273,10 +264,6 @@ const Chat = () => {
         setPendingCallRequest(null);
         setToast({ message: status === 'expired' ? 'No answer' : 'Call declined', type: 'info' });
       }
-      if (videoCallInvitation?.request_id === requestId) {
-        clearCallTimeout();
-        setVideoCallInvitation(null);
-      }
       if (activeCallRequestId === requestId) {
         setShowVideoCall(false);
         setActiveCallRequestId(null);
@@ -296,12 +283,8 @@ const Chat = () => {
         clearCallTimeout();
         setPendingCallRequest(null);
       }
-      if (videoCallInvitation?.request_id === requestId) {
-        clearCallTimeout();
-        setVideoCallInvitation(null);
-      }
     }
-  }, [activeCallRequestId, clearCallTimeout, connectionId, pendingCallRequest, user?.id, videoCallInvitation]);
+  }, [activeCallRequestId, clearCallTimeout, connectionId, pendingCallRequest, user?.id]);
 
   const {
     sendMessage,
@@ -348,10 +331,6 @@ const Chat = () => {
       setConnectionError(errorInfo);
     },
     onNotification: (data) => {
-      if (data.notification_type === 'video_call_request') {
-        setVideoCallInvitation(data);
-        setToast({ message: 'Incoming video call request', type: 'info' });
-      }
     },
     onCallStatus: handleCallStatus,
   });
@@ -562,7 +541,6 @@ const Chat = () => {
     setOffset(0);
     readSent.current = new Set();
     clearCallTimeout();
-    setVideoCallInvitation(null);
     setPendingCallRequest(null);
     setActiveCallRequestId(null);
     setShowVideoCall(false);
@@ -578,7 +556,6 @@ const Chat = () => {
       return;
     }
     
-    // Check if the call request is still pending before showing invitation
     const checkCallStatus = async () => {
       try {
         const db = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8787'}/api/chat/video-call-status/${requestIdParam}`, {
@@ -588,12 +565,10 @@ const Chat = () => {
         });
         const data = await db.json();
         
-        // Only show invitation if call is still pending
         if (data.status === 'pending') {
-          setVideoCallInvitation({
-            notification_type: 'video_call_request',
-            request_id: requestIdParam
-          });
+          setIsIncomingCall(true);
+          setActiveCallRequestId(requestIdParam);
+          setShowVideoCall(true);
         }
       } catch (err) {
         console.log('[Chat] Could not verify call status:', err);
@@ -604,24 +579,7 @@ const Chat = () => {
     setSearchParams({ connectionId });
   }, [connectionId, incomingParam, requestIdParam, setSearchParams]);
 
-  useEffect(() => {
-    if (!videoCallInvitation?.request_id) {
-      return;
-    }
-    clearCallTimeout();
-    callTimeoutRef.current = setTimeout(async () => {
-      try {
-        await respondToVideoCall(videoCallInvitation.request_id, 'expired');
-        await markNotificationsReadBy({ notification_type: 'video_call_request', connection_id: connectionId });
-      } catch {}
-      setVideoCallInvitation(null);
-      setToast({ message: 'Missed call', type: 'info' });
-    }, 45000);
-
-    return clearCallTimeout;
-  }, [clearCallTimeout, connectionId, videoCallInvitation?.request_id]);
-
-  useEffect(() => {
+useEffect(() => {
     if (!pendingCallRequest?.requestId) {
       return;
     }
@@ -1139,58 +1097,7 @@ const Chat = () => {
         </div>
       </div>
 
-      {/* Video Call Invitation Modal */}
-      {videoCallInvitation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl p-6 max-w-sm mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold mb-2">Incoming Video Call</h3>
-            <p className="text-gray-600 mb-4">{otherUserName} is calling you</p>
-            <div className="flex gap-3">
-              <button
-                onClick={async () => {
-                  const requestId = videoCallInvitation?.request_id || requestIdParam;
-                  if (!requestId) {
-                    setVideoCallInvitation(null);
-                    return;
-                  }
-                  clearCallTimeout();
-                  try {
-                    await respondToVideoCall(requestId, 'accepted');
-                    await markNotificationsReadBy({ notification_type: 'video_call_request', connection_id: connectionId });
-                  } catch {}
-                  setVideoCallInvitation(null);
-                  setIsIncomingCall(true);
-                  setActiveCallRequestId(requestId);
-                  setShowVideoCall(true);
-                }}
-                className="flex-1 text-white px-3 py-2 rounded-full font-semibold text-sm hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #27AE60, #F39C12)' }}
-              >
-                Accept
-              </button>
-              <button
-                onClick={async () => {
-                  const requestId = videoCallInvitation?.request_id || requestIdParam;
-                  if (!requestId) {
-                    setVideoCallInvitation(null);
-                    return;
-                  }
-                  clearCallTimeout();
-                  try {
-                    await respondToVideoCall(requestId, 'declined');
-                    await markNotificationsReadBy({ notification_type: 'video_call_request', connection_id: connectionId });
-                  } catch {}
-                  setVideoCallInvitation(null);
-                }}
-                className="flex-1 text-white px-3 py-2 rounded-full font-semibold text-sm hover:scale-105 transition-transform" style={{ background: 'linear-gradient(135deg, #E74C3C, #2C3E50)' }}
-              >
-                Decline
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Video Call Component */}
+{/* Video Call Component */}
       {showVideoCall && (
         <VideoCall
           userId={user?.id}
