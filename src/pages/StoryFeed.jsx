@@ -22,6 +22,7 @@ import Toast from '../components/Toast.jsx';
 import FilterDrawer from '../components/FilterDrawer.jsx';
 import FilterForm from '../components/FilterForm.jsx';
 import ActiveFilters from '../components/ActiveFilters.jsx';
+import InsufficientTokensModal from '../components/InsufficientTokensModal.jsx';
 
 import Button from '../components/ui/Button.jsx';
 import { triggerHaptic } from '../utils/haptics.js';
@@ -67,6 +68,7 @@ const StoryFeed = () => {
   const [toast, setToast] = useState(null);
   const [bannerDismissedUntil, setBannerDismissedUntil] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
 
   const [filters, setFilters] = useState({
     age_min: '',
@@ -306,7 +308,7 @@ const StoryFeed = () => {
   const handleConnect = async (story, message = '') => {
     if (tokenBalance !== null && tokenBalance < 5) {
       triggerHaptic('error');
-      showToast('You need at least 5 tokens to send a connection request.');
+      setShowTopUpModal(true);
       return;
     }
 
@@ -322,20 +324,24 @@ const StoryFeed = () => {
       ));
     } catch (err) {
       console.error('Connection request failed:', err);
-      showToast(`Failed to send connection request: ${err.message}`);
+      if (err.status === 402) {
+        setShowTopUpModal(true);
+      } else {
+        showToast(`Failed to send connection request: ${err.message}`);
+      }
       setTokenBalance((prev) => (prev !== null ? prev + 5 : prev));
     }
   };
 
   const handleAccept = async (story) => {
-    if (tokenBalance !== null && tokenBalance < 5) {
+    if (tokenBalance !== null && tokenBalance < 3) {
       triggerHaptic('error');
-      showToast('You need at least 5 tokens to accept a connection request.');
+      setShowTopUpModal(true);
       return;
     }
 
     triggerHaptic('success');
-    setTokenBalance((prev) => (prev !== null ? prev - 5 : prev));
+    setTokenBalance((prev) => (prev !== null ? prev - 3 : prev));
 
     try {
       await acceptConnectionRequest(story.request_id);
@@ -346,8 +352,12 @@ const StoryFeed = () => {
       ));
     } catch (err) {
       console.error('Accept connection failed:', err);
-      showToast(`Failed to accept connection request: ${err.message}`);
-      setTokenBalance((prev) => (prev !== null ? prev + 5 : prev));
+      if (err.status === 402) {
+        setShowTopUpModal(true);
+      } else {
+        showToast(`Failed to accept connection request: ${err.message}`);
+      }
+      setTokenBalance((prev) => (prev !== null ? prev + 3 : prev));
     }
   };
 
@@ -989,6 +999,14 @@ const StoryFeed = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* Top Up Modal */}
+      <InsufficientTokensModal
+        isOpen={showTopUpModal}
+        onClose={() => setShowTopUpModal(false)}
+        requiredTokens={5}
+        action="send a connection request"
+      />
       </div>
     </div>
   );
